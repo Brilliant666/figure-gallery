@@ -1,0 +1,56 @@
+# Local configuration and credentials
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+credentials/
+secrets/
+
+# Operating-system and editor files
+.DS_Store
+Thumbs.db
+Desktop.ini
+.idea/
+.vscode/
+*.swp
+*~
+
+# Logs, caches, and temporary files
+*.log
+.cache/
+tmp/
+temp/
+coverage/
+htmlcov/
+
+# Local dependencies and generated output
+node_modules/
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+dist/
+build/
+out/
+
+# Archives, database dumps, and common large binaries
+*.zip
+*.7z
+*.rar
+*.tar
+*.tar.gz
+*.tgz
+*.sql
+*.sqlite
+*.sqlite3
+*.exe
+*.msi
+*.dmg
+*.iso
+*.psd
+*.blend
+*.mp4
+*.mov
