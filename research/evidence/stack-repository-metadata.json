@@ -1,0 +1,79 @@
+{
+  "queried_at": "2026-07-12",
+  "source": "Public repository metadata queried through the connected GitHub app (GraphQL), plus public official release and license pages",
+  "credential_handling": "No Cookie, personal token, or credential material was supplied to the research code, inspected, stored, or committed; connector authentication is managed outside the workspace.",
+  "note": "GitHub release nodes are not used for freshness because several projects publish through tags or package registries. Default-branch commit and pushedAt are the uniform activity signals.",
+  "repositories": {
+    "django/django": {
+      "default_branch": "main",
+      "head": "65a9f14196c338d70889bd54753370606b3fb4eb",
+      "head_committed_at": "2026-07-10T22:01:57Z",
+      "pushed_at": "2026-07-10T22:01:58Z",
+      "license": "BSD-3-Clause",
+      "archived": false,
+      "recent_release": "6.0.7 security release, 2026-07-07 (official Django website)"
+    },
+    "unfoldadmin/django-unfold": {
+      "default_branch": "main",
+      "head": "b3fe7755b26547b30c552d9a86d2ab269f1c3f5a",
+      "head_committed_at": "2026-07-08T08:52:07Z",
+      "pushed_at": "2026-07-08T08:52:10Z",
+      "license": "MIT",
+      "archived": false,
+      "recent_release": "0.100.0, 2026-07-06"
+    },
+    "wagtail/wagtail": {
+      "default_branch": "main",
+      "head": "0b3b226f79d83fac9787febe3e8fda29f9e51798",
+      "head_committed_at": "2026-07-08T08:55:15Z",
+      "pushed_at": "2026-07-08T08:55:15Z",
+      "license": "BSD-3-Clause",
+      "archived": false,
+      "recent_release": "7.4.2, 2026-06-15; 7.4 is LTS"
+    },
+    "payloadcms/payload": {
+      "default_branch": "main",
+      "head": "7fd4642d0cd24fbfa4ce1a2704ee2d151c60ae95",
+      "head_committed_at": "2026-07-12T14:56:08Z",
+      "pushed_at": "2026-07-12T14:56:09Z",
+      "license": "MIT",
+      "archived": false,
+      "recent_release": "v3.86.0, 2026-07-10"
+    },
+    "vercel/next.js": {
+      "default_branch": "canary",
+      "head": "31541356c21bc389150b958379acb26aa7e97b22",
+      "head_committed_at": "2026-07-12T11:47:39Z",
+      "pushed_at": "2026-07-12T12:21:51Z",
+      "license": "MIT",
+      "archived": false
+    },
+    "directus/directus": {
+      "default_branch": "main",
+      "head": "9f2f73aee7d8647d3f187dac43f724fe617763f5",
+      "head_committed_at": "2026-07-10T22:42:17Z",
+      "pushed_at": "2026-07-11T00:07:00Z",
+      "license": "MSCL-1.0-GPL (competing-use restriction; GPL-3.0 future license after four years); GitHub reports NOASSERTION",
+      "archived": false,
+      "recent_release": "v12.1.1, 2026-07-01"
+    },
+    "strapi/strapi": {
+      "default_branch": "develop",
+      "head": "550c8f00a873f4f2dda2ca2c746a04df1a9a9c17",
+      "head_committed_at": "2026-07-10T17:23:06Z",
+      "pushed_at": "2026-07-10T17:25:13Z",
+      "license": "Community Edition MIT; code under ee/ has separate enterprise terms; GitHub reports NOASSERTION",
+      "archived": false,
+      "recent_release": "v5.50.1, 2026-07-08"
+    },
+    "rr-/szurubooru": {
+      "default_branch": "master",
+      "head": "22fd239e18c9bae650f23c7db02cad2bfd570daf",
+      "head_committed_at": "2026-05-26T05:21:37Z",
+      "pushed_at": "2026-05-26T05:21:37Z",
+      "license": "GPL-3.0",
+      "archived": false,
+      "recent_release": "2.5, 2021-06-05; later maintenance is commit-based"
+    }
+  }
+}

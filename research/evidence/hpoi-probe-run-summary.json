@@ -1,0 +1,62 @@
+{
+  "tested_during": "2026-07-12 through 2026-07-13 Asia/Shanghai",
+  "fixture_scope": "Manually reduced representative HTML; not a full Hpoi page capture.",
+  "first_run": {
+    "new": ["hpoi:id:98369"],
+    "changed": {},
+    "unchanged": []
+  },
+  "second_run": {
+    "new": [],
+    "changed": {},
+    "unchanged": ["hpoi:id:98369"]
+  },
+  "changed_run": {
+    "new": [],
+    "unchanged": [],
+    "changed_fields": [
+      "candidate_images",
+      "raw_release_date",
+      "raw_release_status",
+      "raw_snapshot"
+    ],
+    "before_semantic_snapshot_sha256": "8c086abc15947f611faaef5b4d8045957ee3ba46e8944b33bdb40a79592c1f57",
+    "after_semantic_snapshot_sha256": "f6e4b92a1f316ddcb15a25e213cdee222b79b0d24b93d5f9a5d0b154f84c3744"
+  },
+  "url_fallback_to_stable_id_run": {
+    "first_key": "hpoi:url:https://www.hpoi.net/hobby/98369",
+    "migrated_to": "hpoi:id:98369",
+    "second_run_new_count": 0,
+    "persisted_item_count": 1
+  },
+  "unit_tests": {
+    "count": 15,
+    "result": "passed",
+    "execution_history": [
+      "Initial run passed 7/7 before the re-encoding perceptual-hash test was added.",
+      "A later repeat exposed HTTP 502 because urllib inherited the host proxy for a localhost image test.",
+      "The probe was changed to use an explicit empty ProxyHandler so it cannot inherit an opaque or credentialed proxy.",
+      "During the image-host allowlist refactor, the localhost-only test initially failed until it explicitly injected its test host.",
+      "The final recorded suite passed 15/15."
+    ],
+    "coverage": [
+      "HTML field parsing",
+      "JSON-LD Product type arrays and ImageObject URLs",
+      "stable source ID priority",
+      "normalized URL fallback",
+      "URL fallback key migration when a stable ID later appears",
+      "idempotent first and repeated runs",
+      "field and image diff output",
+      "file SHA-256, image dimensions and format",
+      "64-bit perceptual average hash",
+      "same pixels re-encoded with different file hashes retain the same perceptual hash",
+      "same bytes under two URLs remain the same image",
+      "same content under a changed URL is reported without treating it as new image content",
+      "same URL with changed content is reported",
+      "declared and streamed image byte limits",
+      "default image-host allowlist and pixel limit",
+      "outbound image requests omit Cookie and Authorization",
+      "credential-bearing URL rejection"
+    ]
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "checked_at": "2026-07-12 Asia/Shanghai",
+  "repository": "Brilliant666/figure-gallery",
+  "governance_files_read_in_full": [
+    "AGENTS.md",
+    "CODEX_MASTER_INSTRUCTION.md",
+    "README.md",
+    "attached VAL-01 task text"
+  ],
+  "validated_baseline_branch": "main",
+  "baseline_commit": "bee42f7da6fc14f9cce89e46ca8831d208e57793",
+  "baseline_worktree": "clean",
+  "main_vs_origin_main_left_right_count": [0, 0],
+  "pull_request_1": {
+    "state": "MERGED",
+    "merged_at": "2026-07-12T15:28:52Z",
+    "merge_commit": "bee42f7da6fc14f9cce89e46ca8831d208e57793"
+  },
+  "task_branch_created": "research/val-01-hpoi-stack-feasibility",
+  "transport_note": "Git smart HTTP was unavailable during baseline refresh. The public GitHub API verification payload and signature were used to reconstruct and hash-check the exact signed merge commit; local main and origin/main were then both verified at that exact remote commit."
+}
