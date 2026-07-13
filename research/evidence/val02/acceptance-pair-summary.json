@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "contract_id": "val02-acceptance-v1",
+  "contract_sha256": "c6106dd86fbb009b80a3dc01263446f9d74251e897c7151f45089cb65480f5ff",
+  "fixture_sha256": "3ff832622a8b9d4244ec39fc70668c270cb78204ca975004941761ddb9df9529",
+  "results": {
+    "wagtail": {
+      "path": "spikes\\val02_wagtail\\acceptance-results.json",
+      "computed_counts": {
+        "pass": 29,
+        "fail": 0,
+        "not_run": 1
+      }
+    },
+    "payload": {
+      "path": "spikes\\val02_payload\\acceptance-results.json",
+      "computed_counts": {
+        "pass": 29,
+        "fail": 0,
+        "not_run": 1
+      }
+    }
+  },
+  "pair_valid": true
+}

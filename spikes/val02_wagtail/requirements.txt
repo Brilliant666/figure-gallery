@@ -1,0 +1,4 @@
+# Direct, task-verified stable dependencies (2026-07-14).
+Django==5.2.16
+Wagtail==7.4.2
+django-storages[s3]==1.14.6

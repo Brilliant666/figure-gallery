@@ -1,0 +1,31 @@
+{
+  "verified_date": "2026-07-14",
+  "repository": "Brilliant666/figure-gallery",
+  "pull_request_3": {
+    "title": "VAL-01B: validate Hpoi real transport gate",
+    "base": "main",
+    "base_sha_before_merge": "50126bd20c430a4a12fced7929ddfb4859b8cefc",
+    "head": "research/val-01b-hpoi-real-transport",
+    "head_sha": "ba3b9f8d50f2de421fc981423331dee527ebf6f9",
+    "whitelisted_files": 14,
+    "pre_merge_unit_tests": {
+      "passed": 30,
+      "failed": 0
+    },
+    "ready_transition_succeeded": true,
+    "merge_method": "squash",
+    "auto_merge_enabled": false,
+    "merge_subject": "research: validate Hpoi transport and access gate (#3)",
+    "merge_sha": "a008351af8e5a5d7f4edaf92381626a7fcf88e49"
+  },
+  "val02": {
+    "branch": "research/val-02-wagtail-payload-pocs",
+    "main_sha_after_merge": "a008351af8e5a5d7f4edaf92381626a7fcf88e49",
+    "branch_start_sha": "a008351af8e5a5d7f4edaf92381626a7fcf88e49"
+  },
+  "network_scope": {
+    "hpoi_requests": 0,
+    "github_fetch_used_existing_loopback_proxy_temporarily": true,
+    "permanent_proxy_configuration_changed": false
+  }
+}

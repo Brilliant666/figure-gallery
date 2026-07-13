@@ -1,0 +1,32 @@
+{% extends "wagtailadmin/base.html" %}
+{% load wagtailimages_tags %}
+{% block titletag %}Review {{ candidate.raw_title }}{% endblock %}
+{% block content %}
+  {% include "wagtailadmin/shared/header.html" with title="Candidate review" subtitle=candidate.raw_title icon="tasks" %}
+  <div class="nice-padding">
+    <section>
+      <h2>Candidate-only fields</h2>
+      <dl>
+        <dt>Source</dt><dd>{{ candidate.source.identity_key }}</dd>
+        <dt>Title</dt><dd>{{ candidate.raw_title }}</dd>
+        <dt>Characters</dt><dd>{{ candidate.raw_character_names|join:", " }}</dd>
+        <dt>Work</dt><dd>{{ candidate.raw_work_name }}</dd>
+        <dt>Manufacturer</dt><dd>{{ candidate.raw_manufacturer }}</dd>
+        <dt>Category / scale</dt><dd>{{ candidate.raw_category }} / {{ candidate.raw_scale }}</dd>
+        <dt>Status</dt><dd>{{ candidate.status }}</dd>
+      </dl>
+    </section>
+    <section>
+      <h2>Candidate images</h2>
+      <div style="display:flex;gap:1rem;flex-wrap:wrap">
+        {% for item in candidate.images.all %}
+          <figure>{% if item.image %}{% image item.image max-240x240 %}{% else %}<span>metadata pending local media</span>{% endif %}<figcaption>#{{ item.pk }} · adult={{ item.is_adult }}</figcaption></figure>
+        {% empty %}<p>No candidate images.</p>{% endfor %}
+      </div>
+    </section>
+    <section>
+      <h2>Audited action</h2>
+      <form method="post">{% csrf_token %}{{ form.as_p }}<button class="button" type="submit">Apply reviewed action</button></form>
+    </section>
+  </div>
+{% endblock %}

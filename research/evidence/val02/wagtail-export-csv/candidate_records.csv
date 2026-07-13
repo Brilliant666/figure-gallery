@@ -1,0 +1,5 @@
+﻿id,source_id,status,raw_title,raw_character_names,raw_work_name,raw_manufacturer,raw_category,raw_scale,raw_release_date,raw_snapshot,field_decisions,review_reason,target_prototype_id,target_version_id
+1,6,pending,希格玛·观测姿态,"[""希格玛""]",尚未匹配作品,新星试作社,scale,1/7,2026-09,"{""fixture_revision"": 1, ""requested_changes"": {}}",{},,,
+2,7,update_pending,林·星跃姿态资料更新,"[""轨道林""]",星轨纪事,极光模型社,scale,1/7,2026-10,"{""fixture_revision"": 2, ""requested_changes"": {""main_image_id"": ""candidate-image-002-b"", ""raw_date"": ""2026-10""}}",{},,1,1
+3,8,deferred,林·月庭礼服补充图,"[""月庭林""]",月庭物语,格点造物,scale,1/6,2026-11,"{""fixture_revision"": 1, ""requested_changes"": {}}",{},等待成人图片人工分级,4,5
+4,9,ignored,重复的莲·月庭漫步,"[""庭莲""]",月庭物语,极光模型社,prize,,2026-08,"{""fixture_revision"": 1, ""requested_changes"": {}}",{},人工确认是已知来源的重复记录,5,8

@@ -1,0 +1,36 @@
+{% load static %}
+<!doctype html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ character.display_name }}</title><link rel="stylesheet" href="{% static 'gallery/gallery.css' %}">
+</head>
+<body>
+  <header class="gallery-header"><a href="{% url 'gallery:home' %}">搜索</a><h1>{{ character.display_name }}</h1></header>
+  <main>
+    <div class="gallery-grid" data-gallery>
+      {% for card in cards %}
+        <button class="gallery-card" type="button" data-index="{{ forloop.counter0 }}" data-src="{{ card.url }}" aria-label="查看图片{% if card.prototype.is_multi_character %}，多人造型{% endif %}">
+          <img src="{{ card.url }}" width="{{ card.width }}" height="{{ card.height }}" alt="{{ character.display_name }}造型参考" loading="lazy">
+          {% if card.prototype.is_multi_character %}<span class="group-badge">多人</span>{% endif %}
+        </button>
+      {% empty %}<p class="empty">暂无可公开图片。</p>{% endfor %}
+    </div>
+    {% if page.has_other_pages %}
+      <nav class="pagination" aria-label="分页">
+        {% if page.has_previous %}<a href="?page={{ page.previous_page_number }}">上一页</a>{% endif %}
+        <span>{{ page.number }} / {{ page.paginator.num_pages }}</span>
+        {% if page.has_next %}<a href="?page={{ page.next_page_number }}">下一页</a>{% endif %}
+      </nav>
+    {% endif %}
+  </main>
+  <dialog class="lightbox" data-lightbox>
+    <button type="button" data-close aria-label="关闭">×</button>
+    <button type="button" data-prev aria-label="上一张">‹</button>
+    <img alt="放大预览" data-lightbox-image>
+    <button type="button" data-next aria-label="下一张">›</button>
+    <button type="button" data-zoom aria-label="缩放">缩放</button>
+  </dialog>
+  <script src="{% static 'gallery/gallery.js' %}"></script>
+</body>
+</html>

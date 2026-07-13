@@ -25,6 +25,12 @@ tmp/
 temp/
 coverage/
 htmlcov/
+.pytest_cache/
+.ruff_cache/
+.eslintcache
+*.tsbuildinfo
+playwright-report/
+test-results/
 
 # Local dependencies and generated output
 node_modules/
@@ -35,6 +41,9 @@ __pycache__/
 dist/
 build/
 out/
+.next/
+staticfiles/
+media/
 
 # Archives, database dumps, and common large binaries
 *.zip
@@ -46,6 +55,9 @@ out/
 *.sql
 *.sqlite
 *.sqlite3
+*.db
+*.db-shm
+*.db-wal
 *.exe
 *.msi
 *.dmg

@@ -1,0 +1,15 @@
+{
+  "checked_date": "2026-07-14",
+  "requested_browser": "Google Chrome",
+  "chrome_installed": true,
+  "chrome_running": true,
+  "chrome_version": "150.0.7871.102",
+  "browser_control_available": false,
+  "blockers": [
+    "The selected Chrome profile does not have the ChatGPT Chrome Extension installed.",
+    "The Chrome native messaging host registry entry is missing."
+  ],
+  "repair_attempted": false,
+  "fallback": "Server-side, component, and DOM-contract tests only; no scripted Chrome substitute was used.",
+  "hpoi_requests": 0
+}

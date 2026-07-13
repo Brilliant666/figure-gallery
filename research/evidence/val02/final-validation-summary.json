@@ -1,0 +1,72 @@
+{
+  "schema_version": 1,
+  "validated_date": "2026-07-14",
+  "shared_contract": {
+    "fixture_sha256": "3ff832622a8b9d4244ec39fc70668c270cb78204ca975004941761ddb9df9529",
+    "unit_tests_passed": 48,
+    "unit_tests_failed": 0,
+    "candidate_client_dry_run_adapters": [
+      "wagtail",
+      "payload"
+    ],
+    "pair_validator": "pass",
+    "pair_valid": true
+  },
+  "wagtail": {
+    "django_tests_passed": 52,
+    "django_tests_failed": 0,
+    "pip_check": "pass",
+    "django_system_check": "pass_with_two_treebeard_E001_warnings",
+    "migration_check": "pass_no_changes",
+    "acceptance": {
+      "pass": 29,
+      "fail": 0,
+      "not_run": 1,
+      "not_run_ids": [
+        "AC-29"
+      ]
+    }
+  },
+  "payload": {
+    "vitest_passed": 36,
+    "vitest_failed": 0,
+    "typecheck": "pass",
+    "eslint": "pass",
+    "production_build": "pass_with_nft_tracing_warning",
+    "fresh_migration": "pass",
+    "repeat_seed": "pass",
+    "json_export_parse": "pass",
+    "csv_export_parse": "pass",
+    "acceptance": {
+      "pass": 29,
+      "fail": 0,
+      "not_run": 1,
+      "not_run_ids": [
+        "AC-29"
+      ]
+    }
+  },
+  "ui": {
+    "chrome_interaction": "not_run",
+    "blocker": "Selected Chrome profile lacked the control extension and native messaging host.",
+    "substitutes": "server-side, component, DOM, CSS and static JavaScript contract tests"
+  },
+  "repository_hygiene": {
+    "strict_utf8_failures": 0,
+    "replacement_character_files": 0,
+    "nul_or_binary_signature_files": 0,
+    "files_over_1_mib": 0,
+    "blocked_binary_extensions": 0,
+    "high_confidence_private_key_or_token_matches": 0,
+    "json_files_parsed": 21,
+    "csv_files_parsed": 10,
+    "git_diff_check": "pass_with_line_ending_notice_only"
+  },
+  "scope": {
+    "hpoi_requests": 0,
+    "real_figure_images_used": false,
+    "cloud_connections": 0,
+    "deployment_performed": false,
+    "final_stack_selected": false
+  }
+}

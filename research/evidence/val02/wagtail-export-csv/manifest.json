@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "contains_binary_media": false,
+  "tables": [
+    "works.csv",
+    "characters.csv",
+    "manufacturers.csv",
+    "figure_prototypes.csv",
+    "figure_versions.csv",
+    "source_records.csv",
+    "candidate_records.csv",
+    "candidate_images.csv",
+    "operation_logs.csv",
+    "system_settings.csv"
+  ]
+}

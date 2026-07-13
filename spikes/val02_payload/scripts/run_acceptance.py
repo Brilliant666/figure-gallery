@@ -1,0 +1,204 @@
+"""Run Payload tests and emit the shared VAL-02 acceptance result."""
+
+from __future__ import annotations
+
+import json
+import os
+import shutil
+import subprocess
+import sys
+import tempfile
+from pathlib import Path
+
+
+PROTOTYPE_ROOT = Path(__file__).resolve().parents[1]
+REPOSITORY_ROOT = PROTOTYPE_ROOT.parents[1]
+sys.path.insert(0, str(REPOSITORY_ROOT))
+
+from spikes.val02_contract.acceptance_result import AcceptanceRecorder  # noqa: E402
+
+
+def source_files() -> list[Path]:
+    included: list[Path] = []
+    for base in (PROTOTYPE_ROOT / "src", PROTOTYPE_ROOT / "scripts", PROTOTYPE_ROOT / "tests"):
+        for path in base.rglob("*"):
+            if path.is_file() and path.suffix in {".css", ".js", ".json", ".mjs", ".py", ".ts", ".tsx"}:
+                included.append(path)
+    included.extend(
+        PROTOTYPE_ROOT / name
+        for name in (
+            ".env.example",
+            "README.md",
+            "eslint.config.mjs",
+            "next.config.mjs",
+            "package-lock.json",
+            "package.json",
+            "tsconfig.json",
+            "vitest.config.ts",
+        )
+    )
+    included.extend(
+        REPOSITORY_ROOT / reference
+        for reference in (
+            "spikes/val02_contract/acceptance_contract.json",
+            "spikes/val02_contract/acceptance_result.py",
+            "spikes/val02_contract/fixture_contract.py",
+            "spikes/val02_contract/fixtures/domain_fixture.json",
+            "spikes/val02_contract/network_guard.py",
+            "spikes/val02_contract/python_candidate_client/__init__.py",
+            "spikes/val02_contract/python_candidate_client/client.py",
+            "spikes/val02_contract/synthetic_media.py",
+        )
+    )
+    return sorted(set(included))
+
+
+def run_tests() -> tuple[dict[str, int], set[str]]:
+    npm = shutil.which("npm.cmd" if os.name == "nt" else "npm")
+    if not npm:
+        raise RuntimeError("npm is not available on PATH")
+    with tempfile.TemporaryDirectory(prefix="figure-gallery-payload-acceptance-") as temporary:
+        result_path = Path(temporary) / "vitest.json"
+        subprocess.run(
+            [npm, "test", "--", "--reporter=json", f"--outputFile={result_path}"],
+            cwd=PROTOTYPE_ROOT,
+            check=True,
+        )
+        result = json.loads(result_path.read_text(encoding="utf-8"))
+    counts = {
+        "passed": int(result["numPassedTests"]),
+        "failed": int(result["numFailedTests"]),
+        "total": int(result["numTotalTests"]),
+    }
+    if counts["failed"] or counts["passed"] != counts["total"]:
+        raise RuntimeError(f"acceptance requires a fully passing automated suite, got {counts}")
+    names = {
+        str(assertion["fullName"])
+        for test_result in result["testResults"]
+        for assertion in test_result["assertionResults"]
+        if assertion["status"] == "passed"
+    }
+    return counts, names
+
+
+def custom_loc() -> int:
+    total = 0
+    for path in source_files():
+        if PROTOTYPE_ROOT not in path.parents or any(
+            part in {"migrations"} for part in path.relative_to(PROTOTYPE_ROOT).parts
+        ):
+            continue
+        if path.name in {"payload-types.ts", "importMap.js"}:
+            continue
+        if path.suffix in {".py", ".ts", ".tsx"}:
+            total += len(path.read_text(encoding="utf-8").splitlines())
+    return total
+
+
+def main() -> int:
+    test_counts, passed_test_names = run_tests()
+    package = json.loads((PROTOTYPE_ROOT / "package.json").read_text(encoding="utf-8"))
+    node = subprocess.run(
+        [shutil.which("node") or "node", "--version"],
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+    recorder = AcceptanceRecorder.from_source_files(
+        prototype="payload",
+        runner="vitest-plus-payload-acceptance-runner",
+        command="python spikes/val02_payload/scripts/run_acceptance.py",
+        source_files=source_files(),
+        runtime={
+            "node": node,
+            "npm": package["packageManager"],
+            "payload": package["dependencies"]["payload"],
+            "next": package["dependencies"]["next"],
+            "python": sys.version.split()[0],
+            "database": "SQLite via @payloadcms/db-sqlite",
+        },
+        metrics={
+            "automated_tests": test_counts,
+            "custom_loc_excluding_generated": custom_loc(),
+        },
+        exports={"formats": ["JSON", "CSV"], "csv_files": 9, "embedded_binary": False},
+        security={
+            "candidate_generic_writes": "closed",
+            "candidate_endpoint_role": "candidate-client only",
+            "formal_generic_writes": "closed; audited administrator services only",
+            "hpoi_network_guard": "enabled",
+            "operation_logs": "append-only outside controlled services",
+        },
+    )
+
+    passed = {
+        "AC-01": ("automated_test", "performs idempotent candidate/source/media metadata upsert", "Repeated source upsert retained one source, candidate and media identity with created then unchanged outcomes."),
+        "AC-02": ("automated_test", "migrates a URL fallback source identity to a stable source ID", "The source and candidate IDs stayed identical while the URL-key row migrated to one stable-ID key."),
+        "AC-03": ("api_permission_test", "performs idempotent candidate/source/media metadata upsert", "Character count was unchanged after an unknown candidate was written."),
+        "AC-04": ("api_permission_test", "performs idempotent candidate/source/media metadata upsert", "Manufacturer count was unchanged after an unknown candidate was written."),
+        "AC-05": ("automated_test", "performs idempotent candidate/source/media metadata upsert", "The unknown character remained candidate-only with matchState=character_pending."),
+        "AC-06": ("admin_workflow_test", "creates a new manufacturer only as audited draft before controlled activation", "Generic active creation was denied; the controlled action created draft, public read excluded it, and a separately audited activation made it visible."),
+        "AC-07": ("api_permission_test", "keeps candidate access out of formal entities", "Candidate identity could not create or update FigurePrototype; generic candidate/source/media writes were also closed."),
+        "AC-08": ("api_permission_test", "keeps candidate access out of formal entities and main-image writes", "Formal/main-image fields returned 403 and the existing main media ID was unchanged."),
+        "AC-09": ("admin_workflow_test", "keeps defer/reject/create review writes atomic and auditable", "Administrator review created a draft prototype, linked the candidate and wrote create_prototype audit data."),
+        "AC-10": ("admin_workflow_test", "applies accepted fields but only links a candidate to an existing version", "The candidate linked to an existing version and the version count did not increase."),
+        "AC-11": ("admin_workflow_test", "keeps defer/reject/create review writes atomic and auditable", "Allowed fields changed the target prototype; rejected field values and reasons were persisted and audited."),
+        "AC-12": ("admin_workflow_test", "keeps defer/reject/create review writes atomic and auditable", "Defer and ignore were each read back with their exact persisted status and non-empty reason."),
+        "AC-13": ("automated_test", "keeps candidate, media, source and version relations closed through merge, split and two undo operations", "One closed component moved candidate, media, two sources and version through merge and split; two undo operations restored every original relation and marked both originals undone."),
+        "AC-14": ("admin_workflow_test", "records every prototype domain operation with complete append-only audit fields", "Every exposed domain operation type was observed with actor, time, reason, before/after state, related records and undo flag; generic formal/global CRUD was separately denied."),
+        "AC-15": ("automated_test", "executes alias routing, Work disambiguation, formal queries and one-entry variants", "Public queries from each related Character returned the same group prototype."),
+        "AC-16": ("automated_test", "executes alias routing, Work disambiguation, formal queries and one-entry variants", "A public Character query returned both target prototype IDs and preserved their distinct manufacturer IDs."),
+        "AC-17": ("automated_test", "executes alias routing, Work disambiguation, formal queries and one-entry variants", "Four version rows related to one prototype while getCharacterGallery returned that prototype exactly once."),
+        "AC-18": ("automated_test", "filters an audited adult formal main image by the controlled global setting", "After audited promotion to a formal main image, the adult prototype was absent with the default setting off."),
+        "AC-19": ("automated_test", "filters an audited adult formal main image by the controlled global setting", "The same public gallery query returned the adult prototype after an audited settings change, then excluded it again after reset."),
+        "AC-20": ("automated_test", "executes alias routing, Work disambiguation, formal queries and one-entry variants", "A stale source remained attached to a published prototype whose local main media existed and remained in the public gallery."),
+        "AC-21": ("media_test", "creates real local thumbnails and exports parseable relationship metadata", "Changing Media.sourceUrl preserved media ID, storageKey and FigurePrototype.mainImage."),
+        "AC-22": ("export_parse", "creates real local thumbnails and exports parseable relationship metadata", "JSON and nine CSV files preserved stable IDs, relationships, storage keys, source URLs and hashes."),
+        "AC-23": ("binary_scan", "creates real local thumbnails and exports parseable relationship metadata", "Serialized exports contained no data URL, PNG base64 marker or image bytes."),
+        "AC-24": ("automated_test", "executes alias routing, Work disambiguation, formal queries and one-entry variants", "The public alias Pilot Lin matched exactly one Character."),
+        "AC-25": ("automated_test", "executes alias routing, Work disambiguation, formal queries and one-entry variants", "The executable resolver returned kind=unique and the exact /characters/<id> gallery target for the alias query."),
+        "AC-26": ("automated_test", "executes alias routing, Work disambiguation, formal queries and one-entry variants", "The executable resolver returned disambiguation with two same-name Characters and two distinct Work labels."),
+        "AC-27": ("automated_test", "paginates seventeen formal gallery items as stable disjoint 16 and 1 item pages", "Seventeen public prototypes produced stable id-sorted pages of 16 and 1 with no overlap and totalPages=2."),
+        "AC-28": ("ui_test", "renders multiple original-ratio image elements without a download control", "SSR preserved width/height metadata; CSS uses height:auto and object-fit:contain across 4/3/2 columns."),
+        "AC-30": ("network_guard_test", "rejects before invoking the underlying fetch", "The fetch spy was never called; Hpoi root/deep-subdomain network targets and S3 endpoint configuration were rejected before transport or plugin construction."),
+    }
+    blockers = {
+        "AC-29": "Chrome control was unavailable in this environment, and SSR/source checks do not execute lightbox previous/next boundary interactions.",
+    }
+
+    for index in range(1, 31):
+        identifier = f"AC-{index:02d}"
+        if identifier in passed:
+            kind, reference, observed = passed[identifier]
+            if not any(reference in test_name for test_name in passed_test_names):
+                raise RuntimeError(
+                    f"acceptance evidence {identifier} does not match a passed Vitest name: {reference}"
+                )
+            recorder.record(identifier, "pass", kind=kind, reference=reference, observed=observed)
+        else:
+            recorder.record(
+                identifier,
+                "not_run",
+                kind="blocker",
+                reference="spikes/val02_payload/README.md",
+                observed=blockers[identifier],
+            )
+    recorder.add_evidence(
+        "AC-14",
+        kind="api_permission_test",
+        reference="tests/integration.test.ts::closes generic formal and global CRUD while controlled services remain available",
+        observed="Create, update and delete were denied for every formal collection and update was denied for SystemSettings; legal services use internal transaction and audit context.",
+    )
+    recorder.add_evidence(
+        "AC-29",
+        kind="static_assertion",
+        reference="tests/ui.test.tsx::declares 4/3/2 responsive columns, original ratio and lightbox controls",
+        observed="Static fallback confirmed close, zoom, previous and next controls, but did not execute interaction state.",
+    )
+    output = recorder.write(PROTOTYPE_ROOT / "acceptance-results.json")
+    print(json.dumps({"output": str(output), "status": "generated", "expected_not_run": sorted(blockers)}))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

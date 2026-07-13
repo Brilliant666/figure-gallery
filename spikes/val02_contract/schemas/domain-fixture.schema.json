@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://figure-gallery.invalid/schemas/val02-domain-fixture-v1.json",
+  "title": "VAL-02 synthetic shared domain fixture",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "fixture_id", "synthetic_only", "media_policy", "works", "characters", "manufacturers", "media", "figure_prototypes", "figure_versions", "source_records", "candidate_records", "operation_logs", "system_settings", "scenarios"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "fixture_id": {"const": "val02-synthetic-domain-v1"},
+    "synthetic_only": {"const": true},
+    "description": {"type": "string"},
+    "media_policy": {
+      "type": "object",
+      "required": ["binary_committed", "generation", "identity_field", "exact_dedup_field", "similarity_hint_field"],
+      "properties": {
+        "binary_committed": {"const": false},
+        "generation": {"const": "dynamic_png"},
+        "identity_field": {"const": "storage_key"},
+        "exact_dedup_field": {"const": "sha256"},
+        "similarity_hint_field": {"const": "perceptual_hash"}
+      }
+    },
+    "works": {"type": "array", "minItems": 2, "items": {"$ref": "#/$defs/entity"}},
+    "characters": {"type": "array", "minItems": 4, "items": {"$ref": "#/$defs/entity"}},
+    "manufacturers": {"type": "array", "minItems": 3, "items": {"$ref": "#/$defs/entity"}},
+    "media": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/entity"}},
+    "figure_prototypes": {"type": "array", "minItems": 5, "items": {"$ref": "#/$defs/entity"}},
+    "figure_versions": {"type": "array", "minItems": 4, "items": {"$ref": "#/$defs/entity"}},
+    "source_records": {"type": "array", "minItems": 5, "items": {"$ref": "#/$defs/entity"}},
+    "candidate_records": {"type": "array", "minItems": 2, "items": {"$ref": "#/$defs/entity"}},
+    "operation_logs": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/entity"}},
+    "system_settings": {
+      "type": "object",
+      "required": ["show_adult_images", "gallery_page_size", "public_read_enabled"],
+      "properties": {
+        "show_adult_images": {"const": false},
+        "gallery_page_size": {"const": 16},
+        "public_read_enabled": {"type": "boolean"}
+      }
+    },
+    "scenarios": {"type": "object"}
+  },
+  "$defs": {
+    "entity": {
+      "type": "object",
+      "required": ["id"],
+      "properties": {"id": {"type": "string", "minLength": 1}}
+    }
+  }
+}

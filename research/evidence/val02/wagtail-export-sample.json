@@ -1,0 +1,909 @@
+{
+  "schema_version": 1,
+  "export_format": "figure-gallery-open-relational",
+  "contains_binary_media": false,
+  "works": [
+    {
+      "id": 1,
+      "name": "星轨纪事",
+      "original_name": "オービット・クロニクル",
+      "aliases": [
+        "Orbit Chronicle",
+        "星轨"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "月庭物语",
+      "original_name": "ムーン・ガーデン",
+      "aliases": [
+        "Moon Garden",
+        "月庭"
+      ]
+    }
+  ],
+  "characters": [
+    {
+      "id": 1,
+      "display_name": "林",
+      "name_zh": "林",
+      "name_ja": "リン",
+      "name_en": "Lin Orbit",
+      "aliases": [
+        "轨道林",
+        "Pilot Lin"
+      ],
+      "work_id": 1,
+      "is_hidden": false,
+      "is_soft_deleted": false
+    },
+    {
+      "id": 2,
+      "display_name": "林",
+      "name_zh": "林",
+      "name_ja": "リン・ムーン",
+      "name_en": "Lin Moon",
+      "aliases": [
+        "月庭林",
+        "Gardener Lin"
+      ],
+      "work_id": 2,
+      "is_hidden": false,
+      "is_soft_deleted": false
+    },
+    {
+      "id": 3,
+      "display_name": "绫",
+      "name_zh": "绫",
+      "name_ja": "アヤ",
+      "name_en": "Aya",
+      "aliases": [
+        "星绫",
+        "Navigator Aya"
+      ],
+      "work_id": 1,
+      "is_hidden": false,
+      "is_soft_deleted": false
+    },
+    {
+      "id": 4,
+      "display_name": "莲",
+      "name_zh": "莲",
+      "name_ja": "レン",
+      "name_en": "Ren",
+      "aliases": [
+        "庭莲",
+        "Moon Ren"
+      ],
+      "work_id": 2,
+      "is_hidden": false,
+      "is_soft_deleted": false
+    }
+  ],
+  "manufacturers": [
+    {
+      "id": 1,
+      "name": "极光模型社",
+      "aliases": [
+        "Aurora Models"
+      ],
+      "status": "active"
+    },
+    {
+      "id": 2,
+      "name": "格点造物",
+      "aliases": [
+        "Lattice Works"
+      ],
+      "status": "active"
+    },
+    {
+      "id": 3,
+      "name": "素描工房",
+      "aliases": [
+        "Sketch Atelier"
+      ],
+      "status": "draft"
+    }
+  ],
+  "figure_prototypes": [
+    {
+      "id": 1,
+      "title": "林·星跃姿态",
+      "character_ids": [
+        1
+      ],
+      "work_id": 1,
+      "manufacturer_id": 1,
+      "figure_type": "scale",
+      "scale": "1/7",
+      "costume_skin_text": "虚构蓝白航行服",
+      "is_multi_character": false,
+      "is_adult": false,
+      "live": true,
+      "is_hidden": false,
+      "is_soft_deleted": false,
+      "is_merged": false,
+      "merged_into_id": null,
+      "main_image_id": 1,
+      "created_at": "2026-07-13T19:38:28.463810+00:00",
+      "updated_at": "2026-07-13T19:38:28.472687+00:00"
+    },
+    {
+      "id": 2,
+      "title": "林·星跃姿态（格点造物）",
+      "character_ids": [
+        1
+      ],
+      "work_id": 1,
+      "manufacturer_id": 2,
+      "figure_type": "scale",
+      "scale": "1/8",
+      "costume_skin_text": "虚构银灰航行服",
+      "is_multi_character": false,
+      "is_adult": false,
+      "live": true,
+      "is_hidden": false,
+      "is_soft_deleted": false,
+      "is_merged": false,
+      "merged_into_id": null,
+      "main_image_id": null,
+      "created_at": "2026-07-13T19:38:28.477194+00:00",
+      "updated_at": "2026-07-13T19:38:28.481195+00:00"
+    },
+    {
+      "id": 3,
+      "title": "绫与林·双星导航",
+      "character_ids": [
+        1,
+        3
+      ],
+      "work_id": 1,
+      "manufacturer_id": 1,
+      "figure_type": "scale",
+      "scale": "1/7",
+      "costume_skin_text": "虚构双人导航服",
+      "is_multi_character": true,
+      "is_adult": false,
+      "live": true,
+      "is_hidden": false,
+      "is_soft_deleted": false,
+      "is_merged": false,
+      "merged_into_id": null,
+      "main_image_id": null,
+      "created_at": "2026-07-13T19:38:28.486194+00:00",
+      "updated_at": "2026-07-13T19:38:28.490194+00:00"
+    },
+    {
+      "id": 4,
+      "title": "林·月庭礼服",
+      "character_ids": [
+        2
+      ],
+      "work_id": 2,
+      "manufacturer_id": 2,
+      "figure_type": "scale",
+      "scale": "1/6",
+      "costume_skin_text": "虚构月色礼服",
+      "is_multi_character": false,
+      "is_adult": true,
+      "live": true,
+      "is_hidden": false,
+      "is_soft_deleted": false,
+      "is_merged": false,
+      "merged_into_id": null,
+      "main_image_id": 3,
+      "created_at": "2026-07-13T19:38:28.493704+00:00",
+      "updated_at": "2026-07-13T19:38:28.498705+00:00"
+    },
+    {
+      "id": 5,
+      "title": "莲·月庭漫步",
+      "character_ids": [
+        4
+      ],
+      "work_id": 2,
+      "manufacturer_id": 1,
+      "figure_type": "prize",
+      "scale": "",
+      "costume_skin_text": "虚构庭园便服",
+      "is_multi_character": false,
+      "is_adult": false,
+      "live": true,
+      "is_hidden": false,
+      "is_soft_deleted": false,
+      "is_merged": false,
+      "merged_into_id": null,
+      "main_image_id": 2,
+      "created_at": "2026-07-13T19:38:28.502705+00:00",
+      "updated_at": "2026-07-13T19:38:28.507705+00:00"
+    }
+  ],
+  "figure_versions": [
+    {
+      "id": 1,
+      "prototype_id": 1,
+      "name": "普通版",
+      "kind": "standard",
+      "notes": ""
+    },
+    {
+      "id": 2,
+      "prototype_id": 2,
+      "name": "普通版",
+      "kind": "standard",
+      "notes": ""
+    },
+    {
+      "id": 3,
+      "prototype_id": 3,
+      "name": "普通版",
+      "kind": "standard",
+      "notes": ""
+    },
+    {
+      "id": 4,
+      "prototype_id": 4,
+      "name": "普通版",
+      "kind": "standard",
+      "notes": ""
+    },
+    {
+      "id": 5,
+      "prototype_id": 4,
+      "name": "豪华版",
+      "kind": "deluxe",
+      "notes": ""
+    },
+    {
+      "id": 6,
+      "prototype_id": 4,
+      "name": "再版",
+      "kind": "reissue",
+      "notes": ""
+    },
+    {
+      "id": 7,
+      "prototype_id": 4,
+      "name": "纯异色版",
+      "kind": "recolor",
+      "notes": ""
+    },
+    {
+      "id": 8,
+      "prototype_id": 5,
+      "name": "普通版",
+      "kind": "standard",
+      "notes": ""
+    }
+  ],
+  "source_records": [
+    {
+      "id": 1,
+      "prototype_id": 1,
+      "source_type": "synthetic_catalog",
+      "source_item_id": "SYN-001",
+      "source_url": "https://synthetic.invalid/items/SYN-001",
+      "normalized_url": "https://synthetic.invalid/items/SYN-001",
+      "source_status": "active",
+      "last_synced_at": "2026-01-10T00:00:00+00:00",
+      "is_unavailable": false,
+      "raw_snapshot": {
+        "title": "林·星跃姿态",
+        "revision": 1
+      }
+    },
+    {
+      "id": 2,
+      "prototype_id": 2,
+      "source_type": "synthetic_catalog",
+      "source_item_id": "SYN-002",
+      "source_url": "https://synthetic.invalid/items/SYN-002",
+      "normalized_url": "https://synthetic.invalid/items/SYN-002",
+      "source_status": "active",
+      "last_synced_at": "2026-01-10T00:00:00+00:00",
+      "is_unavailable": false,
+      "raw_snapshot": {
+        "title": "林·星跃姿态（格点造物）",
+        "revision": 1
+      }
+    },
+    {
+      "id": 3,
+      "prototype_id": 3,
+      "source_type": "synthetic_catalog",
+      "source_item_id": "SYN-003",
+      "source_url": "https://synthetic.invalid/items/SYN-003",
+      "normalized_url": "https://synthetic.invalid/items/SYN-003",
+      "source_status": "active",
+      "last_synced_at": "2026-01-10T00:00:00+00:00",
+      "is_unavailable": false,
+      "raw_snapshot": {
+        "title": "绫与林·双星导航",
+        "revision": 1
+      }
+    },
+    {
+      "id": 4,
+      "prototype_id": 4,
+      "source_type": "synthetic_catalog",
+      "source_item_id": "SYN-004",
+      "source_url": "https://synthetic.invalid/items/SYN-004",
+      "normalized_url": "https://synthetic.invalid/items/SYN-004",
+      "source_status": "active",
+      "last_synced_at": "2026-01-10T00:00:00+00:00",
+      "is_unavailable": false,
+      "raw_snapshot": {
+        "title": "林·月庭礼服",
+        "revision": 1
+      }
+    },
+    {
+      "id": 5,
+      "prototype_id": 5,
+      "source_type": "synthetic_catalog",
+      "source_item_id": "SYN-005",
+      "source_url": "https://synthetic.invalid/items/SYN-005",
+      "normalized_url": "https://synthetic.invalid/items/SYN-005",
+      "source_status": "missing",
+      "last_synced_at": "2026-01-10T00:00:00+00:00",
+      "is_unavailable": true,
+      "raw_snapshot": {
+        "title": "莲·月庭漫步",
+        "revision": 1
+      }
+    },
+    {
+      "id": 6,
+      "prototype_id": null,
+      "source_type": "synthetic_feed",
+      "source_item_id": "CAND-001",
+      "source_url": "https://synthetic.invalid/candidates/CAND-001",
+      "normalized_url": "https://synthetic.invalid/candidates/CAND-001",
+      "source_status": "active",
+      "last_synced_at": "2026-07-13T19:38:28.560516+00:00",
+      "is_unavailable": false,
+      "raw_snapshot": {
+        "fixture_revision": 1,
+        "requested_changes": {}
+      }
+    },
+    {
+      "id": 7,
+      "prototype_id": null,
+      "source_type": "synthetic_feed",
+      "source_item_id": "CAND-002",
+      "source_url": "https://synthetic.invalid/candidates/CAND-002",
+      "normalized_url": "https://synthetic.invalid/candidates/CAND-002",
+      "source_status": "active",
+      "last_synced_at": "2026-07-13T19:38:28.582551+00:00",
+      "is_unavailable": false,
+      "raw_snapshot": {
+        "fixture_revision": 2,
+        "requested_changes": {
+          "raw_date": "2026-10",
+          "main_image_id": "candidate-image-002-b"
+        }
+      }
+    },
+    {
+      "id": 8,
+      "prototype_id": null,
+      "source_type": "synthetic_feed",
+      "source_item_id": "",
+      "source_url": "https://synthetic.invalid/candidates/adult-deferred?utm_source=fixture",
+      "normalized_url": "https://synthetic.invalid/candidates/adult-deferred",
+      "source_status": "active",
+      "last_synced_at": "2026-07-13T19:38:28.602541+00:00",
+      "is_unavailable": false,
+      "raw_snapshot": {
+        "fixture_revision": 1,
+        "requested_changes": {}
+      }
+    },
+    {
+      "id": 9,
+      "prototype_id": null,
+      "source_type": "synthetic_feed",
+      "source_item_id": "CAND-004",
+      "source_url": "https://synthetic.invalid/candidates/CAND-004",
+      "normalized_url": "https://synthetic.invalid/candidates/CAND-004",
+      "source_status": "active",
+      "last_synced_at": "2026-07-13T19:38:28.623280+00:00",
+      "is_unavailable": false,
+      "raw_snapshot": {
+        "fixture_revision": 1,
+        "requested_changes": {}
+      }
+    }
+  ],
+  "candidate_records": [
+    {
+      "id": 1,
+      "source_id": 6,
+      "status": "pending",
+      "raw_title": "希格玛·观测姿态",
+      "raw_character_names": [
+        "希格玛"
+      ],
+      "raw_work_name": "尚未匹配作品",
+      "raw_manufacturer": "新星试作社",
+      "raw_category": "scale",
+      "raw_scale": "1/7",
+      "raw_release_date": "2026-09",
+      "raw_snapshot": {
+        "fixture_revision": 1,
+        "requested_changes": {}
+      },
+      "field_decisions": {},
+      "review_reason": "",
+      "target_prototype_id": null,
+      "target_version_id": null
+    },
+    {
+      "id": 2,
+      "source_id": 7,
+      "status": "update_pending",
+      "raw_title": "林·星跃姿态资料更新",
+      "raw_character_names": [
+        "轨道林"
+      ],
+      "raw_work_name": "星轨纪事",
+      "raw_manufacturer": "极光模型社",
+      "raw_category": "scale",
+      "raw_scale": "1/7",
+      "raw_release_date": "2026-10",
+      "raw_snapshot": {
+        "fixture_revision": 2,
+        "requested_changes": {
+          "raw_date": "2026-10",
+          "main_image_id": "candidate-image-002-b"
+        }
+      },
+      "field_decisions": {},
+      "review_reason": "",
+      "target_prototype_id": 1,
+      "target_version_id": 1
+    },
+    {
+      "id": 3,
+      "source_id": 8,
+      "status": "deferred",
+      "raw_title": "林·月庭礼服补充图",
+      "raw_character_names": [
+        "月庭林"
+      ],
+      "raw_work_name": "月庭物语",
+      "raw_manufacturer": "格点造物",
+      "raw_category": "scale",
+      "raw_scale": "1/6",
+      "raw_release_date": "2026-11",
+      "raw_snapshot": {
+        "fixture_revision": 1,
+        "requested_changes": {}
+      },
+      "field_decisions": {},
+      "review_reason": "等待成人图片人工分级",
+      "target_prototype_id": 4,
+      "target_version_id": 5
+    },
+    {
+      "id": 4,
+      "source_id": 9,
+      "status": "ignored",
+      "raw_title": "重复的莲·月庭漫步",
+      "raw_character_names": [
+        "庭莲"
+      ],
+      "raw_work_name": "月庭物语",
+      "raw_manufacturer": "极光模型社",
+      "raw_category": "prize",
+      "raw_scale": "",
+      "raw_release_date": "2026-08",
+      "raw_snapshot": {
+        "fixture_revision": 1,
+        "requested_changes": {}
+      },
+      "field_decisions": {},
+      "review_reason": "人工确认是已知来源的重复记录",
+      "target_prototype_id": 5,
+      "target_version_id": 8
+    }
+  ],
+  "candidate_images": [
+    {
+      "id": 1,
+      "candidate_id": null,
+      "prototype_id": 1,
+      "media_id": 1,
+      "original_url": "https://synthetic.invalid/media/prototype-01-main.png",
+      "storage_key": "synthetic/prototypes/prototype-01/main.png",
+      "file_size": 197,
+      "width": 48,
+      "height": 72,
+      "format": "PNG",
+      "sha256": "6a45d140189a9e2c5c87833c9e96d5f229118e500ead77f099d6ef36903dd6ae",
+      "perceptual_hash": "ffffffffffffffff",
+      "is_adult": false,
+      "is_source_homepage": true,
+      "exists_in_latest_source": true,
+      "selected_as_main": true
+    },
+    {
+      "id": 2,
+      "candidate_id": null,
+      "prototype_id": 5,
+      "media_id": 2,
+      "original_url": "https://synthetic.invalid/media/prototype-05-main.png",
+      "storage_key": "synthetic/prototypes/prototype-05/main.png",
+      "file_size": 185,
+      "width": 64,
+      "height": 64,
+      "format": "PNG",
+      "sha256": "08f299074e7d092179100d654218673a25e47f7fce8a336444fe4a0aedbc5035",
+      "perceptual_hash": "ffffffffffffffff",
+      "is_adult": false,
+      "is_source_homepage": true,
+      "exists_in_latest_source": false,
+      "selected_as_main": true
+    },
+    {
+      "id": 3,
+      "candidate_id": null,
+      "prototype_id": 4,
+      "media_id": 3,
+      "original_url": "https://synthetic.invalid/media/prototype-04-main.png",
+      "storage_key": "synthetic/prototypes/prototype-04/main.png",
+      "file_size": 211,
+      "width": 54,
+      "height": 81,
+      "format": "PNG",
+      "sha256": "d090459a70a7529c7aed346fef01bdac8f35618dee69f7221aae158c42f59686",
+      "perceptual_hash": "ffffffffffffffff",
+      "is_adult": false,
+      "is_source_homepage": true,
+      "exists_in_latest_source": true,
+      "selected_as_main": true
+    },
+    {
+      "id": 4,
+      "candidate_id": 1,
+      "prototype_id": null,
+      "media_id": 4,
+      "original_url": "https://synthetic.invalid/candidates/CAND-001/a.png",
+      "storage_key": "synthetic/candidates/CAND-001/a.png",
+      "file_size": 178,
+      "width": 40,
+      "height": 60,
+      "format": "PNG",
+      "sha256": "7110851146be22d4f3c563a588d4d2091e8aa71c06c063adc82ce61eb6de0b74",
+      "perceptual_hash": "ffffffffffffffff",
+      "is_adult": false,
+      "is_source_homepage": true,
+      "exists_in_latest_source": true,
+      "selected_as_main": false
+    },
+    {
+      "id": 5,
+      "candidate_id": 1,
+      "prototype_id": null,
+      "media_id": 5,
+      "original_url": "https://synthetic.invalid/candidates/CAND-001/b.png",
+      "storage_key": "synthetic/candidates/CAND-001/b.png",
+      "file_size": 149,
+      "width": 60,
+      "height": 40,
+      "format": "PNG",
+      "sha256": "ffe6f8821ab2488fb700669f9c29055d62e8cf79c132e05e7236072febbe8847",
+      "perceptual_hash": "ffffffffffffffff",
+      "is_adult": false,
+      "is_source_homepage": false,
+      "exists_in_latest_source": true,
+      "selected_as_main": false
+    },
+    {
+      "id": 6,
+      "candidate_id": 2,
+      "prototype_id": null,
+      "media_id": 6,
+      "original_url": "https://synthetic.invalid/candidates/CAND-002/a.png",
+      "storage_key": "synthetic/candidates/CAND-002/a.png",
+      "file_size": 197,
+      "width": 48,
+      "height": 72,
+      "format": "PNG",
+      "sha256": "b6a9eb16e0d5f0732863168a723ca3a593d318f0e4a38951eccc09b259d9bdcb",
+      "perceptual_hash": "ffffffffffffffff",
+      "is_adult": false,
+      "is_source_homepage": true,
+      "exists_in_latest_source": true,
+      "selected_as_main": false
+    },
+    {
+      "id": 7,
+      "candidate_id": 2,
+      "prototype_id": null,
+      "media_id": 7,
+      "original_url": "https://synthetic.invalid/candidates/CAND-002/b.png",
+      "storage_key": "synthetic/candidates/CAND-002/b.png",
+      "file_size": 197,
+      "width": 48,
+      "height": 72,
+      "format": "PNG",
+      "sha256": "09a21df14668be35fd16191e03d785961a496515cc39a962f51837c526f9fc7e",
+      "perceptual_hash": "ffffffffffffffff",
+      "is_adult": false,
+      "is_source_homepage": false,
+      "exists_in_latest_source": true,
+      "selected_as_main": false
+    },
+    {
+      "id": 8,
+      "candidate_id": 3,
+      "prototype_id": null,
+      "media_id": 8,
+      "original_url": "https://synthetic.invalid/candidates/adult-deferred/a.png",
+      "storage_key": "synthetic/candidates/adult-deferred/a.png",
+      "file_size": 201,
+      "width": 50,
+      "height": 75,
+      "format": "PNG",
+      "sha256": "9fee460992cd5537a5441cf74e7e584f96c7fb550b00fe6ed23b32b245fd9a62",
+      "perceptual_hash": "ffffffffffffffff",
+      "is_adult": true,
+      "is_source_homepage": false,
+      "exists_in_latest_source": true,
+      "selected_as_main": false
+    },
+    {
+      "id": 9,
+      "candidate_id": 3,
+      "prototype_id": null,
+      "media_id": 9,
+      "original_url": "https://synthetic.invalid/candidates/adult-deferred/b.png",
+      "storage_key": "synthetic/candidates/adult-deferred/b.png",
+      "file_size": 193,
+      "width": 75,
+      "height": 50,
+      "format": "PNG",
+      "sha256": "69e30ff8468d724a771a97fec7f36142f7854b3b2d52672b7dfc9c45eac3865f",
+      "perceptual_hash": "ffffffffffffffff",
+      "is_adult": false,
+      "is_source_homepage": true,
+      "exists_in_latest_source": true,
+      "selected_as_main": false
+    },
+    {
+      "id": 10,
+      "candidate_id": 4,
+      "prototype_id": null,
+      "media_id": 10,
+      "original_url": "https://synthetic.invalid/candidates/CAND-004/a.png",
+      "storage_key": "synthetic/candidates/CAND-004/a.png",
+      "file_size": 188,
+      "width": 44,
+      "height": 66,
+      "format": "PNG",
+      "sha256": "e7db91cb3322d42d7d4bce9c2b59de344463a680c1d7b9f61a54e2e941e5d4b1",
+      "perceptual_hash": "ffffffffffffffff",
+      "is_adult": false,
+      "is_source_homepage": true,
+      "exists_in_latest_source": false,
+      "selected_as_main": false
+    },
+    {
+      "id": 11,
+      "candidate_id": 4,
+      "prototype_id": null,
+      "media_id": 11,
+      "original_url": "https://synthetic.invalid/candidates/CAND-004/b.png",
+      "storage_key": "synthetic/candidates/CAND-004/b.png",
+      "file_size": 156,
+      "width": 66,
+      "height": 44,
+      "format": "PNG",
+      "sha256": "77c229baa1625437d10f5546f5e73d43bf4c723a762a911b2ee4941f5217040e",
+      "perceptual_hash": "ffffffffffffffff",
+      "is_adult": false,
+      "is_source_homepage": false,
+      "exists_in_latest_source": false,
+      "selected_as_main": false
+    }
+  ],
+  "operation_logs": [
+    {
+      "id": 1,
+      "actor_id": null,
+      "actor_label": "synthetic-fixture-seed",
+      "created_at": "2026-07-13T19:38:28.563516+00:00",
+      "operation": "candidate_upsert",
+      "reason": "candidate-only idempotent upsert: new",
+      "before_state": {
+        "source": {
+          "identity_key": null,
+          "source_url": "",
+          "raw_snapshot": {}
+        },
+        "candidate": {}
+      },
+      "after_state": {
+        "source_identity": "synthetic_feed:id:CAND-001",
+        "candidate_id": 1,
+        "status": "pending",
+        "outcome": "new"
+      },
+      "related_records": {
+        "source_id": 6,
+        "candidate_id": 1,
+        "candidate_image_ids": [],
+        "migrated_from_url_fallback": false
+      },
+      "is_undone": false,
+      "undo_of_id": null
+    },
+    {
+      "id": 2,
+      "actor_id": null,
+      "actor_label": "synthetic-fixture-seed",
+      "created_at": "2026-07-13T19:38:28.585551+00:00",
+      "operation": "candidate_upsert",
+      "reason": "candidate-only idempotent upsert: new",
+      "before_state": {
+        "source": {
+          "identity_key": null,
+          "source_url": "",
+          "raw_snapshot": {}
+        },
+        "candidate": {}
+      },
+      "after_state": {
+        "source_identity": "synthetic_feed:id:CAND-002",
+        "candidate_id": 2,
+        "status": "pending",
+        "outcome": "new"
+      },
+      "related_records": {
+        "source_id": 7,
+        "candidate_id": 2,
+        "candidate_image_ids": [],
+        "migrated_from_url_fallback": false
+      },
+      "is_undone": false,
+      "undo_of_id": null
+    },
+    {
+      "id": 3,
+      "actor_id": null,
+      "actor_label": "synthetic-fixture-seed",
+      "created_at": "2026-07-13T19:38:28.605541+00:00",
+      "operation": "candidate_upsert",
+      "reason": "candidate-only idempotent upsert: new",
+      "before_state": {
+        "source": {
+          "identity_key": null,
+          "source_url": "",
+          "raw_snapshot": {}
+        },
+        "candidate": {}
+      },
+      "after_state": {
+        "source_identity": "synthetic_feed:url:https://synthetic.invalid/candidates/adult-deferred",
+        "candidate_id": 3,
+        "status": "pending",
+        "outcome": "new"
+      },
+      "related_records": {
+        "source_id": 8,
+        "candidate_id": 3,
+        "candidate_image_ids": [],
+        "migrated_from_url_fallback": false
+      },
+      "is_undone": false,
+      "undo_of_id": null
+    },
+    {
+      "id": 4,
+      "actor_id": null,
+      "actor_label": "synthetic-fixture-seed",
+      "created_at": "2026-07-13T19:38:28.625281+00:00",
+      "operation": "candidate_upsert",
+      "reason": "candidate-only idempotent upsert: new",
+      "before_state": {
+        "source": {
+          "identity_key": null,
+          "source_url": "",
+          "raw_snapshot": {}
+        },
+        "candidate": {}
+      },
+      "after_state": {
+        "source_identity": "synthetic_feed:id:CAND-004",
+        "candidate_id": 4,
+        "status": "pending",
+        "outcome": "new"
+      },
+      "related_records": {
+        "source_id": 9,
+        "candidate_id": 4,
+        "candidate_image_ids": [],
+        "migrated_from_url_fallback": false
+      },
+      "is_undone": false,
+      "undo_of_id": null
+    },
+    {
+      "id": 5,
+      "actor_id": 1,
+      "actor_label": "fixture-admin",
+      "created_at": "2026-07-13T19:38:28.649747+00:00",
+      "operation": "main_image",
+      "reason": "Synthetic fixture explicitly selects this main image",
+      "before_state": {
+        "main_image_id": null,
+        "candidate_image_prototype_id": 1
+      },
+      "after_state": {
+        "main_image_id": 1,
+        "candidate_image_prototype_id": 1
+      },
+      "related_records": {
+        "prototype_id": 1,
+        "candidate_image_id": 1
+      },
+      "is_undone": false,
+      "undo_of_id": null
+    },
+    {
+      "id": 6,
+      "actor_id": 1,
+      "actor_label": "fixture-admin",
+      "created_at": "2026-07-13T19:38:28.655748+00:00",
+      "operation": "main_image",
+      "reason": "Synthetic fixture explicitly selects this main image",
+      "before_state": {
+        "main_image_id": null,
+        "candidate_image_prototype_id": 4
+      },
+      "after_state": {
+        "main_image_id": 3,
+        "candidate_image_prototype_id": 4
+      },
+      "related_records": {
+        "prototype_id": 4,
+        "candidate_image_id": 3
+      },
+      "is_undone": false,
+      "undo_of_id": null
+    },
+    {
+      "id": 7,
+      "actor_id": 1,
+      "actor_label": "fixture-admin",
+      "created_at": "2026-07-13T19:38:28.661748+00:00",
+      "operation": "main_image",
+      "reason": "Synthetic fixture explicitly selects this main image",
+      "before_state": {
+        "main_image_id": null,
+        "candidate_image_prototype_id": 5
+      },
+      "after_state": {
+        "main_image_id": 2,
+        "candidate_image_prototype_id": 5
+      },
+      "related_records": {
+        "prototype_id": 5,
+        "candidate_image_id": 2
+      },
+      "is_undone": false,
+      "undo_of_id": null
+    }
+  ],
+  "system_settings": [
+    {
+      "id": 1,
+      "show_adult_images": false,
+      "page_size": 16,
+      "public_access_enabled": true
+    }
+  ]
+}
