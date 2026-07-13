@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "checked_at_date": "2026-07-14",
+  "robots": {
+    "url": "https://www.hpoi.net/robots.txt",
+    "status": 200,
+    "bytes": 13,
+    "content": "User-Agent: *",
+    "allow_directives": 0,
+    "disallow_directives": 0,
+    "technical_signal_for_sample_paths": "none",
+    "interpretation_limit": "absence of a directive is not permission"
+  },
+  "public_user_agreement": {
+    "url": "https://www.hpoi.net/protocol",
+    "status": 200,
+    "title": "用户协议 | Hpoi手办维基",
+    "relevant_location": "section 3.10",
+    "observed_fact": "The public text requires prior explicit written permission before using robots, spiders, crawlers, or other automated programs, scripts, or software to obtain platform services, content, or data",
+    "legal_conclusion_made": false,
+    "operational_effect": "all remaining automated Hpoi HTTP checks stopped immediately"
+  },
+  "project_owner_follow_up": "Obtain and retain Hpoi's written permission, and manually confirm the current terms, before any further automated collection test"
+}

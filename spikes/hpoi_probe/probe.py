@@ -104,6 +104,7 @@ class _HpoiFragmentParser(HTMLParser):
     def __init__(self) -> None:
         super().__init__(convert_charrefs=True)
         self.canonical_url: str | None = None
+        self.document_title: str | None = None
         self.og_title: str | None = None
         self.og_image: str | None = None
         self.images: list[str] = []
@@ -112,6 +113,7 @@ class _HpoiFragmentParser(HTMLParser):
         self._capture: str | None = None
         self._buffer: list[str] = []
         self._pending_label: str | None = None
+        self._info_item_depth = 0
 
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
         values = {key.lower(): value or "" for key, value in attrs}
@@ -128,8 +130,23 @@ class _HpoiFragmentParser(HTMLParser):
         elif lowered == "img" and values.get("src"):
             self.images.append(values["src"])
 
+        classes = set(values.get("class", "").split())
+        if lowered == "div" and "hpoi-infoList-item" in classes:
+            self._info_item_depth = 1
+        elif lowered == "div" and self._info_item_depth:
+            self._info_item_depth += 1
+
         if lowered in {"dt", "dd"}:
             self._capture = lowered
+            self._buffer = []
+        elif lowered == "title":
+            self._capture = "title"
+            self._buffer = []
+        elif self._info_item_depth and lowered == "span":
+            self._capture = "info_label"
+            self._buffer = []
+        elif self._info_item_depth and lowered == "p":
+            self._capture = "info_value"
             self._buffer = []
         elif lowered == "script" and values.get("type", "").lower() == "application/ld+json":
             self._capture = "json_ld"
@@ -150,6 +167,18 @@ class _HpoiFragmentParser(HTMLParser):
                 self.fields[self._pending_label] = value
             self._pending_label = None
             self._capture = None
+        elif self._capture == "title" and lowered == "title":
+            self.document_title = _compact_text("".join(self._buffer)) or self.document_title
+            self._capture = None
+        elif self._capture == "info_label" and lowered == "span":
+            self._pending_label = _compact_text("".join(self._buffer))
+            self._capture = None
+        elif self._capture == "info_value" and lowered == "p":
+            value = _compact_text("".join(self._buffer))
+            if self._pending_label and value:
+                self.fields[self._pending_label] = value
+            self._pending_label = None
+            self._capture = None
         elif self._capture == "json_ld" and lowered == "script":
             raw = "".join(self._buffer).strip()
             if raw:
@@ -158,6 +187,8 @@ class _HpoiFragmentParser(HTMLParser):
                 except json.JSONDecodeError:
                     pass
             self._capture = None
+        if lowered == "div" and self._info_item_depth:
+            self._info_item_depth -= 1
         self._buffer = [] if self._capture is None else self._buffer
 
 
@@ -173,6 +204,7 @@ def _split_names(value: str | None) -> list[str]:
 
 def _first_json_ld_product(values: Iterable[Any]) -> dict[str, Any]:
     queue = list(values)
+    creative_work_fallback: dict[str, Any] | None = None
     while queue:
         current = queue.pop(0)
         if isinstance(current, list):
@@ -180,12 +212,12 @@ def _first_json_ld_product(values: Iterable[Any]) -> dict[str, Any]:
         elif isinstance(current, dict):
             raw_types = current.get("@type", [])
             types = {raw_types} if isinstance(raw_types, str) else set(raw_types or [])
-            if types & {"Product", "CreativeWork"}:
+            if "Product" in types:
                 return current
-            graph = current.get("@graph")
-            if isinstance(graph, list):
-                queue.extend(graph)
-    return {}
+            if "CreativeWork" in types and creative_work_fallback is None:
+                creative_work_fallback = current
+            queue.extend(value for value in current.values() if isinstance(value, (dict, list)))
+    return creative_work_fallback or {}
 
 
 def _json_ld_images(value: Any) -> list[str]:
@@ -227,6 +259,7 @@ def parse_hpoi_html(
         or parser.fields.get("中文名")
         or structured.get("name")
         or parser.og_title
+        or parser.document_title
     )
     if not raw_title:
         raise ValueError("no item title found in HTML sample")
@@ -242,6 +275,9 @@ def parse_hpoi_html(
         except ValueError:
             continue
         if not _hpoi_host(urlsplit(normalized_image).hostname):
+            continue
+        image_path = urlsplit(normalized_image).path
+        if not image_path.startswith(("/gk/cover/", "/gk/pic/")):
             continue
         if normalized_image not in image_values:
             image_values.append(normalized_image)

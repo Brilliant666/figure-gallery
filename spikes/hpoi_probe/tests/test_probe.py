@@ -67,6 +67,40 @@ class ProbeTests(unittest.TestCase):
         self.assertEqual(candidate["raw_release_status"], "已出荷")
         self.assertEqual(len(candidate["candidate_images"]), 1)
 
+    def test_parse_two_sanitized_real_response_structures(self) -> None:
+        cases = (
+            (
+                "real_item_80002_sanitized.html",
+                "80002",
+                "アズールレーン チェシャー",
+                ["柴郡"],
+                "Alter",
+                "2025年7月14日",
+            ),
+            (
+                "real_item_35415_sanitized.html",
+                "35415",
+                "Re：ゼロから始める異世界生活 レム",
+                ["雷姆"],
+                "良笑",
+                None,
+            ),
+        )
+        for filename, item_id, title, characters, maker, release_date in cases:
+            with self.subTest(item_id=item_id):
+                candidate = parse_hpoi_html(
+                    _sample(filename),
+                    f"https://www.hpoi.net/hobby/{item_id}",
+                    collected_at=COLLECTED_AT,
+                )
+                self.assertEqual(candidate["source_item_id"], item_id)
+                self.assertEqual(candidate["raw_title"], title)
+                self.assertEqual(candidate["raw_character_names"], characters)
+                self.assertEqual(candidate["raw_manufacturer"], maker)
+                self.assertEqual(candidate["raw_release_date"], release_date)
+                self.assertEqual(candidate["raw_scale"], "1/7")
+                self.assertEqual(len(candidate["candidate_images"]), 2)
+
     def test_json_ld_image_object_and_type_list(self) -> None:
         html = """<html><head>
         <link rel="canonical" href="https://www.hpoi.net/hobby/42">
