@@ -1,0 +1,2 @@
+# Only required for image metadata and perceptual aHash validation.
+Pillow>=10,<13

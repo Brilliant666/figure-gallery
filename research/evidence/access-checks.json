@@ -1,0 +1,69 @@
+{
+  "tested_during": "2026-07-12 through 2026-07-13 Asia/Shanghai",
+  "environment": {
+    "os": "Windows",
+    "python": "3.10.9",
+    "pillow": "12.2.0"
+  },
+  "hpoi_credentials_used": false,
+  "credential_handling": "No Cookie, personal token, login data, or credential material was supplied to Hpoi or stored. Existing authenticated GitHub tooling is used only for repository metadata/PR operations and does not expose credential material to the workspace.",
+  "checks": [
+    {
+      "target": "https://www.hpoi.net/",
+      "channel": "in-app browser",
+      "result": "unavailable",
+      "detail": "The browser page session did not attach; no page content or restriction signal was observed."
+    },
+    {
+      "target": "https://www.hpoi.net/hobby/98369",
+      "channel": "ordinary HTTP from the workspace",
+      "result": "timeout",
+      "detail": "Unauthenticated GET timed out after 20 seconds."
+    },
+    {
+      "target": "https://www.hpoi.net/charactar/35516 and selected public item pages",
+      "channel": "read-only web reader",
+      "result": "accessible",
+      "detail": "Public rendered text and links were readable without login."
+    },
+    {
+      "target": "https://github.com/django/django",
+      "channel": "read-only web reader",
+      "result": "accessible"
+    },
+    {
+      "target": "https://api.github.com/repos/django/django",
+      "channel": "GitHub API and read-only web reader",
+      "result": "accessible"
+    },
+    {
+      "target": "https://raw.githubusercontent.com/django/django/main/LICENSE",
+      "channel": "read-only web reader",
+      "result": "accessible"
+    },
+    {
+      "target": "https://rfx.hpoi.net/gk/pic/s/2024/04/d9156a376565489a888f818dc82fdb08.jpg?date=1713844314",
+      "channel": "read-only web reader",
+      "result": "redirect loop",
+      "detail": "One public thumbnail from the Cheshire item was selected; no bytes were obtained."
+    },
+    {
+      "target": "https://rfx.hpoi.net/gk/pic/s/2017/02/ae34b775588e41d3af7647a09edb0f37.gif?date=1487118149",
+      "channel": "read-only web reader",
+      "result": "HTTP 403",
+      "detail": "One public thumbnail from the Rem item was selected; the cause of refusal cannot be distinguished from this result alone."
+    },
+    {
+      "target": "https://rfx.hpoi.net/gk/pic/s/2024/06/8e56ba1098bb4313a56fe5d03477a590.jpg?date=1718939401",
+      "channel": "ordinary HTTP and read-only web reader",
+      "result": "timeout, then redirect loop on recheck",
+      "detail": "One public thumbnail from the Hatsune Miku item was selected; bytes and anti-hotlink behavior could not be verified."
+    },
+    {
+      "target": "Chrome",
+      "channel": "Chrome connector",
+      "result": "unavailable",
+      "detail": "No Chrome instance was exposed to the automation connector."
+    }
+  ]
+}

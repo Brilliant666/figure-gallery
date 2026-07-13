@@ -1,0 +1,92 @@
+{
+  "tested_during": "2026-07-12 through 2026-07-13 Asia/Shanghai",
+  "site": "https://www.hpoi.net/",
+  "method": "Public, read-only web rendering; no login, Cookie or Token",
+  "characters": [
+    {
+      "requested_name": "柴郡",
+      "matched_context": "碧蓝航线",
+      "character_id_signal": "87596",
+      "character_page_status": "The exposed work-page character link returned 404 in the web reader",
+      "keyword_search_last_page": 2,
+      "reliable_total_available": false,
+      "collision_examples": ["小柴郡", "柴郡猫", "原创角色"],
+      "sample_item": "https://www.hpoi.net/hobby/80002"
+    },
+    {
+      "requested_name": "蕾姆",
+      "matched_primary_name": "雷姆",
+      "character_id": "35516",
+      "character_url": "https://www.hpoi.net/charactar/35516",
+      "aliases": ["REM", "蕾姆", "Remu", "大锤"],
+      "keyword_search_last_page": 16,
+      "reliable_total_available": false,
+      "sample_item": "https://www.hpoi.net/hobby/35415"
+    },
+    {
+      "requested_name": "初音未来",
+      "matched_primary_name": "初音未来",
+      "character_id": "3",
+      "character_url": "https://www.hpoi.net/charactar/3",
+      "aliases_observed": ["初音ミク", "Miku", "樱花未来", "雪未来", "赛车未来"],
+      "keyword_search_last_page": 43,
+      "reliable_total_available": false,
+      "sample_item": "https://www.hpoi.net/hobby/98369"
+    }
+  ],
+  "sample_items": [
+    {
+      "character": "柴郡",
+      "source_item_id": "80002",
+      "source_url": "https://www.hpoi.net/hobby/80002",
+      "raw_title": "碧蓝航线 柴郡",
+      "raw_manufacturer": "Alter",
+      "raw_category": "比例人形",
+      "raw_scale": "1/7",
+      "public_official_information_image_links_observed": 12,
+      "tested_thumbnail_url": "https://rfx.hpoi.net/gk/pic/s/2024/04/d9156a376565489a888f818dc82fdb08.jpg?date=1713844314",
+      "image_read_result": "redirect loop in the read-only web channel"
+    },
+    {
+      "character": "蕾姆（Hpoi 主名：雷姆）",
+      "source_item_id": "35415",
+      "source_url": "https://www.hpoi.net/hobby/35415",
+      "raw_title": "Re：从零开始的异世界生活 蕾姆",
+      "raw_manufacturer": "良笑",
+      "raw_category": "比例人形",
+      "raw_scale": "1/7",
+      "public_official_information_image_links_observed": 12,
+      "tested_thumbnail_url": "https://rfx.hpoi.net/gk/pic/s/2017/02/ae34b775588e41d3af7647a09edb0f37.gif?date=1487118149",
+      "image_read_result": "HTTP 403 in the read-only web channel"
+    },
+    {
+      "character": "初音未来",
+      "source_item_id": "98369",
+      "source_url": "https://www.hpoi.net/hobby/98369",
+      "raw_title": "初音未来 feat. Yoneyama Mai",
+      "raw_character_names": ["初音未来"],
+      "raw_work_name": "piapro",
+      "raw_manufacturer": "良笑",
+      "raw_category": "比例人形",
+      "raw_scale": "1/7",
+      "raw_release_date": "2025年12月25日",
+      "public_official_information_image_links_observed": 6,
+      "tested_thumbnail_url": "https://rfx.hpoi.net/gk/pic/s/2024/06/8e56ba1098bb4313a56fe5d03477a590.jpg?date=1718939401",
+      "image_read_result": "ordinary HTTP timeout; redirect loop on read-only web recheck"
+    }
+  ],
+  "image_check_conclusion": {
+    "domain": "rfx.hpoi.net",
+    "bytes_obtained": false,
+    "hotlinking_conclusion": "currently unverifiable; one 403 alone does not establish its cause",
+    "scope": "one thumbnail URL for one item per test character"
+  },
+  "release_and_production_status_signals": {
+    "preorder": "observed as timeline text; no stable enum verified",
+    "released": "observed as shipment date/timeline text; no stable enum verified",
+    "delayed": "observed as timeline events; no stable enum verified",
+    "gray_or_unpainted": "an unpainted label signal was observed, but equivalence to a complete gray prototype is unverified",
+    "painted_prototype": "currently unverifiable as a stable structured status",
+    "cancelled": "currently unverifiable in the limited samples"
+  }
+}
