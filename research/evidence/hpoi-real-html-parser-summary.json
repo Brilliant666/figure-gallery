@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "test_date": "2026-07-14",
+  "source": "locally cached public responses obtained before the public-rule stop condition",
+  "full_html_committed": false,
+  "items": [
+    {
+      "source_item_id": "80002",
+      "source_url": "https://www.hpoi.net/hobby/80002",
+      "raw_title": "アズールレーン チェシャー",
+      "raw_character_names": ["柴郡"],
+      "raw_work_name": "碧蓝航线",
+      "raw_manufacturer": "Alter",
+      "raw_category": "女 、 比例人形 、 观感安心",
+      "raw_scale": "1/7",
+      "raw_release_date": "2025年7月14日",
+      "json_ld_product_nested_under_main_entity": true,
+      "candidate_media_url_count": 46,
+      "core_parse_success": true
+    },
+    {
+      "source_item_id": "35415",
+      "source_url": "https://www.hpoi.net/hobby/35415",
+      "raw_title": "Re：ゼロから始める異世界生活 レム",
+      "raw_character_names": ["雷姆"],
+      "raw_work_name": "Re：从零开始的异世界生活",
+      "raw_manufacturer": "良笑",
+      "raw_category": "女 、 比例人形 、 观感安心",
+      "raw_scale": "1/7",
+      "raw_release_date": null,
+      "json_ld_product_nested_under_main_entity": true,
+      "candidate_media_url_count": 49,
+      "core_parse_success": true
+    },
+    {
+      "source_item_id": "98369",
+      "source_url": "https://www.hpoi.net/hobby/98369",
+      "raw_title": "初音未来 feat. Yoneyama Mai",
+      "raw_character_names": ["初音未来"],
+      "raw_work_name": "piapro",
+      "raw_manufacturer": "良笑",
+      "raw_category": "女 、 比例人形 、 观感安心",
+      "raw_scale": "1/7",
+      "raw_release_date": "2025年12月25日",
+      "json_ld_product_nested_under_main_entity": true,
+      "candidate_media_url_count": 35,
+      "core_parse_success": true
+    }
+  ],
+  "real_product_pages_parsed": 3,
+  "idempotence": {
+    "item": "80002",
+    "first_run": "new",
+    "second_run": "unchanged"
+  },
+  "known_parser_limit": "The generic media-path filter finds cover and pic URLs but does not prove that every pic URL is an official product image"
+}

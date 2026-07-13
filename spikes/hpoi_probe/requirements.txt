@@ -1,2 +1,5 @@
 # Only required for image metadata and perceptual aHash validation.
 Pillow>=10,<13
+
+# Used only by the bounded VAL-01B transport spike; environment proxies are disabled.
+requests>=2.32,<3

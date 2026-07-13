@@ -1,0 +1,160 @@
+{
+  "schema_version": 1,
+  "test_date": "2026-07-14",
+  "timezone": "Asia/Shanghai",
+  "fixed_user_agent": true,
+  "single_concurrency": true,
+  "minimum_start_interval_seconds": 2,
+  "maximum_requests": 30,
+  "conservative_request_count": 14,
+  "redirect_hops": 0,
+  "permanent_proxy_changes": false,
+  "attempts": [
+    {
+      "request_number": 1,
+      "channel": "direct",
+      "client": "curl.exe",
+      "target_sample": "hobby/80002",
+      "result": "invalid_initial_command_and_no_http_response",
+      "counting_note": "PowerShell removed an empty proxy argument; conservatively counted and excluded from conclusions"
+    },
+    {
+      "request_number": 2,
+      "channel": "direct",
+      "client": "curl.exe",
+      "target_sample": "hobby/35415",
+      "result": "invalid_initial_command_and_no_http_response",
+      "counting_note": "curl interpreted --noproxy as a proxy host; conservatively counted and excluded from conclusions"
+    },
+    {
+      "request_number": 3,
+      "channel": "direct",
+      "client": "curl.exe",
+      "target_sample": "hobby/98369",
+      "result": "invalid_initial_command_and_no_http_response",
+      "counting_note": "curl interpreted --noproxy as a proxy host; conservatively counted and excluded from conclusions"
+    },
+    {
+      "request_number": 4,
+      "channel": "direct",
+      "client": "curl.exe 7.87.0 (Schannel)",
+      "url": "https://www.hpoi.net/hobby/80002",
+      "status": null,
+      "curl_exit_code": 35,
+      "error_class": "tls_certificate_revocation_offline",
+      "response_bytes": 0
+    },
+    {
+      "request_number": 5,
+      "channel": "direct",
+      "client": "curl.exe 7.87.0 (Schannel)",
+      "url": "https://www.hpoi.net/hobby/35415",
+      "status": null,
+      "curl_exit_code": 35,
+      "error_class": "tls_certificate_revocation_offline",
+      "response_bytes": 0
+    },
+    {
+      "request_number": 6,
+      "channel": "direct",
+      "client": "curl.exe 7.87.0 (Schannel)",
+      "url": "https://www.hpoi.net/hobby/98369",
+      "status": null,
+      "curl_exit_code": 35,
+      "error_class": "tls_certificate_revocation_offline",
+      "response_bytes": 0
+    },
+    {
+      "request_number": 7,
+      "channel": "direct",
+      "client": "requests 2.34.2",
+      "url": "https://www.hpoi.net/hobby/80002",
+      "status": 200,
+      "elapsed_seconds": 0.157,
+      "content_type": "text/html;charset=utf-8",
+      "response_bytes": 169570,
+      "sha256": "fe93d42d4365704982e875caf5ffed7d2c53a4faa7863c85a71b9b524829fed1"
+    },
+    {
+      "request_number": 8,
+      "channel": "direct",
+      "client": "requests 2.34.2",
+      "url": "https://www.hpoi.net/hobby/35415",
+      "status": 200,
+      "elapsed_seconds": 0.151,
+      "content_type": "text/html;charset=utf-8",
+      "response_bytes": 179506,
+      "sha256": "b446ef65712ddac169856ae3ca8606ea3c38a6c87de014c4bbb94c4b3be27d84"
+    },
+    {
+      "request_number": 9,
+      "channel": "direct",
+      "client": "requests 2.34.2",
+      "url": "https://www.hpoi.net/hobby/98369",
+      "status": 200,
+      "elapsed_seconds": 0.156,
+      "content_type": "text/html;charset=utf-8",
+      "response_bytes": 158160,
+      "sha256": "62e4e6e1ff00e61d3fcfeb8441c99ebc6c67890bab27e2b3c71d73aad280849f"
+    },
+    {
+      "request_number": 10,
+      "channel": "direct",
+      "client": "requests 2.34.2",
+      "url": "https://www.hpoi.net/charactar/35516",
+      "status": 200,
+      "elapsed_seconds": 0.112,
+      "content_type": "text/html;charset=utf-8",
+      "response_bytes": 131159,
+      "sha256": "d833263e293bfa51e7488227f7e4932dd7ade427f894d1691ad63205556ffb4c"
+    },
+    {
+      "request_number": 11,
+      "channel": "direct",
+      "client": "requests 2.34.2",
+      "url": "https://www.hpoi.net/charactar/3",
+      "status": 200,
+      "elapsed_seconds": 0.12,
+      "content_type": "text/html;charset=utf-8",
+      "response_bytes": 133095,
+      "sha256": "382537555b6cf7518131bade14b4b097487a0964236f0589423a9679d5625eca"
+    },
+    {
+      "request_number": 12,
+      "channel": "direct",
+      "client": "requests 2.34.2",
+      "url": "https://www.hpoi.net:443/charactar/87596",
+      "status": 200,
+      "elapsed_seconds": 0.088,
+      "content_type": "text/html;charset=utf-8",
+      "response_bytes": 104906,
+      "sha256": "bd068cd18a44f299ef4fb3eebeb9b84425a3d28ffdb69787b6677635a22ad720"
+    },
+    {
+      "request_number": 13,
+      "channel": "direct",
+      "client": "requests 2.34.2",
+      "url": "https://www.hpoi.net/robots.txt",
+      "status": 200,
+      "elapsed_seconds": 0.073,
+      "content_type": "text/plain",
+      "response_bytes": 13,
+      "sha256": "c21076ff28354d67812a98f194035d33320b1d8858e4f4af7e925dd16fe2fb10"
+    },
+    {
+      "request_number": 14,
+      "channel": "direct",
+      "client": "requests 2.34.2",
+      "url": "https://www.hpoi.net/protocol",
+      "status": 200,
+      "elapsed_seconds": 0.065,
+      "content_type": "text/html;charset=utf-8",
+      "response_bytes": 68292,
+      "sha256": "235b67b0b782ee04d9a150d165d6082146cec4d3525c03785a29ad2539a808f2",
+      "stop_triggered": true
+    }
+  ],
+  "proxy_http_attempts": 0,
+  "image_http_attempts": 0,
+  "stop_reason": "The public user agreement requires prior explicit written permission for automated programs or scripts to obtain platform services, content, or data"
+}
