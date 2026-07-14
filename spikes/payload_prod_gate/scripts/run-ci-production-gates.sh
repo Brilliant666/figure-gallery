@@ -56,17 +56,39 @@ secret_names = (
 )
 secrets = [os.environ.get(name, "") for name in secret_names]
 secrets = sorted((value for value in secrets if value), key=len, reverse=True)
-diagnostics = []
-for path in sorted(work_path.glob("*.log"), key=lambda item: item.stat().st_mtime)[-3:]:
-    text = "\n".join(path.read_text(encoding="utf-8", errors="replace").splitlines()[-30:])
+def sanitize(text):
     for secret in secrets:
         text = text.replace(secret, "[MASKED]")
     text = re.sub(r"(?i)(postgres(?:ql)?://[^\s:@/]+:)[^\s@/]+(@)", r"\1[MASKED]\2", text)
     text = re.sub(r"(?i)(authorization\s*[:=]\s*[^\s]+\s+)[^\s]+", r"\1[MASKED]", text)
+    return text
+diagnostics = []
+for path in sorted(work_path.glob("*.log"), key=lambda item: item.stat().st_mtime)[-3:]:
+    text = "\n".join(path.read_text(encoding="utf-8", errors="replace").splitlines()[-30:])
+    text = sanitize(text)
     diagnostics.append({"file": path.name, "size_bytes": path.stat().st_size})
     if text:
         print(f"--- sanitized tail: {path.name} ---", file=sys.stderr)
         print(text, file=sys.stderr)
+test_failures = []
+for path in sorted(work_path.glob("vitest-*.json")):
+    try:
+        document = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        continue
+    for suite in document.get("testResults", []):
+        for assertion in suite.get("assertionResults", []):
+            if assertion.get("status") != "failed":
+                continue
+            title = sanitize(str(assertion.get("fullName") or assertion.get("title") or "unknown"))[:300]
+            messages = assertion.get("failureMessages") or suite.get("message") or []
+            if isinstance(messages, str):
+                messages = [messages]
+            summary = sanitize("\n".join(str(message) for message in messages))[:2000]
+            test_failures.append({"file": path.name, "test": title, "summary": summary})
+for failure in test_failures:
+    print(f"--- sanitized test failure: {failure['file']} :: {failure['test']} ---", file=sys.stderr)
+    print(failure["summary"], file=sys.stderr)
 numeric_rc = int(rc)
 payload = {
     "schema_version": 1,
@@ -76,6 +98,7 @@ payload = {
     "exit_code": numeric_rc,
     "timed_out": numeric_rc in (124, 137),
     "logs": diagnostics,
+    "test_failures": test_failures,
 }
 pathlib.Path(target).write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 PY
