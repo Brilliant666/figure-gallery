@@ -1,0 +1,88 @@
+import { sqliteAdapter } from '@payloadcms/db-sqlite'
+import { s3Storage } from '@payloadcms/storage-s3'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
+import { buildConfig, type Plugin } from 'payload'
+import sharp from 'sharp'
+
+import { CandidateRecords } from '@/collections/CandidateRecords'
+import { Characters } from '@/collections/Characters'
+import { FigurePrototypes } from '@/collections/FigurePrototypes'
+import { FigureVersions } from '@/collections/FigureVersions'
+import { Manufacturers } from '@/collections/Manufacturers'
+import { Media } from '@/collections/Media'
+import { OperationLogs } from '@/collections/OperationLogs'
+import { SourceRecords } from '@/collections/SourceRecords'
+import { Users } from '@/collections/Users'
+import { Works } from '@/collections/Works'
+import { SystemSettings } from '@/globals/SystemSettings'
+import { migrations } from '@/migrations'
+import { guardedS3Endpoint } from '@/security/networkGuard'
+
+const filename = fileURLToPath(import.meta.url)
+const dirname = path.dirname(filename)
+
+const required = (name: string): string => {
+  const value = process.env[name]?.trim()
+  if (!value) throw new Error(`${name} must be supplied at runtime; no secret is committed.`)
+  return value
+}
+
+const optionalS3Plugin = (): Plugin[] => {
+  if (process.env.S3_ENABLED !== 'true') return []
+
+  return [
+    s3Storage({
+      alwaysInsertFields: true,
+      bucket: required('S3_BUCKET'),
+      collections: { media: true },
+      config: {
+        credentials: {
+          accessKeyId: required('S3_ACCESS_KEY_ID'),
+          secretAccessKey: required('S3_SECRET_ACCESS_KEY'),
+        },
+        endpoint: guardedS3Endpoint(process.env.S3_ENDPOINT),
+        forcePathStyle: process.env.S3_FORCE_PATH_STYLE === 'true',
+        region: required('S3_REGION'),
+      },
+      disableLocalStorage: true,
+    }),
+  ]
+}
+
+export default buildConfig({
+  admin: {
+    components: {
+      views: {
+        candidateReview: {
+          Component: '/components/admin/CandidateReviewView#CandidateReviewView',
+          path: '/candidate-review',
+        },
+      },
+    },
+    importMap: { baseDir: path.resolve(dirname) },
+    user: Users.slug,
+  },
+  collections: [
+    Users,
+    Works,
+    Characters,
+    Manufacturers,
+    Media,
+    FigurePrototypes,
+    FigureVersions,
+    SourceRecords,
+    CandidateRecords,
+    OperationLogs,
+  ],
+  db: sqliteAdapter({
+    client: { url: process.env.DATABASE_URI ?? 'file:./val02-payload.db' },
+    prodMigrations: migrations,
+    transactionOptions: { behavior: 'immediate' },
+  }),
+  globals: [SystemSettings],
+  plugins: optionalS3Plugin(),
+  secret: required('PAYLOAD_SECRET'),
+  sharp,
+  typescript: { outputFile: path.resolve(dirname, 'payload-types.ts') },
+})

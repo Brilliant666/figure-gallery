@@ -1,0 +1,37 @@
+{
+  "tested_date": "2026-07-14",
+  "fixture": {
+    "sha256": "3ff832622a8b9d4244ec39fc70668c270cb78204ca975004941761ddb9df9529",
+    "works": 2,
+    "characters": 4,
+    "manufacturers": 3,
+    "figure_prototypes": 5,
+    "figure_versions": 8,
+    "source_records": 5,
+    "candidate_records": 4,
+    "dynamic_image_descriptors": 11,
+    "committed_image_binaries": 0
+  },
+  "acceptance_catalog": {
+    "items": 30,
+    "first_id": "AC-01",
+    "last_id": "AC-30"
+  },
+  "unit_tests": {
+    "passed": 48,
+    "failed": 0,
+    "includes_loopback_proxy_bypass_regression": true
+  },
+  "candidate_client": {
+    "adapters": ["wagtail", "payload"],
+    "public_write_operations": ["candidate_upsert"],
+    "token_source": "runtime environment only",
+    "endpoint_scope": "loopback only",
+    "environment_proxy_used": false,
+    "embedded_binary_media": false
+  },
+  "network_guard": {
+    "hpoi_root_and_subdomains_blocked_before_dns_or_transport": true,
+    "hpoi_requests": 0
+  }
+}

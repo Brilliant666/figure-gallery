@@ -1,0 +1,76 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://figure-gallery.invalid/schemas/val02-candidate-upsert-v1.json",
+  "title": "VAL-02 candidate-only upsert request",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["protocol_version", "operation", "candidate"],
+  "properties": {
+    "protocol_version": {"const": 1},
+    "operation": {"const": "candidate_upsert"},
+    "candidate": {
+      "type": "object",
+      "required": ["id", "source", "raw_title", "raw_character_names", "raw_work_name", "raw_manufacturer", "raw_category", "raw_scale", "raw_date", "raw_snapshot", "status", "reason", "match_state", "proposed_manufacturer_status", "target_prototype_id", "target_version_id", "requested_changes", "images"],
+      "properties": {
+        "id": {"type": "string", "minLength": 1},
+        "source": {
+          "type": "object",
+          "required": ["source_type", "source_item_id", "source_url", "source_status", "last_synced_at", "is_stale"],
+          "properties": {
+            "source_type": {"type": "string", "minLength": 1},
+            "source_item_id": {"type": ["string", "null"]},
+            "source_url": {"type": "string", "format": "uri"},
+            "source_status": {"type": "string"},
+            "last_synced_at": {"type": "string", "format": "date-time"},
+            "is_stale": {"type": "boolean"}
+          }
+        },
+        "raw_title": {"type": "string"},
+        "raw_character_names": {"type": "array", "items": {"type": "string"}},
+        "raw_work_name": {"type": ["string", "null"]},
+        "raw_manufacturer": {"type": ["string", "null"]},
+        "raw_category": {"type": ["string", "null"]},
+        "raw_scale": {"type": ["string", "null"]},
+        "raw_date": {"type": ["string", "null"]},
+        "raw_snapshot": {"type": "object"},
+        "status": {"enum": ["pending", "accepted", "deferred", "ignored", "merged", "update_pending"]},
+        "reason": {"type": ["string", "null"]},
+        "match_state": {"type": "string"},
+        "proposed_manufacturer_status": {"enum": ["draft", "active", "hidden"]},
+        "target_prototype_id": {"type": ["string", "null"]},
+        "target_version_id": {"type": ["string", "null"]},
+        "requested_changes": {"type": "object"},
+        "expected_rejections": {"type": "array", "items": {"type": "string"}},
+        "images": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": ["id", "source_url", "storage_key", "generator", "format", "is_adult", "is_source_homepage", "present_in_latest_source", "width", "height", "file_size", "sha256", "perceptual_hash"],
+            "properties": {
+              "id": {"type": "string", "minLength": 1},
+              "source_url": {"type": "string", "format": "uri"},
+              "storage_key": {"type": "string", "minLength": 1},
+              "generator": {"type": "object"},
+              "format": {"const": "PNG"},
+              "is_adult": {"type": "boolean"},
+              "is_source_homepage": {"type": "boolean"},
+              "present_in_latest_source": {"type": "boolean"},
+              "width": {"type": "integer", "minimum": 1},
+              "height": {"type": "integer", "minimum": 1},
+              "file_size": {"type": "integer", "minimum": 1},
+              "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+              "perceptual_hash": {"type": "string", "pattern": "^[0-9a-f]{16}$"}
+            },
+            "not": {
+              "anyOf": [
+                {"required": ["content_base64"]},
+                {"required": ["bytes"]}
+              ]
+            }
+          }
+        }
+      }
+    }
+  }
+}

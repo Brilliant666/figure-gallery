@@ -1,0 +1,30 @@
+:root { color-scheme: light; font-family: Inter, system-ui, sans-serif; color: #202124; background: #fff; }
+* { box-sizing: border-box; }
+body { margin: 0; }
+a { color: #3156a3; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); }
+.search-page { min-height: 100vh; display: grid; place-items: center; }
+.search-shell { width: min(92vw, 680px); text-align: center; transform: translateY(-8vh); }
+.search-shell h1 { font-size: clamp(2rem, 7vw, 4rem); font-weight: 500; letter-spacing: -.04em; }
+.search-shell form { display: flex; gap: .6rem; }
+.search-shell input { flex: 1; border: 1px solid #dfe1e5; box-shadow: 0 1px 6px #20212422; border-radius: 999px; padding: 1rem 1.4rem; font-size: 1rem; }
+.search-shell button, .pagination a { border: 0; border-radius: 999px; padding: .8rem 1.2rem; background: #f1f3f4; }
+.results-shell, .gallery-header, main { width: min(94vw, 1480px); margin: 2rem auto; }
+.disambiguation { list-style: none; padding: 0; max-width: 680px; }
+.disambiguation a { display: flex; justify-content: space-between; padding: 1rem; border-bottom: 1px solid #eee; text-decoration: none; }
+.gallery-header h1 { font-size: clamp(2.5rem, 7vw, 6rem); margin: 1.5rem 0; }
+.gallery-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1.25rem; align-items: start; }
+.gallery-card { position: relative; display: block; width: 100%; padding: 0; border: 0; background: transparent; cursor: zoom-in; }
+.gallery-card img { display: block; width: 100%; height: auto; object-fit: contain; }
+.group-badge { position: absolute; right: .5rem; bottom: .5rem; border-radius: 999px; padding: .25rem .55rem; background: #111b; color: white; font-size: .75rem; }
+.pagination { display: flex; justify-content: center; gap: 1rem; align-items: center; margin: 2rem 0; }
+.lightbox { width: 100vw; height: 100vh; max-width: none; max-height: none; border: 0; padding: 2rem 4rem; background: #111e; color: white; }
+.lightbox[open] { display: grid; grid-template-columns: auto 1fr auto; place-items: center; gap: 1rem; }
+.lightbox::backdrop { background: #111e; }
+.lightbox img { max-width: 82vw; max-height: 82vh; object-fit: contain; transition: transform .2s; }
+.lightbox img.zoomed { transform: scale(1.6); }
+.lightbox button { border: 0; background: #fff2; color: white; border-radius: 999px; padding: .7rem 1rem; font-size: 1.4rem; }
+.lightbox [data-close] { position: fixed; top: 1rem; right: 1rem; }
+.lightbox [data-zoom] { position: fixed; bottom: 1rem; left: 50%; font-size: .9rem; }
+@media (max-width: 980px) { .gallery-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 620px) { .gallery-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .65rem; } .search-shell form { flex-direction: column; } .lightbox { padding: 1rem; } }

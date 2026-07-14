@@ -1,0 +1,47 @@
+{
+  "name": "figure-gallery-val02-payload-poc",
+  "version": "0.0.0",
+  "private": true,
+  "packageManager": "npm@10.9.8",
+  "type": "module",
+  "description": "Disposable VAL-02 Payload CMS and Next.js feasibility prototype.",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "build": "next build",
+    "dev": "next dev -H 127.0.0.1",
+    "generate:importmap": "payload generate:importmap",
+    "lint": "eslint . --max-warnings=0",
+    "start": "next start -H 127.0.0.1",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit",
+    "acceptance": "python scripts/run_acceptance.py",
+    "provision:client": "tsx scripts/provision-client.ts",
+    "smoke:python-client": "python scripts/live_python_client_smoke.py",
+    "seed": "tsx scripts/seed.ts",
+    "export": "tsx scripts/export.ts"
+  },
+  "dependencies": {
+    "@payloadcms/db-sqlite": "3.86.0",
+    "@payloadcms/next": "3.86.0",
+    "@payloadcms/storage-s3": "3.86.0",
+    "graphql": "16.11.0",
+    "next": "16.2.10",
+    "payload": "3.86.0",
+    "react": "19.2.7",
+    "react-dom": "19.2.7",
+    "sharp": "0.34.5"
+  },
+  "devDependencies": {
+    "@types/node": "22.18.0",
+    "@types/react": "19.2.14",
+    "@types/react-dom": "19.2.3",
+    "eslint": "9.39.2",
+    "eslint-config-next": "16.2.10",
+    "tsx": "4.20.6",
+    "typescript": "5.9.3",
+    "vitest": "4.0.18"
+  }
+}

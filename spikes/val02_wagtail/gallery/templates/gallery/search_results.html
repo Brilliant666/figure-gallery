@@ -1,0 +1,21 @@
+{% load static %}
+<!doctype html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>搜索结果</title><link rel="stylesheet" href="{% static 'gallery/gallery.css' %}">
+</head>
+<body>
+  <main class="results-shell">
+    <a href="{% url 'gallery:home' %}">返回搜索</a>
+    <h1>“{{ query }}”</h1>
+    {% if matches %}
+      <ul class="disambiguation">
+        {% for character in matches %}
+          <li><a href="{% url 'gallery:character_gallery' character.pk %}"><strong>{{ character.display_name }}</strong><span>{{ character.work.name|default:"未关联作品" }}</span></a></li>
+        {% endfor %}
+      </ul>
+    {% else %}<p class="empty">没有匹配的角色。</p>{% endif %}
+  </main>
+</body>
+</html>

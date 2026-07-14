@@ -1,0 +1,433 @@
+{
+  "schema_version": 1,
+  "contract_id": "val02-acceptance-v1",
+  "prototype": "wagtail",
+  "generated_at": "2026-07-13T20:50:20.251213Z",
+  "generated_by": {
+    "runner": "django-test-suite",
+    "command": "python manage.py test gallery.tests -v 1 --testrunner gallery.acceptance_runner.RecordingDiscoverRunner",
+    "source_digest": "89b09dc4d3fa7b9a9a9dacd40eebb6eb9cb25796b425441526b2c21e18a409ee",
+    "source_files": [
+      "spikes/val02_contract/acceptance_contract.json",
+      "spikes/val02_contract/acceptance_result.py",
+      "spikes/val02_contract/fixture_contract.py",
+      "spikes/val02_contract/network_guard.py",
+      "spikes/val02_contract/python_candidate_client/client.py",
+      "spikes/val02_contract/synthetic_media.py",
+      "spikes/val02_wagtail/figure_gallery_poc/__init__.py",
+      "spikes/val02_wagtail/figure_gallery_poc/settings.py",
+      "spikes/val02_wagtail/figure_gallery_poc/urls.py",
+      "spikes/val02_wagtail/figure_gallery_poc/wsgi.py",
+      "spikes/val02_wagtail/gallery/__init__.py",
+      "spikes/val02_wagtail/gallery/acceptance_runner.py",
+      "spikes/val02_wagtail/gallery/apps.py",
+      "spikes/val02_wagtail/gallery/candidate_service.py",
+      "spikes/val02_wagtail/gallery/exports.py",
+      "spikes/val02_wagtail/gallery/forms.py",
+      "spikes/val02_wagtail/gallery/management/__init__.py",
+      "spikes/val02_wagtail/gallery/management/commands/__init__.py",
+      "spikes/val02_wagtail/gallery/management/commands/export_gallery.py",
+      "spikes/val02_wagtail/gallery/management/commands/generate_acceptance.py",
+      "spikes/val02_wagtail/gallery/management/commands/seed_synthetic.py",
+      "spikes/val02_wagtail/gallery/migrations/0001_initial.py",
+      "spikes/val02_wagtail/gallery/migrations/0002_alter_candidateimage_image_and_more.py",
+      "spikes/val02_wagtail/gallery/migrations/__init__.py",
+      "spikes/val02_wagtail/gallery/models.py",
+      "spikes/val02_wagtail/gallery/network_guard.py",
+      "spikes/val02_wagtail/gallery/services.py",
+      "spikes/val02_wagtail/gallery/static/gallery/gallery.css",
+      "spikes/val02_wagtail/gallery/static/gallery/gallery.js",
+      "spikes/val02_wagtail/gallery/templates/gallery/admin/candidate_review.html",
+      "spikes/val02_wagtail/gallery/templates/gallery/character_gallery.html",
+      "spikes/val02_wagtail/gallery/templates/gallery/home.html",
+      "spikes/val02_wagtail/gallery/templates/gallery/public_disabled.html",
+      "spikes/val02_wagtail/gallery/templates/gallery/search_results.html",
+      "spikes/val02_wagtail/gallery/tests/__init__.py",
+      "spikes/val02_wagtail/gallery/tests/base.py",
+      "spikes/val02_wagtail/gallery/tests/test_candidate_boundary.py",
+      "spikes/val02_wagtail/gallery/tests/test_domain_services.py",
+      "spikes/val02_wagtail/gallery/tests/test_frontend_export_security.py",
+      "spikes/val02_wagtail/gallery/tests/test_wagtail_capabilities.py",
+      "spikes/val02_wagtail/gallery/urls.py",
+      "spikes/val02_wagtail/gallery/views.py",
+      "spikes/val02_wagtail/gallery/wagtail_hooks.py",
+      "spikes/val02_wagtail/manage.py",
+      "spikes/val02_wagtail/requirements.lock",
+      "spikes/val02_wagtail/requirements.txt"
+    ]
+  },
+  "fixture_sha256": "3ff832622a8b9d4244ec39fc70668c270cb78204ca975004941761ddb9df9529",
+  "assertions": [
+    {
+      "id": "AC-01",
+      "status": "pass",
+      "evidence": [
+        {
+          "kind": "automated_test",
+          "reference": "gallery.tests::CandidateServiceTests.test_source_upsert_is_idempotent",
+          "observed": "per-test outcome=pass; test_id=gallery.tests.test_candidate_boundary.CandidateServiceTests.test_source_upsert_is_idempotent; runner detail=unittest addSuccess"
+        }
+      ]
+    },
+    {
+      "id": "AC-02",
+      "status": "pass",
+      "evidence": [
+        {
+          "kind": "automated_test",
+          "reference": "gallery.tests::CandidateServiceTests.test_url_fallback_migrates_to_stable_id_without_duplicate",
+          "observed": "per-test outcome=pass; test_id=gallery.tests.test_candidate_boundary.CandidateServiceTests.test_url_fallback_migrates_to_stable_id_without_duplicate; runner detail=unittest addSuccess"
+        }
+      ]
+    },
+    {
+      "id": "AC-03",
+      "status": "pass",
+      "evidence": [
+        {
+          "kind": "api_permission_test",
+          "reference": "gallery.tests::CandidateServiceTests.test_unknown_names_stay_in_candidate_pool",
+          "observed": "per-test outcome=pass; test_id=gallery.tests.test_candidate_boundary.CandidateServiceTests.test_unknown_names_stay_in_candidate_pool; runner detail=unittest addSuccess"
+        }
+      ]
+    },
+    {
+      "id": "AC-04",
+      "status": "pass",
+      "evidence": [
+        {
+          "kind": "api_permission_test",
+          "reference": "gallery.tests::CandidateHttpTests.test_http_idempotence_and_formal_counts",
+          "observed": "per-test outcome=pass; test_id=gallery.tests.test_candidate_boundary.CandidateHttpTests.test_http_idempotence_and_formal_counts; runner detail=unittest addSuccess"
+        }
+      ]
+    },
+    {
+      "id": "AC-05",
+      "status": "pass",
+      "evidence": [
+        {
+          "kind": "automated_test",
+          "reference": "gallery.tests::CandidateServiceTests.test_unknown_names_stay_in_candidate_pool",
+          "observed": "per-test outcome=pass; test_id=gallery.tests.test_candidate_boundary.CandidateServiceTests.test_unknown_names_stay_in_candidate_pool; runner detail=unittest addSuccess"
+        }
+      ]
+    },
+    {
+      "id": "AC-06",
+      "status": "pass",
+      "evidence": [
+        {
+          "kind": "automated_test",
+          "reference": "gallery.tests::DomainServiceTests.test_new_manufacturer_defaults_draft",
+          "observed": "per-test outcome=pass; test_id=gallery.tests.test_domain_services.DomainServiceTests.test_new_manufacturer_defaults_draft; runner detail=unittest addSuccess"
+        }
+      ]
+    },
+    {
+      "id": "AC-07",
+      "status": "pass",
+      "evidence": [
+        {
+          "kind": "api_permission_test",
+          "reference": "gallery.tests::CandidateHttpTests.test_http_rejects_direct_prototype_or_main_image_write",
+          "observed": "per-test outcome=pass; test_id=gallery.tests.test_candidate_boundary.CandidateHttpTests.test_http_rejects_direct_prototype_or_main_image_write; runner detail=unittest addSuccess"
+        }
+      ]
+    },
+    {
+      "id": "AC-08",
+      "status": "pass",
+      "evidence": [
+        {
+          "kind": "api_permission_test",
+          "reference": "gallery.tests::CandidateHttpTests.test_shared_python_client_integrates_and_remains_candidate_only",
+          "observed": "per-test outcome=pass; test_id=gallery.tests.test_candidate_boundary.CandidateHttpTests.test_shared_python_client_integrates_and_remains_candidate_only; runner detail=unittest addSuccess"
+        }
+      ]
+    },
+    {
+      "id": "AC-09",
+      "status": "pass",
+      "evidence": [
+        {
+          "kind": "admin_workflow_test",
+          "reference": "gallery.tests::DomainServiceTests.test_admin_creates_prototype_from_candidate_with_audit",
+          "observed": "per-test outcome=pass; test_id=gallery.tests.test_domain_services.DomainServiceTests.test_admin_creates_prototype_from_candidate_with_audit; runner detail=unittest addSuccess"
+        }
+      ]
+    },
+    {
+      "id": "AC-10",
+      "status": "pass",
+      "evidence": [
+        {
+          "kind": "admin_workflow_test",
+          "reference": "gallery.tests::DomainServiceTests.test_admin_attaches_candidate_to_existing_version",
+          "observed": "per-test outcome=pass; test_id=gallery.tests.test_domain_services.DomainServiceTests.test_admin_attaches_candidate_to_existing_version; runner detail=unittest addSuccess"
+        }
+      ]
+    },
+    {
+      "id": "AC-11",
+      "status": "pass",
+      "evidence": [
+        {
+          "kind": "admin_workflow_test",
+          "reference": "gallery.tests::DomainServiceTests.test_field_accept_and_reject_are_audited",
+          "observed": "per-test outcome=pass; test_id=gallery.tests.test_domain_services.DomainServiceTests.test_field_accept_and_reject_are_audited; runner detail=unittest addSuccess"
+        }
+      ]
+    },
+    {
+      "id": "AC-12",
+      "status": "pass",
+      "evidence": [
+        {
+          "kind": "automated_test",
+          "reference": "gallery.tests::DomainServiceTests.test_deferred_and_ignored_keep_reason",
+          "observed": "per-test outcome=pass; test_id=gallery.tests.test_domain_services.DomainServiceTests.test_deferred_and_ignored_keep_reason; runner detail=unittest addSuccess"
+        }
+      ]
+    },
+    {
+      "id": "AC-13",
+      "status": "pass",
+      "evidence": [
+        {
+          "kind": "automated_test",
+          "reference": "gallery.tests::DomainServiceTests.test_merge_split_and_two_undos_restore_cross_record_relations",
+          "observed": "per-test outcome=pass; test_id=gallery.tests.test_domain_services.DomainServiceTests.test_merge_split_and_two_undos_restore_cross_record_relations; runner detail=unittest addSuccess"
+        }
+      ]
+    },
+    {
+      "id": "AC-14",
+      "status": "pass",
+      "evidence": [
+        {
+          "kind": "automated_test",
+          "reference": "gallery.tests::DomainServiceTests.test_all_domain_write_services_emit_complete_operation_logs",
+          "observed": "per-test outcome=pass; test_id=gallery.tests.test_domain_services.DomainServiceTests.test_all_domain_write_services_emit_complete_operation_logs; runner detail=unittest addSuccess"
+        }
+      ]
+    },
+    {
+      "id": "AC-15",
+      "status": "pass",
+      "evidence": [
+        {
+          "kind": "automated_test",
+          "reference": "gallery.tests::FrontendTests.test_multi_character_prototype_is_queryable_from_each_character",
+          "observed": "per-test outcome=pass; test_id=gallery.tests.test_frontend_export_security.FrontendTests.test_multi_character_prototype_is_queryable_from_each_character; runner detail=unittest addSuccess"
+        }
+      ]
+    },
+    {
+      "id": "AC-16",
+      "status": "pass",
+      "evidence": [
+        {
+          "kind": "automated_test",
+          "reference": "gallery.tests::FrontendTests.test_similar_pose_different_manufacturers_remain_distinct",
+          "observed": "per-test outcome=pass; test_id=gallery.tests.test_frontend_export_security.FrontendTests.test_similar_pose_different_manufacturers_remain_distinct; runner detail=unittest addSuccess"
+        }
+      ]
+    },
+    {
+      "id": "AC-17",
+      "status": "pass",
+      "evidence": [
+        {
+          "kind": "automated_test",
+          "reference": "gallery.tests::FrontendTests.test_four_versions_are_one_gallery_prototype",
+          "observed": "per-test outcome=pass; test_id=gallery.tests.test_frontend_export_security.FrontendTests.test_four_versions_are_one_gallery_prototype; runner detail=unittest addSuccess"
+        }
+      ]
+    },
+    {
+      "id": "AC-18",
+      "status": "pass",
+      "evidence": [
+        {
+          "kind": "automated_test",
+          "reference": "gallery.tests::FrontendTests.test_adult_main_is_hidden_by_default_and_visible_when_enabled",
+          "observed": "per-test outcome=pass; test_id=gallery.tests.test_frontend_export_security.FrontendTests.test_adult_main_is_hidden_by_default_and_visible_when_enabled; runner detail=unittest addSuccess"
+        }
+      ]
+    },
+    {
+      "id": "AC-19",
+      "status": "pass",
+      "evidence": [
+        {
+          "kind": "automated_test",
+          "reference": "gallery.tests::FrontendTests.test_adult_main_is_hidden_by_default_and_visible_when_enabled",
+          "observed": "per-test outcome=pass; test_id=gallery.tests.test_frontend_export_security.FrontendTests.test_adult_main_is_hidden_by_default_and_visible_when_enabled; runner detail=unittest addSuccess"
+        }
+      ]
+    },
+    {
+      "id": "AC-20",
+      "status": "pass",
+      "evidence": [
+        {
+          "kind": "automated_test",
+          "reference": "gallery.tests::FrontendTests.test_stale_source_does_not_unpublish_or_remove_local_main",
+          "observed": "per-test outcome=pass; test_id=gallery.tests.test_frontend_export_security.FrontendTests.test_stale_source_does_not_unpublish_or_remove_local_main; runner detail=unittest addSuccess"
+        }
+      ]
+    },
+    {
+      "id": "AC-21",
+      "status": "pass",
+      "evidence": [
+        {
+          "kind": "media_test",
+          "reference": "gallery.tests::DomainServiceTests.test_manual_main_image_selection_requires_owned_local_media",
+          "observed": "per-test outcome=pass; test_id=gallery.tests.test_domain_services.DomainServiceTests.test_manual_main_image_selection_requires_owned_local_media; runner detail=unittest addSuccess"
+        }
+      ]
+    },
+    {
+      "id": "AC-22",
+      "status": "pass",
+      "evidence": [
+        {
+          "kind": "export_parse",
+          "reference": "gallery.tests::ExportAndSecurityTests.test_json_and_csv_exports_parse",
+          "observed": "per-test outcome=pass; test_id=gallery.tests.test_frontend_export_security.ExportAndSecurityTests.test_json_and_csv_exports_parse; runner detail=unittest addSuccess"
+        }
+      ]
+    },
+    {
+      "id": "AC-23",
+      "status": "pass",
+      "evidence": [
+        {
+          "kind": "binary_scan",
+          "reference": "gallery.tests::ExportAndSecurityTests.test_json_export_has_relations_media_metadata_and_no_binary",
+          "observed": "per-test outcome=pass; test_id=gallery.tests.test_frontend_export_security.ExportAndSecurityTests.test_json_export_has_relations_media_metadata_and_no_binary; runner detail=unittest addSuccess"
+        }
+      ]
+    },
+    {
+      "id": "AC-24",
+      "status": "pass",
+      "evidence": [
+        {
+          "kind": "automated_test",
+          "reference": "gallery.tests::FrontendTests.test_unique_alias_match_redirects_to_gallery",
+          "observed": "per-test outcome=pass; test_id=gallery.tests.test_frontend_export_security.FrontendTests.test_unique_alias_match_redirects_to_gallery; runner detail=unittest addSuccess"
+        }
+      ]
+    },
+    {
+      "id": "AC-25",
+      "status": "pass",
+      "evidence": [
+        {
+          "kind": "automated_test",
+          "reference": "gallery.tests::FrontendTests.test_unique_alias_match_redirects_to_gallery",
+          "observed": "per-test outcome=pass; test_id=gallery.tests.test_frontend_export_security.FrontendTests.test_unique_alias_match_redirects_to_gallery; runner detail=unittest addSuccess"
+        }
+      ]
+    },
+    {
+      "id": "AC-26",
+      "status": "pass",
+      "evidence": [
+        {
+          "kind": "automated_test",
+          "reference": "gallery.tests::FrontendTests.test_same_name_characters_render_work_disambiguation",
+          "observed": "per-test outcome=pass; test_id=gallery.tests.test_frontend_export_security.FrontendTests.test_same_name_characters_render_work_disambiguation; runner detail=unittest addSuccess"
+        }
+      ]
+    },
+    {
+      "id": "AC-27",
+      "status": "pass",
+      "evidence": [
+        {
+          "kind": "automated_test",
+          "reference": "gallery.tests::FrontendTests.test_default_page_size_and_stable_paginator",
+          "observed": "per-test outcome=pass; test_id=gallery.tests.test_frontend_export_security.FrontendTests.test_default_page_size_and_stable_paginator; runner detail=unittest addSuccess"
+        }
+      ]
+    },
+    {
+      "id": "AC-28",
+      "status": "pass",
+      "evidence": [
+        {
+          "kind": "static_assertion",
+          "reference": "gallery.tests::FrontendTests.test_original_ratio_dom_and_css_contract",
+          "observed": "per-test outcome=pass; test_id=gallery.tests.test_frontend_export_security.FrontendTests.test_original_ratio_dom_and_css_contract; runner detail=unittest addSuccess"
+        }
+      ]
+    },
+    {
+      "id": "AC-29",
+      "status": "not_run",
+      "evidence": [
+        {
+          "kind": "blocker",
+          "reference": "gallery.tests::FrontendTests.test_lightbox_current_page_static_contract",
+          "observed": "static substitute passed as test_id=gallery.tests.test_frontend_export_security.FrontendTests.test_lightbox_current_page_static_contract; blocker: Chrome interaction was not executable in this environment because the selected profile had no control extension and the native host was unavailable. The mapped static DOM/JavaScript contract passed, but real click/previous/next/boundary behavior was not executed."
+        },
+        {
+          "kind": "static_assertion",
+          "reference": "gallery.tests::FrontendTests.test_lightbox_current_page_static_contract",
+          "observed": "The generated per-test outcome proves only the static current-page DOM/JavaScript contract; it is not browser interaction evidence."
+        }
+      ]
+    },
+    {
+      "id": "AC-30",
+      "status": "pass",
+      "evidence": [
+        {
+          "kind": "network_guard_test",
+          "reference": "gallery.tests::ExportAndSecurityTests.test_hpoi_guard_and_static_runtime_scan",
+          "observed": "per-test outcome=pass; test_id=gallery.tests.test_frontend_export_security.ExportAndSecurityTests.test_hpoi_guard_and_static_runtime_scan; runner detail=unittest addSuccess"
+        },
+        {
+          "kind": "static_assertion",
+          "reference": "gallery.tests::ExportAndSecurityTests.test_hpoi_guard_and_static_runtime_scan",
+          "observed": "The mapped test also scans runtime Python modules and found no Hpoi fetch target outside the dedicated process guard."
+        }
+      ]
+    }
+  ],
+  "runtime": {
+    "python": "3.10.9",
+    "django": "5.2.16",
+    "wagtail": "7.4.2",
+    "database": "SQLite",
+    "processes_required": 1
+  },
+  "metrics": {
+    "test_count": 52,
+    "test_exit_code": 0,
+    "custom_implementation_lines": 2904,
+    "test_lines": 1499,
+    "admin_ui_customization_lines": 220,
+    "migration_files": 2,
+    "direct_dependencies": 3
+  },
+  "exports": {
+    "json_parseable": true,
+    "csv_relational_tables": 10,
+    "contains_binary_media": false,
+    "candidate_image_records": 11
+  },
+  "security": {
+    "hpoi_process_guard": true,
+    "candidate_api_token_from_environment": true,
+    "candidate_http_surface": [
+      "candidate_upsert"
+    ],
+    "cloud_connection_performed": false,
+    "browser_interaction": "not_run: Chrome control extension/native host unavailable; server-render and static DOM substitutes used"
+  }
+}

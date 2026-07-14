@@ -1,0 +1,20 @@
+{% load static %}
+<!doctype html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>角色手办图库 · VAL-02</title>
+  <link rel="stylesheet" href="{% static 'gallery/gallery.css' %}">
+</head>
+<body class="search-page">
+  <main class="search-shell">
+    <h1>角色手办图库</h1>
+    <form action="{% url 'gallery:character_search' %}" method="get" role="search">
+      <label class="sr-only" for="character-query">角色名</label>
+      <input id="character-query" name="q" type="search" placeholder="输入角色名称或别名" autofocus>
+      <button type="submit">搜索</button>
+    </form>
+  </main>
+</body>
+</html>

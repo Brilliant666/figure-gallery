@@ -1,0 +1,10 @@
+﻿id,prototype_id,source_type,source_item_id,source_url,normalized_url,source_status,last_synced_at,is_unavailable,raw_snapshot
+1,1,synthetic_catalog,SYN-001,https://synthetic.invalid/items/SYN-001,https://synthetic.invalid/items/SYN-001,active,2026-01-10T00:00:00+00:00,False,"{""revision"": 1, ""title"": ""林·星跃姿态""}"
+2,2,synthetic_catalog,SYN-002,https://synthetic.invalid/items/SYN-002,https://synthetic.invalid/items/SYN-002,active,2026-01-10T00:00:00+00:00,False,"{""revision"": 1, ""title"": ""林·星跃姿态（格点造物）""}"
+3,3,synthetic_catalog,SYN-003,https://synthetic.invalid/items/SYN-003,https://synthetic.invalid/items/SYN-003,active,2026-01-10T00:00:00+00:00,False,"{""revision"": 1, ""title"": ""绫与林·双星导航""}"
+4,4,synthetic_catalog,SYN-004,https://synthetic.invalid/items/SYN-004,https://synthetic.invalid/items/SYN-004,active,2026-01-10T00:00:00+00:00,False,"{""revision"": 1, ""title"": ""林·月庭礼服""}"
+5,5,synthetic_catalog,SYN-005,https://synthetic.invalid/items/SYN-005,https://synthetic.invalid/items/SYN-005,missing,2026-01-10T00:00:00+00:00,True,"{""revision"": 1, ""title"": ""莲·月庭漫步""}"
+6,,synthetic_feed,CAND-001,https://synthetic.invalid/candidates/CAND-001,https://synthetic.invalid/candidates/CAND-001,active,2026-07-13T19:38:28.560516+00:00,False,"{""fixture_revision"": 1, ""requested_changes"": {}}"
+7,,synthetic_feed,CAND-002,https://synthetic.invalid/candidates/CAND-002,https://synthetic.invalid/candidates/CAND-002,active,2026-07-13T19:38:28.582551+00:00,False,"{""fixture_revision"": 2, ""requested_changes"": {""main_image_id"": ""candidate-image-002-b"", ""raw_date"": ""2026-10""}}"
+8,,synthetic_feed,,https://synthetic.invalid/candidates/adult-deferred?utm_source=fixture,https://synthetic.invalid/candidates/adult-deferred,active,2026-07-13T19:38:28.602541+00:00,False,"{""fixture_revision"": 1, ""requested_changes"": {}}"
+9,,synthetic_feed,CAND-004,https://synthetic.invalid/candidates/CAND-004,https://synthetic.invalid/candidates/CAND-004,active,2026-07-13T19:38:28.623280+00:00,False,"{""fixture_revision"": 1, ""requested_changes"": {}}"

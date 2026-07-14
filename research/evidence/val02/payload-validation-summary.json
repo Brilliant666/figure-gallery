@@ -1,0 +1,119 @@
+{
+  "schema_version": 1,
+  "prototype": "payload",
+  "observed_date": "2026-07-14",
+  "environment": {
+    "os": "Windows",
+    "node": "22.23.1",
+    "npm": "10.9.8",
+    "python": "3.10.9",
+    "payload": "3.86.0",
+    "next": "16.2.10",
+    "react": "19.2.7",
+    "react_dom": "19.2.7",
+    "database": "SQLite via @payloadcms/db-sqlite"
+  },
+  "automated_tests": {
+    "passed": 36,
+    "failed": 0,
+    "total": 36
+  },
+  "acceptance": {
+    "contract_id": "val02-acceptance-v1",
+    "pass": 29,
+    "fail": 0,
+    "not_run": 1,
+    "not_run_ids": [
+      "AC-29"
+    ],
+    "fixture_sha256": "3ff832622a8b9d4244ec39fc70668c270cb78204ca975004941761ddb9df9529",
+    "source_file_count": 68,
+    "source_digest": "993a600fc97894083f2a2641bf2c8d6974b10533447004e22a08291fdd07a7b1",
+    "result_file": {
+      "path": "spikes/val02_payload/acceptance-results.json",
+      "bytes": 17572,
+      "sha256": "18bb27483e64e103ff156532bcf627fdb348f67d38fc1e8d5bc7ed68345a106d"
+    }
+  },
+  "checks": {
+    "fresh_migrate": "pass",
+    "migration_status": "pass",
+    "first_seed": "pass",
+    "repeat_seed": "pass",
+    "typecheck": "pass",
+    "lint": "pass",
+    "production_build": "pass_with_standalone_startup_notice",
+    "json_export_parse": "pass",
+    "csv_export_parse": "pass",
+    "loopback_python_candidate_client": "pass",
+    "hpoi_network_guard": "pass"
+  },
+  "loopback_candidate_client": {
+    "host_scope": "shared client and validated local server binding are loopback-only; handler requires a trusted network boundary if exposed",
+    "candidate_count": 2,
+    "first_created": [
+      true,
+      true
+    ],
+    "repeat_created": [
+      false,
+      false
+    ],
+    "identity_stable_on_repeat": true,
+    "formal_main_image_attack_http_status": 403,
+    "credential_recorded": false
+  },
+  "exports": {
+    "json_files": 1,
+    "csv_files": 9,
+    "embedded_binary": false,
+    "real_images": false
+  },
+  "metrics": {
+    "runner_custom_loc_including_tests": 6212,
+    "implementation_physical_lines": 4289,
+    "implementation_files": 43,
+    "test_physical_lines": 2122,
+    "test_files": 4,
+    "admin_component_lines": 413,
+    "admin_components_plus_review_endpoint_lines": 984,
+    "logical_migrations": 1,
+    "direct_runtime_dependencies": 9,
+    "direct_development_dependencies": 8,
+    "vitest_duration_seconds": 6.43,
+    "build_compile_seconds": 5.3,
+    "build_typescript_seconds": 3.6,
+    "build_static_generation_seconds": 1.026,
+    "loopback_server_ready_ms_one_sample": 195
+  },
+  "security": {
+    "candidate_generic_writes": "closed",
+    "candidate_endpoint_role": "candidate-client only",
+    "formal_generic_writes": "closed; audited administrator services only",
+    "operation_logs": "append-only outside controlled services",
+    "public_read_disable_tested_collections": [
+      "works",
+      "characters",
+      "manufacturers",
+      "figure-prototypes",
+      "media"
+    ]
+  },
+  "network_and_media": {
+    "hpoi_requests": 0,
+    "cloud_connections": 0,
+    "real_images_used": false,
+    "chrome_interaction_executed": false,
+    "s3_boundary_only": true
+  },
+  "known_gaps": [
+    "AC-29 real Chrome lightbox interaction was not run.",
+    "The shared client and local dev/start bindings are loopback-only, but the endpoint handler itself requires a trusted network boundary if exposed.",
+    "Admin has no merge, split, undo, publication lifecycle, or settings controls.",
+    "Work, Character, and FigureVersion formal maintenance services and UI are not implemented.",
+    "Undo targets only the globally latest non-undone merge or split and has no concurrency scope.",
+    "The shared client sends media metadata only; controlled candidate media-file import is not implemented.",
+    "accept-field accepts a trusted administrator-supplied prototypeID without binding it to the candidate's current target.",
+    "Real S3, deployment, production database, backup/restore, and concurrent review were not tested."
+  ]
+}

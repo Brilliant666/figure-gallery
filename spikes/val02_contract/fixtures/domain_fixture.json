@@ -1,0 +1,454 @@
+{
+  "schema_version": 1,
+  "fixture_id": "val02-synthetic-domain-v1",
+  "synthetic_only": true,
+  "description": "完全虚构的 VAL-02 离线领域数据；名称、URL 与图片描述均不对应真实人物、作品、厂商或商品。",
+  "media_policy": {
+    "binary_committed": false,
+    "generation": "dynamic_png",
+    "identity_field": "storage_key",
+    "exact_dedup_field": "sha256",
+    "similarity_hint_field": "perceptual_hash"
+  },
+  "works": [
+    {
+      "id": "work-orbit-chronicles",
+      "name": "星轨纪事",
+      "original_name": "オービット・クロニクル",
+      "aliases": ["Orbit Chronicle", "星轨"]
+    },
+    {
+      "id": "work-moon-garden",
+      "name": "月庭物语",
+      "original_name": "ムーン・ガーデン",
+      "aliases": ["Moon Garden", "月庭"]
+    }
+  ],
+  "characters": [
+    {
+      "id": "character-lin-orbit",
+      "display_name": "林",
+      "names": {"zh": "林", "ja": "リン", "en": "Lin Orbit"},
+      "aliases": ["轨道林", "Pilot Lin"],
+      "work_id": "work-orbit-chronicles",
+      "status": "active",
+      "soft_deleted": false
+    },
+    {
+      "id": "character-lin-moon",
+      "display_name": "林",
+      "names": {"zh": "林", "ja": "リン・ムーン", "en": "Lin Moon"},
+      "aliases": ["月庭林", "Gardener Lin"],
+      "work_id": "work-moon-garden",
+      "status": "active",
+      "soft_deleted": false
+    },
+    {
+      "id": "character-aya",
+      "display_name": "绫",
+      "names": {"zh": "绫", "ja": "アヤ", "en": "Aya"},
+      "aliases": ["星绫", "Navigator Aya"],
+      "work_id": "work-orbit-chronicles",
+      "status": "active",
+      "soft_deleted": false
+    },
+    {
+      "id": "character-ren",
+      "display_name": "莲",
+      "names": {"zh": "莲", "ja": "レン", "en": "Ren"},
+      "aliases": ["庭莲", "Moon Ren"],
+      "work_id": "work-moon-garden",
+      "status": "active",
+      "soft_deleted": false
+    }
+  ],
+  "manufacturers": [
+    {
+      "id": "manufacturer-aurora",
+      "canonical_name": "极光模型社",
+      "aliases": ["Aurora Models"],
+      "status": "active"
+    },
+    {
+      "id": "manufacturer-lattice",
+      "canonical_name": "格点造物",
+      "aliases": ["Lattice Works"],
+      "status": "active"
+    },
+    {
+      "id": "manufacturer-sketch",
+      "canonical_name": "素描工房",
+      "aliases": ["Sketch Atelier"],
+      "status": "draft"
+    }
+  ],
+  "media": [
+    {
+      "id": "media-prototype-01-main",
+      "owner_type": "figure_prototype",
+      "owner_id": "prototype-orbit-lin-aurora",
+      "source_url": "https://synthetic.invalid/media/prototype-01-main.png",
+      "storage_key": "synthetic/prototypes/prototype-01/main.png",
+      "generator": {"width": 48, "height": 72, "rgba": [72, 118, 210, 255]},
+      "format": "PNG",
+      "file_size": null,
+      "sha256": null,
+      "perceptual_hash": null,
+      "is_adult": false,
+      "is_source_homepage": true,
+      "present_in_latest_source": true,
+      "manually_selected_as_main": true
+    },
+    {
+      "id": "media-prototype-05-main",
+      "owner_type": "figure_prototype",
+      "owner_id": "prototype-moon-ren-prize",
+      "source_url": "https://synthetic.invalid/media/prototype-05-main.png",
+      "storage_key": "synthetic/prototypes/prototype-05/main.png",
+      "generator": {"width": 64, "height": 64, "rgba": [82, 158, 108, 255]},
+      "format": "PNG",
+      "file_size": null,
+      "sha256": null,
+      "perceptual_hash": null,
+      "is_adult": false,
+      "is_source_homepage": true,
+      "present_in_latest_source": false,
+      "manually_selected_as_main": true
+    },
+    {
+      "id": "media-prototype-04-main",
+      "owner_type": "figure_prototype",
+      "owner_id": "prototype-moon-lin-variants",
+      "source_url": "https://synthetic.invalid/media/prototype-04-main.png",
+      "storage_key": "synthetic/prototypes/prototype-04/main.png",
+      "generator": {"width": 54, "height": 81, "rgba": [138, 92, 164, 255]},
+      "format": "PNG",
+      "file_size": null,
+      "sha256": null,
+      "perceptual_hash": null,
+      "is_adult": false,
+      "is_source_homepage": true,
+      "present_in_latest_source": true,
+      "manually_selected_as_main": true
+    }
+  ],
+  "figure_prototypes": [
+    {
+      "id": "prototype-orbit-lin-aurora",
+      "title": "林·星跃姿态",
+      "character_ids": ["character-lin-orbit"],
+      "work_id": "work-orbit-chronicles",
+      "manufacturer_id": "manufacturer-aurora",
+      "figure_type": "scale",
+      "scale": "1/7",
+      "costume_text": "虚构蓝白航行服",
+      "is_group": false,
+      "is_adult": false,
+      "publication_status": "published",
+      "soft_deleted": false,
+      "merged_into_id": null,
+      "main_image_id": "media-prototype-01-main",
+      "created_at": "2026-01-01T00:00:00Z",
+      "updated_at": "2026-01-02T00:00:00Z"
+    },
+    {
+      "id": "prototype-orbit-lin-lattice",
+      "title": "林·星跃姿态（格点造物）",
+      "character_ids": ["character-lin-orbit"],
+      "work_id": "work-orbit-chronicles",
+      "manufacturer_id": "manufacturer-lattice",
+      "figure_type": "scale",
+      "scale": "1/8",
+      "costume_text": "虚构银灰航行服",
+      "is_group": false,
+      "is_adult": false,
+      "publication_status": "published",
+      "soft_deleted": false,
+      "merged_into_id": null,
+      "main_image_id": null,
+      "created_at": "2026-01-03T00:00:00Z",
+      "updated_at": "2026-01-03T00:00:00Z"
+    },
+    {
+      "id": "prototype-orbit-duo",
+      "title": "绫与林·双星导航",
+      "character_ids": ["character-aya", "character-lin-orbit"],
+      "work_id": "work-orbit-chronicles",
+      "manufacturer_id": "manufacturer-aurora",
+      "figure_type": "scale",
+      "scale": "1/7",
+      "costume_text": "虚构双人导航服",
+      "is_group": true,
+      "is_adult": false,
+      "publication_status": "published",
+      "soft_deleted": false,
+      "merged_into_id": null,
+      "main_image_id": null,
+      "created_at": "2026-01-04T00:00:00Z",
+      "updated_at": "2026-01-04T00:00:00Z"
+    },
+    {
+      "id": "prototype-moon-lin-variants",
+      "title": "林·月庭礼服",
+      "character_ids": ["character-lin-moon"],
+      "work_id": "work-moon-garden",
+      "manufacturer_id": "manufacturer-lattice",
+      "figure_type": "scale",
+      "scale": "1/6",
+      "costume_text": "虚构月色礼服",
+      "is_group": false,
+      "is_adult": true,
+      "publication_status": "published",
+      "soft_deleted": false,
+      "merged_into_id": null,
+      "main_image_id": "media-prototype-04-main",
+      "created_at": "2026-01-05T00:00:00Z",
+      "updated_at": "2026-01-05T00:00:00Z"
+    },
+    {
+      "id": "prototype-moon-ren-prize",
+      "title": "莲·月庭漫步",
+      "character_ids": ["character-ren"],
+      "work_id": "work-moon-garden",
+      "manufacturer_id": "manufacturer-aurora",
+      "figure_type": "prize",
+      "scale": null,
+      "costume_text": "虚构庭园便服",
+      "is_group": false,
+      "is_adult": false,
+      "publication_status": "published",
+      "soft_deleted": false,
+      "merged_into_id": null,
+      "main_image_id": "media-prototype-05-main",
+      "created_at": "2026-01-06T00:00:00Z",
+      "updated_at": "2026-01-06T00:00:00Z"
+    }
+  ],
+  "figure_versions": [
+    {"id": "version-p1-standard", "prototype_id": "prototype-orbit-lin-aurora", "kind": "standard", "name": "普通版"},
+    {"id": "version-p2-standard", "prototype_id": "prototype-orbit-lin-lattice", "kind": "standard", "name": "普通版"},
+    {"id": "version-p3-standard", "prototype_id": "prototype-orbit-duo", "kind": "standard", "name": "普通版"},
+    {"id": "version-p4-standard", "prototype_id": "prototype-moon-lin-variants", "kind": "standard", "name": "普通版"},
+    {"id": "version-p4-deluxe", "prototype_id": "prototype-moon-lin-variants", "kind": "deluxe", "name": "豪华版"},
+    {"id": "version-p4-reissue", "prototype_id": "prototype-moon-lin-variants", "kind": "reissue", "name": "再版"},
+    {"id": "version-p4-recolor", "prototype_id": "prototype-moon-lin-variants", "kind": "recolor", "name": "纯异色版"},
+    {"id": "version-p5-standard", "prototype_id": "prototype-moon-ren-prize", "kind": "standard", "name": "普通版"}
+  ],
+  "source_records": [
+    {
+      "id": "source-p1",
+      "prototype_id": "prototype-orbit-lin-aurora",
+      "source_type": "synthetic_catalog",
+      "source_item_id": "SYN-001",
+      "source_url": "https://synthetic.invalid/items/SYN-001",
+      "source_status": "active",
+      "last_synced_at": "2026-01-10T00:00:00Z",
+      "is_stale": false,
+      "raw_snapshot": {"title": "林·星跃姿态", "revision": 1}
+    },
+    {
+      "id": "source-p2",
+      "prototype_id": "prototype-orbit-lin-lattice",
+      "source_type": "synthetic_catalog",
+      "source_item_id": "SYN-002",
+      "source_url": "https://synthetic.invalid/items/SYN-002",
+      "source_status": "active",
+      "last_synced_at": "2026-01-10T00:00:00Z",
+      "is_stale": false,
+      "raw_snapshot": {"title": "林·星跃姿态（格点造物）", "revision": 1}
+    },
+    {
+      "id": "source-p3",
+      "prototype_id": "prototype-orbit-duo",
+      "source_type": "synthetic_catalog",
+      "source_item_id": "SYN-003",
+      "source_url": "https://synthetic.invalid/items/SYN-003",
+      "source_status": "active",
+      "last_synced_at": "2026-01-10T00:00:00Z",
+      "is_stale": false,
+      "raw_snapshot": {"title": "绫与林·双星导航", "revision": 1}
+    },
+    {
+      "id": "source-p4",
+      "prototype_id": "prototype-moon-lin-variants",
+      "source_type": "synthetic_catalog",
+      "source_item_id": "SYN-004",
+      "source_url": "https://synthetic.invalid/items/SYN-004",
+      "source_status": "active",
+      "last_synced_at": "2026-01-10T00:00:00Z",
+      "is_stale": false,
+      "raw_snapshot": {"title": "林·月庭礼服", "revision": 1}
+    },
+    {
+      "id": "source-p5-stale",
+      "prototype_id": "prototype-moon-ren-prize",
+      "source_type": "synthetic_catalog",
+      "source_item_id": "SYN-005",
+      "source_url": "https://synthetic.invalid/items/SYN-005",
+      "source_status": "missing",
+      "last_synced_at": "2026-01-10T00:00:00Z",
+      "is_stale": true,
+      "raw_snapshot": {"title": "莲·月庭漫步", "revision": 1}
+    }
+  ],
+  "candidate_records": [
+    {
+      "id": "candidate-new-unmatched",
+      "source": {
+        "source_type": "synthetic_feed",
+        "source_item_id": "CAND-001",
+        "source_url": "https://synthetic.invalid/candidates/CAND-001",
+        "source_status": "active",
+        "last_synced_at": "2026-02-01T00:00:00Z",
+        "is_stale": false
+      },
+      "raw_title": "希格玛·观测姿态",
+      "raw_character_names": ["希格玛"],
+      "raw_work_name": "尚未匹配作品",
+      "raw_manufacturer": "新星试作社",
+      "raw_category": "比例手办",
+      "raw_scale": "1/7",
+      "raw_date": "2026-09",
+      "raw_snapshot": {"fixture_revision": 1},
+      "status": "pending",
+      "reason": null,
+      "match_state": "character_pending",
+      "proposed_manufacturer_status": "draft",
+      "target_prototype_id": null,
+      "target_version_id": null,
+      "requested_changes": {},
+      "images": [
+        {"id": "candidate-image-001-a", "source_url": "https://synthetic.invalid/candidates/CAND-001/a.png", "storage_key": "synthetic/candidates/CAND-001/a.png", "generator": {"width": 40, "height": 60, "rgba": [196, 92, 106, 255]}, "format": "PNG", "is_adult": false, "is_source_homepage": true, "present_in_latest_source": true},
+        {"id": "candidate-image-001-b", "source_url": "https://synthetic.invalid/candidates/CAND-001/b.png", "storage_key": "synthetic/candidates/CAND-001/b.png", "generator": {"width": 60, "height": 40, "rgba": [212, 126, 72, 255]}, "format": "PNG", "is_adult": false, "is_source_homepage": false, "present_in_latest_source": true}
+      ]
+    },
+    {
+      "id": "candidate-main-image-attack",
+      "source": {
+        "source_type": "synthetic_feed",
+        "source_item_id": "CAND-002",
+        "source_url": "https://synthetic.invalid/candidates/CAND-002",
+        "source_status": "active",
+        "last_synced_at": "2026-02-02T00:00:00Z",
+        "is_stale": false
+      },
+      "raw_title": "林·星跃姿态资料更新",
+      "raw_character_names": ["轨道林"],
+      "raw_work_name": "星轨纪事",
+      "raw_manufacturer": "极光模型社",
+      "raw_category": "比例手办",
+      "raw_scale": "1/7",
+      "raw_date": "2026-10",
+      "raw_snapshot": {"fixture_revision": 2},
+      "status": "update_pending",
+      "reason": null,
+      "match_state": "matched",
+      "proposed_manufacturer_status": "active",
+      "target_prototype_id": "prototype-orbit-lin-aurora",
+      "target_version_id": "version-p1-standard",
+      "requested_changes": {"raw_date": "2026-10", "main_image_id": "candidate-image-002-b"},
+      "expected_rejections": ["main_image_id"],
+      "images": [
+        {"id": "candidate-image-002-a", "source_url": "https://synthetic.invalid/candidates/CAND-002/a.png", "storage_key": "synthetic/candidates/CAND-002/a.png", "generator": {"width": 48, "height": 72, "rgba": [74, 120, 212, 255]}, "format": "PNG", "is_adult": false, "is_source_homepage": true, "present_in_latest_source": true},
+        {"id": "candidate-image-002-b", "source_url": "https://synthetic.invalid/candidates/CAND-002/b.png", "storage_key": "synthetic/candidates/CAND-002/b.png", "generator": {"width": 48, "height": 72, "rgba": [46, 88, 166, 255]}, "format": "PNG", "is_adult": false, "is_source_homepage": false, "present_in_latest_source": true}
+      ]
+    },
+    {
+      "id": "candidate-adult-deferred",
+      "source": {
+        "source_type": "synthetic_feed",
+        "source_item_id": null,
+        "source_url": "https://synthetic.invalid/candidates/adult-deferred?utm_source=fixture",
+        "source_status": "active",
+        "last_synced_at": "2026-02-03T00:00:00Z",
+        "is_stale": false
+      },
+      "raw_title": "林·月庭礼服补充图",
+      "raw_character_names": ["月庭林"],
+      "raw_work_name": "月庭物语",
+      "raw_manufacturer": "格点造物",
+      "raw_category": "比例手办",
+      "raw_scale": "1/6",
+      "raw_date": "2026-11",
+      "raw_snapshot": {"fixture_revision": 1},
+      "status": "deferred",
+      "reason": "等待成人图片人工分级",
+      "match_state": "matched",
+      "proposed_manufacturer_status": "active",
+      "target_prototype_id": "prototype-moon-lin-variants",
+      "target_version_id": "version-p4-deluxe",
+      "requested_changes": {},
+      "images": [
+        {"id": "candidate-image-003-a", "source_url": "https://synthetic.invalid/candidates/adult-deferred/a.png", "storage_key": "synthetic/candidates/adult-deferred/a.png", "generator": {"width": 50, "height": 75, "rgba": [152, 86, 150, 255]}, "format": "PNG", "is_adult": true, "is_source_homepage": false, "present_in_latest_source": true},
+        {"id": "candidate-image-003-b", "source_url": "https://synthetic.invalid/candidates/adult-deferred/b.png", "storage_key": "synthetic/candidates/adult-deferred/b.png", "generator": {"width": 75, "height": 50, "rgba": [102, 72, 138, 255]}, "format": "PNG", "is_adult": false, "is_source_homepage": true, "present_in_latest_source": true}
+      ]
+    },
+    {
+      "id": "candidate-ignored",
+      "source": {
+        "source_type": "synthetic_feed",
+        "source_item_id": "CAND-004",
+        "source_url": "https://synthetic.invalid/candidates/CAND-004",
+        "source_status": "active",
+        "last_synced_at": "2026-02-04T00:00:00Z",
+        "is_stale": false
+      },
+      "raw_title": "重复的莲·月庭漫步",
+      "raw_character_names": ["庭莲"],
+      "raw_work_name": "月庭物语",
+      "raw_manufacturer": "极光模型社",
+      "raw_category": "景品",
+      "raw_scale": null,
+      "raw_date": "2026-08",
+      "raw_snapshot": {"fixture_revision": 1},
+      "status": "ignored",
+      "reason": "人工确认是已知来源的重复记录",
+      "match_state": "matched",
+      "proposed_manufacturer_status": "active",
+      "target_prototype_id": "prototype-moon-ren-prize",
+      "target_version_id": "version-p5-standard",
+      "requested_changes": {},
+      "images": [
+        {"id": "candidate-image-004-a", "source_url": "https://synthetic.invalid/candidates/CAND-004/a.png", "storage_key": "synthetic/candidates/CAND-004/a.png", "generator": {"width": 44, "height": 66, "rgba": [90, 166, 114, 255]}, "format": "PNG", "is_adult": false, "is_source_homepage": true, "present_in_latest_source": false},
+        {"id": "candidate-image-004-b", "source_url": "https://synthetic.invalid/candidates/CAND-004/b.png", "storage_key": "synthetic/candidates/CAND-004/b.png", "generator": {"width": 66, "height": 44, "rgba": [68, 130, 92, 255]}, "format": "PNG", "is_adult": false, "is_source_homepage": false, "present_in_latest_source": false}
+      ]
+    }
+  ],
+  "operation_logs": [
+    {
+      "id": "operation-select-main-p1",
+      "actor": "fixture-admin",
+      "occurred_at": "2026-01-02T00:00:00Z",
+      "operation_type": "select_main_image",
+      "reason": "人工选择合成主图",
+      "before": {"main_image_id": null},
+      "after": {"main_image_id": "media-prototype-01-main"},
+      "related_record_ids": ["prototype-orbit-lin-aurora", "media-prototype-01-main"],
+      "is_undone": false
+    }
+  ],
+  "system_settings": {
+    "show_adult_images": false,
+    "gallery_page_size": 16,
+    "public_read_enabled": true
+  },
+  "scenarios": {
+    "similar_pose_distinct_prototype_ids": ["prototype-orbit-lin-aurora", "prototype-orbit-lin-lattice"],
+    "group_prototype_id": "prototype-orbit-duo",
+    "multi_version_prototype_id": "prototype-moon-lin-variants",
+    "stale_source_published_prototype_id": "prototype-moon-ren-prize",
+    "protected_main_image_prototype_id": "prototype-orbit-lin-aurora",
+    "protected_main_image_candidate_id": "candidate-main-image-attack",
+    "url_fallback_migration": {
+      "source_type": "synthetic_feed",
+      "initial_url": "https://synthetic.invalid/candidates/fallback-item?utm_source=fixture",
+      "canonical_url": "https://synthetic.invalid/candidates/fallback-item",
+      "later_source_item_id": "CAND-FALLBACK-001"
+    },
+    "merge_split_undo": {
+      "retained_prototype_id": "prototype-orbit-lin-aurora",
+      "merged_prototype_id": "prototype-orbit-lin-lattice",
+      "relationship_kinds": ["source", "version", "candidate"]
+    }
+  }
+}

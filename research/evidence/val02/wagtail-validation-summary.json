@@ -1,0 +1,95 @@
+{
+  "tested_date": "2026-07-14",
+  "runtime": {
+    "python": "3.10.9",
+    "django": "5.2.16",
+    "wagtail": "7.4.2",
+    "database": "SQLite",
+    "processes_required": 1
+  },
+  "commands": {
+    "pip_check_ms": 521,
+    "django_check_ms": 1442,
+    "migration_check_ms": 1536,
+    "fresh_migrate_ms": 6852,
+    "first_seed_ms": 1527,
+    "repeat_seed_ms": 1546,
+    "test_command_ms": 7970,
+    "collectstatic_ms": 1266,
+    "acceptance_generation_ms": 12161
+  },
+  "tests": {
+    "django_tests_passed": 52,
+    "django_tests_failed": 0,
+    "shared_contract_tests_passed": 48,
+    "shared_contract_tests_failed": 0,
+    "acceptance": {
+      "pass": 29,
+      "fail": 0,
+      "not_run": 1,
+      "not_run_ids": ["AC-29"]
+    }
+  },
+  "local_http": {
+    "cold_start_to_200_ms": 1728,
+    "root_status": 200,
+    "warm_root_response_ms": [39.79, 1.28, 0.78, 0.95, 0.72],
+    "warm_root_median_ms": 0.95,
+    "alias_search_final_status": 200,
+    "alias_search_redirected_to_gallery": true,
+    "shared_python_client": {
+      "first_outcome": "updated",
+      "repeat_outcome": "unchanged",
+      "identity_stable": true,
+      "formal_prototype_attack_http": 403,
+      "main_image_attack_http": 403
+    }
+  },
+  "exports": {
+    "json_bytes": 25807,
+    "csv_files": 11,
+    "contains_binary_media": false
+  },
+  "code_metrics": {
+    "custom_implementation_physical_lines": 2904,
+    "test_physical_lines": 1499,
+    "admin_customization_physical_lines": 220,
+    "migration_files": 2,
+    "direct_dependencies": 3
+  },
+  "acceptance_result": {
+    "path": "spikes/val02_wagtail/acceptance-results.json",
+    "bytes": 18976,
+    "sha256": "03f5543263c0ab4104e8ac4e3e779bf345f799041f8cc21be28bfa4001368223",
+    "source_digest": "89b09dc4d3fa7b9a9a9dacd40eebb6eb9cb25796b425441526b2c21e18a409ee"
+  },
+  "observed_warnings": [
+    "Two unsilenced treebeard.E001 warnings describe a future Treebeard 6 manager compatibility issue."
+  ],
+  "resolved_during_validation": [
+    "Converted the Wagtail filesystem storage location from pathlib.Path to string so repeat seed reset works on Windows.",
+    "Made the loopback-only shared Python client bypass environment proxies and added a regression test.",
+    "Used an unoccupied loopback port because port 8000 was already owned by an unrelated local process.",
+    "The first hardening acceptance invocation used a new isolated runtime before migration and failed with a missing gallery_work table; a fresh migrate and two successful reset seeds preceded the final successful generation.",
+    "The first PowerShell timing probe omitted the System.Net.Http assembly and produced no valid HTTP observation; the corrected probe loaded the assembly, disabled proxy use, and returned five HTTP 200 responses."
+  ],
+  "hardening": {
+    "candidate_image_link_fields_rejected": ["image", "image_id"],
+    "formal_or_main_candidate_image_metadata_preserved": true,
+    "formal_source_without_existing_candidate_rejected": true,
+    "existing_reviewed_candidate_source_resync_allowed": true,
+    "candidate_endpoint_loopback_only": true,
+    "forwarded_address_headers_trusted": false,
+    "manufacturer_lifecycle_service": "staff-only, transactional, audited; no Wagtail UI control",
+    "system_settings_service": "staff-only, transactional, audited; no Wagtail UI control",
+    "shared_client_candidate_file_import": "not implemented; metadata-only transport",
+    "candidate_client_ownership": "single shared token; no per-client owner attribution or isolation",
+    "undo_scope": "globally latest merge/split only; no concurrent reviewer scope",
+    "staff_field_decision_target_scope": "trusted staff may explicitly choose target_prototype_id; not bound to a prior candidate target",
+    "merge_split_undo_admin_ui": false,
+    "real_s3_io_validated": false
+  },
+  "hpoi_requests": 0,
+  "real_images_used": false,
+  "cloud_connections": 0
+}
