@@ -170,7 +170,11 @@ const candidateMediaUploadHandler: Endpoint['handler'] = async (req) => {
       }
 
       const extension = verified.detectedType === 'image/png' ? 'png' : 'jpg'
-      const storageKey = `candidate/${clientID}/${verified.sha256.slice(0, 2)}/${verified.sha256}.${extension}`
+      const objectPrefix = `candidate/${clientID}/${verified.sha256.slice(0, 2)}`
+      const contentFilename = `${verified.sha256}.${extension}`
+      // storageKey is the stable business identity below the deploy-specific
+      // S3 root prefix. The public URL and S3 endpoint are deliberately absent.
+      const storageKey = `${objectPrefix}/${contentFilename}`
       req.context = { ...req.context, candidateSync: true }
       const media = await withinPayloadTransaction(req, async () => {
         const created = await payload.create({
@@ -188,6 +192,7 @@ const candidateMediaUploadHandler: Endpoint['handler'] = async (req) => {
             perceptualHash: verified.perceptualHash,
             pixelHeight: metadata.height,
             pixelWidth: metadata.width,
+            ...(process.env.S3_ENABLED === 'true' ? { prefix: objectPrefix } : {}),
             presentInLatestSource: true,
             selectedAsMain: false,
             sha256: verified.sha256,
@@ -197,7 +202,7 @@ const candidateMediaUploadHandler: Endpoint['handler'] = async (req) => {
           file: {
             data: bytes,
             mimetype: verified.detectedType,
-            name: metadata.filename,
+            name: contentFilename,
             size: bytes.length,
           },
           overrideAccess: true,

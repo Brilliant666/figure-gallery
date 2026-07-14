@@ -6,7 +6,7 @@
 
 - Node.js `22.23.1`（要求 `>=22.12.0`）
 - npm `10.9.8`
-- Payload CMS、SQLite adapter、Next integration、S3 storage plugin `3.86.0`
+- Payload CMS、SQLite/PostgreSQL adapters、Next integration、S3 storage plugin `3.86.0`
 - Next.js `16.2.10`
 - React / React DOM `19.2.7`
 - TypeScript `5.9.3`
@@ -25,6 +25,7 @@ cd spikes/val02_payload
 npm ci --no-audit --no-fund
 
 $env:PAYLOAD_SECRET = ([guid]::NewGuid().ToString('N')) + ([guid]::NewGuid().ToString('N'))
+$env:DATABASE_ADAPTER = 'sqlite'
 $env:DATABASE_URI = "file:$($env:TEMP.Replace('\','/'))/figure-gallery-val02-payload.db"
 $env:MEDIA_DIR = "$env:TEMP/figure-gallery-val02-payload-media"
 $env:S3_ENABLED = 'false'
@@ -58,6 +59,27 @@ npx payload migrate
 npx payload migrate:status
 npm run seed
 ```
+
+### PostgreSQL migration fail-closed 门禁
+
+配置已接入官方 `@payloadcms/db-postgres@3.86.0`，但本轮没有可安全使用的
+PostgreSQL 运行环境，因此 `src/migrations-postgres/` 尚未生成迁移，PostgreSQL
+验证保持 `environment_blocked`。当 `DATABASE_ADAPTER=postgres` 且迁移数组为空时，
+普通启动和 `payload migrate` 会直接失败，不能产生“空迁移成功”的假阳性。
+
+未来只有在一次性、可丢弃的 PostgreSQL 环境已经可用时，才允许通过双重门禁生成
+迁移：显式打开 generation-only 开关，并且实际命令必须是 `migrate:create`：
+
+```powershell
+$env:DATABASE_ADAPTER = 'postgres'
+$env:DATABASE_URI = 'postgresql://<runtime-user>:<runtime-password>@127.0.0.1:<runtime-port>/<runtime-db>'
+$env:PAYLOAD_ALLOW_EMPTY_POSTGRES_MIGRATIONS_FOR_GENERATION = 'true'
+npx payload migrate:create
+Remove-Item Env:PAYLOAD_ALLOW_EMPTY_POSTGRES_MIGRATIONS_FOR_GENERATION
+```
+
+不得在 `payload migrate`、应用启动或部署时启用该开关。生成文件必须经过审查后，
+再以默认关闭开关的方式执行 fresh migration 和重复 migration 验证。
 
 ## 共享 Python CandidateClient 的真实 HTTP 验证
 
@@ -131,14 +153,14 @@ npm run acceptance:val02b -- --browser-results "$env:TEMP/payload-browser.json" 
 
 ## 导出和对象存储边界
 
-`npm run export` 生成一个关系明确的 JSON 和 9 个 CSV；包含内部 ID、关系 ID、`storageKey`、来源 URL、SHA-256/pHash 元数据，不嵌入图片 bytes/base64，也不导出框架私有备份。
+`npm run export` 生成一个关系明确的 JSON 和 10 个 CSV（包括 `ReviewWorkItems`）；包含内部 ID、关系 ID、`storageKey`、来源 URL、SHA-256/pHash 元数据，不嵌入图片 bytes/base64，也不导出框架私有备份。
 
-本地存储是本轮实际验证路径。S3 只验证官方 plugin 的配置边界，未连接真实 bucket；切换需要运行时 `S3_*` 环境变量，不能把 access key 提交到仓库。
+本地存储是本轮实际验证路径。`storageKey` 是不含 endpoint/public URL 的稳定业务标识；仅在 `S3_ENABLED=true` 时才写 document-level 内容前缀，并与运行时 `S3_PREFIX` 组合。S3 只验证官方 plugin 的配置边界和 SQLite 回归兼容，未连接真实 bucket，因此实际对象 key、读写和恢复仍为 `environment_blocked`；切换需要运行时 `S3_*` 环境变量，不能把 access key 提交到仓库。
 
 ## 已知限制与未运行项
 
 - `publicReadEnabled` 同时约束前台查询和匿名 Works/Characters/Manufacturers/FigurePrototypes/Media collection read；FigureVersions、候选、来源与审计日志始终不对匿名访问开放。
-- 当前机器没有可运行的 Docker engine、PostgreSQL 或 MinIO，因此 PostgreSQL migration/backup/restore、S3 闭环和含 PostgreSQL+S3 的完整非生产启动必须记为 `environment_blocked`，不能用 SQLite/本地媒体结果替代。
+- 本轮当前执行环境没有可安全使用的 PostgreSQL 或 MinIO；`src/migrations-postgres/` 仍为空，因此 PostgreSQL migration/backup/restore、S3 闭环和含 PostgreSQL+S3 的完整非生产启动必须记为 `environment_blocked`，不能用 SQLite/本地媒体结果替代。
 - `next build` 与 standalone 只验证本地、合成、非生产形态；没有云部署、生产凭据、生产数据或真实邮件 adapter。
 - 真实浏览器结果和共享 Python loopback 结果由外部 harness 以机器 JSON 注入；未传入时生成器明确写 `not_run`，不会以静态检查冒充浏览器或传输通过。
 

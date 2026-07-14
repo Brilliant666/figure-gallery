@@ -1,0 +1,100 @@
+{
+  "schema_version": 1,
+  "contract_id": "payload-production-gate-v1",
+  "test_date": "2026-07-14",
+  "gates": [
+    {
+      "id": "PG-01",
+      "status": "environment_blocked",
+      "blocker": "No stable PostgreSQL runtime; fresh migration was not run.",
+      "evidence": ["environment-summary.json", "postgres-results.json"]
+    },
+    {
+      "id": "PG-02",
+      "status": "environment_blocked",
+      "blocker": "No stable PostgreSQL runtime; seed and repeated seed were not run.",
+      "evidence": ["environment-summary.json", "postgres-results.json"]
+    },
+    {
+      "id": "PG-03",
+      "status": "environment_blocked",
+      "blocker": "PostgreSQL concurrency, rollback, merge, split, and specified undo were not run.",
+      "evidence": ["postgres-results.json"]
+    },
+    {
+      "id": "PG-04",
+      "status": "environment_blocked",
+      "blocker": "A PostgreSQL backup and empty-database restore could not be performed.",
+      "evidence": ["postgres-results.json"]
+    },
+    {
+      "id": "PG-05",
+      "status": "environment_blocked",
+      "blocker": "Post-restore contracts and authorization boundaries could not be tested.",
+      "evidence": ["postgres-results.json"]
+    },
+    {
+      "id": "PG-06",
+      "status": "environment_blocked",
+      "blocker": "MinIO was not started; original object upload and read were not run.",
+      "evidence": ["environment-summary.json", "s3-results.json"]
+    },
+    {
+      "id": "PG-07",
+      "status": "environment_blocked",
+      "blocker": "MinIO was not started; thumbnail and preview generation/read were not run.",
+      "evidence": ["s3-results.json"]
+    },
+    {
+      "id": "PG-08",
+      "status": "environment_blocked",
+      "blocker": "Source and candidate deletion protection was not tested against object storage.",
+      "evidence": ["s3-results.json"]
+    },
+    {
+      "id": "PG-09",
+      "status": "environment_blocked",
+      "blocker": "A running MinIO service was unavailable for outage and retry testing.",
+      "evidence": ["s3-results.json"]
+    },
+    {
+      "id": "PG-10",
+      "status": "environment_blocked",
+      "blocker": "Object prefix migration and public-URL decoupling were not run.",
+      "evidence": ["s3-results.json"]
+    },
+    {
+      "id": "PG-11",
+      "status": "environment_blocked",
+      "blocker": "Combined PostgreSQL and object-store restore was not run.",
+      "evidence": ["postgres-results.json", "s3-results.json"]
+    },
+    {
+      "id": "PG-12",
+      "status": "environment_blocked",
+      "blocker": "A clean standalone start with PostgreSQL and S3 could not be run.",
+      "evidence": ["standalone-results.json"]
+    },
+    {
+      "id": "PG-13",
+      "status": "environment_blocked",
+      "blocker": "Standalone restart and persistence checks could not be run.",
+      "evidence": ["standalone-results.json"]
+    },
+    {
+      "id": "PG-14",
+      "status": "environment_blocked",
+      "blocker": "Authorization attacks were not rerun under the PostgreSQL and S3 adapters.",
+      "evidence": ["postgres-results.json", "standalone-results.json"]
+    }
+  ],
+  "summary": {
+    "pass": 0,
+    "fail": 0,
+    "environment_blocked": 14,
+    "hard_gate_ids": ["PG-03", "PG-04", "PG-05", "PG-08", "PG-11", "PG-12", "PG-14"],
+    "hard_failures": 0,
+    "adr_acceptance_allowed": false,
+    "allowed_adr_state": "Proposed — Payload CMS + Next.js"
+  }
+}

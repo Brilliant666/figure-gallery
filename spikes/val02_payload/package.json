@@ -26,6 +26,7 @@
     "export": "tsx scripts/export.ts"
   },
   "dependencies": {
+    "@payloadcms/db-postgres": "3.86.0",
     "@payloadcms/db-sqlite": "3.86.0",
     "@payloadcms/next": "3.86.0",
     "@payloadcms/storage-s3": "3.86.0",

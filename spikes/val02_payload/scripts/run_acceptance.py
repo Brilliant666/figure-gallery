@@ -121,7 +121,7 @@ def main() -> int:
             "automated_tests": test_counts,
             "custom_loc_excluding_generated": custom_loc(),
         },
-        exports={"formats": ["JSON", "CSV"], "csv_files": 9, "embedded_binary": False},
+        exports={"formats": ["JSON", "CSV"], "csv_files": 10, "embedded_binary": False},
         security={
             "candidate_generic_writes": "closed",
             "candidate_endpoint_role": "candidate-client only",
@@ -153,7 +153,7 @@ def main() -> int:
         "AC-19": ("automated_test", "filters an audited adult formal main image by the controlled global setting", "The same public gallery query returned the adult prototype after an audited settings change, then excluded it again after reset."),
         "AC-20": ("automated_test", "executes alias routing, Work disambiguation, formal queries and one-entry variants", "A stale source remained attached to a published prototype whose local main media existed and remained in the public gallery."),
         "AC-21": ("media_test", "creates real local thumbnails and exports parseable relationship metadata", "Changing Media.sourceUrl preserved media ID, storageKey and FigurePrototype.mainImage."),
-        "AC-22": ("export_parse", "creates real local thumbnails and exports parseable relationship metadata", "JSON and nine CSV files preserved stable IDs, relationships, storage keys, source URLs and hashes."),
+        "AC-22": ("export_parse", "creates real local thumbnails and exports parseable relationship metadata", "JSON and ten CSV files, including ReviewWorkItems, preserved stable IDs, relationships, storage keys, source URLs and hashes."),
         "AC-23": ("binary_scan", "creates real local thumbnails and exports parseable relationship metadata", "Serialized exports contained no data URL, PNG base64 marker or image bytes."),
         "AC-24": ("automated_test", "executes alias routing, Work disambiguation, formal queries and one-entry variants", "The public alias Pilot Lin matched exactly one Character."),
         "AC-25": ("automated_test", "executes alias routing, Work disambiguation, formal queries and one-entry variants", "The executable resolver returned kind=unique and the exact /characters/<id> gallery target for the alias query."),

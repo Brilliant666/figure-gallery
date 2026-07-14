@@ -2,11 +2,11 @@
   "schema_version": 1,
   "contract_id": "val02-acceptance-v1",
   "prototype": "payload",
-  "generated_at": "2026-07-14T06:13:50.842105Z",
+  "generated_at": "2026-07-14T09:23:11.458078Z",
   "generated_by": {
     "runner": "vitest-plus-payload-acceptance-runner",
     "command": "python spikes/val02_payload/scripts/run_acceptance.py",
-    "source_digest": "997b133c2f203cf717aac9d9b5946e91613b44d01ccf495c9989a9ce048510dc",
+    "source_digest": "2bec00076c8c748d1b48c22e2cc0caf11a4ba19b8857fe870202588783a7481c",
     "source_files": [
       "spikes/val02_contract/acceptance_contract.json",
       "spikes/val02_contract/acceptance_result.py",
@@ -57,6 +57,7 @@
       "spikes/val02_payload/src/components/admin/DomainOperationsClient.tsx",
       "spikes/val02_payload/src/components/admin/DomainOperationsView.tsx",
       "spikes/val02_payload/src/components/frontend/GalleryGrid.tsx",
+      "spikes/val02_payload/src/databaseRuntime.ts",
       "spikes/val02_payload/src/domain/export.ts",
       "spikes/val02_payload/src/domain/fixture.ts",
       "spikes/val02_payload/src/domain/payloadDomainService.ts",
@@ -72,6 +73,7 @@
       "spikes/val02_payload/src/hooks/protectMainImage.ts",
       "spikes/val02_payload/src/hooks/sourceBoundary.ts",
       "spikes/val02_payload/src/lib/gallery.ts",
+      "spikes/val02_payload/src/migrations-postgres/index.ts",
       "spikes/val02_payload/src/migrations/20260713_190619_val02_initial_schema.json",
       "spikes/val02_payload/src/migrations/20260713_190619_val02_initial_schema.ts",
       "spikes/val02_payload/src/migrations/20260714_044222_val02b_decision_gates.json",
@@ -334,7 +336,7 @@
         {
           "kind": "export_parse",
           "reference": "creates real local thumbnails and exports parseable relationship metadata",
-          "observed": "JSON and nine CSV files preserved stable IDs, relationships, storage keys, source URLs and hashes."
+          "observed": "JSON and ten CSV files, including ReviewWorkItems, preserved stable IDs, relationships, storage keys, source URLs and hashes."
         }
       ]
     },
@@ -446,14 +448,14 @@
       "failed": 0,
       "total": 44
     },
-    "custom_loc_excluding_generated": 8904
+    "custom_loc_excluding_generated": 9011
   },
   "exports": {
     "formats": [
       "JSON",
       "CSV"
     ],
-    "csv_files": 9,
+    "csv_files": 10,
     "embedded_binary": false
   },
   "security": {

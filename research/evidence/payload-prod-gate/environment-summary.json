@@ -1,0 +1,105 @@
+{
+  "schema_version": 1,
+  "test_date": "2026-07-14",
+  "platform": "Windows",
+  "docker": {
+    "cli_present": true,
+    "compose_present": true,
+    "compose_version": "v2.20.2-desktop.1",
+    "desktop_installed": true,
+    "engine_version_transiently_reported": "24.0.5",
+    "daemon_stable": false,
+    "failure_classification": "rpcbind_terminated_then_daemon_timeouts",
+    "bounded_restarts_without_setting_changes": 2,
+    "final_info_status": "timeout",
+    "final_ping_status": "timeout",
+    "desktop_final_state": "stopped"
+  },
+  "command_probes": [
+    {
+      "command": "docker version",
+      "result": "client_available_server_transiently_reported",
+      "server_version_observed": "24.0.5"
+    },
+    {
+      "command": "docker compose version",
+      "result": "success",
+      "version_observed": "v2.20.2-desktop.1"
+    },
+    {
+      "command": "docker info",
+      "result": "timeout_after_bounded_restarts"
+    },
+    {
+      "command": "Docker Engine /_ping probe",
+      "result": "timeout_after_bounded_restarts"
+    },
+    {
+      "command": "bounded image acquisition probe",
+      "result": "started_but_did_not_complete_after_daemon_failure; no image availability or digest was verified"
+    }
+  ],
+  "prohibited_system_changes": {
+    "docker_installed_or_upgraded": false,
+    "docker_permanent_settings_changed": false,
+    "wsl_changed": false,
+    "hyper_v_changed": false,
+    "windows_features_changed": false,
+    "registry_changed": false,
+    "service_start_type_changed": false
+  },
+  "planned_images": [
+    {
+      "role": "postgres",
+      "reference": "postgres:16.9-bookworm",
+      "pull_state": "attempt_started_but_not_completed_or_verified",
+      "run_state": "not_run"
+    },
+    {
+      "role": "minio",
+      "reference": "quay.io/minio/minio:RELEASE.2025-04-22T22-12-26Z",
+      "pull_state": "not_verified",
+      "run_state": "not_run"
+    },
+    {
+      "role": "minio_client",
+      "reference": "quay.io/minio/mc:RELEASE.2025-04-16T18-13-26Z",
+      "pull_state": "not_verified",
+      "run_state": "not_run"
+    }
+  ],
+  "runtime_resources": {
+    "containers_started": 0,
+    "networks_created": 0,
+    "volumes_created": 0,
+    "runtime_env_files_created": 0,
+    "credentials_generated": 0,
+    "databases_created": 0,
+    "objects_created": 0
+  },
+  "port_checks": [
+    {
+      "port": 55432,
+      "listener": false
+    },
+    {
+      "port": 59000,
+      "listener": false
+    },
+    {
+      "port": 59001,
+      "listener": false
+    }
+  ],
+  "cleanup_verification": {
+    "docker_desktop_and_helper_processes": 0,
+    "repository_runtime_processes": 0,
+    "task_owned_listeners": 0,
+    "payload_task_temp_directories_remaining": 0,
+    "tracked_or_untracked_build_outputs": 0,
+    "runtime_env_files_remaining": 0,
+    "compose_down": "not_applicable_no_compose_project_or_runtime_env_was_created",
+    "note": "A loopback listener on port 3000 belongs to an unrelated process outside this repository and was not touched."
+  },
+  "stop_reason": "Docker daemon could not be made stable within the allowed bounded restarts without prohibited system changes."
+}

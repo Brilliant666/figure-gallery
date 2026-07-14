@@ -1,0 +1,48 @@
+{
+  "schema_version": 1,
+  "test_date": "2026-07-14",
+  "component": "payload_postgres",
+  "versions": {
+    "planned_postgres_image": "postgres:16.9-bookworm",
+    "payload_db_adapter": "@payloadcms/db-postgres@3.86.0"
+  },
+  "infrastructure": {
+    "postgres_started": false,
+    "database_created": false,
+    "credentials_generated": false,
+    "image_pull_state": "attempt_started_but_not_completed_or_verified",
+    "image_run_state": "not_run"
+  },
+  "checks": {
+    "fresh_migration": "environment_blocked",
+    "migration_repeat": "environment_blocked",
+    "seed": "environment_blocked",
+    "seed_repeat": "environment_blocked",
+    "unique_constraints": "environment_blocked",
+    "transaction_rollback": "environment_blocked",
+    "concurrent_review": "environment_blocked",
+    "merge_split_specified_undo": "environment_blocked",
+    "json_export": "environment_blocked",
+    "csv_export": "environment_blocked",
+    "backup": "environment_blocked",
+    "empty_database_restore": "environment_blocked",
+    "post_restore_contract": "environment_blocked",
+    "post_restore_attack_regression": "environment_blocked"
+  },
+  "artifacts": {
+    "database_files": 0,
+    "backup_files": 0,
+    "export_files": 0,
+    "backup_sha256": null,
+    "backup_size_bytes": null,
+    "restored_record_diff": null
+  },
+  "gate_statuses": {
+    "PG-01": "environment_blocked",
+    "PG-02": "environment_blocked",
+    "PG-03": "environment_blocked",
+    "PG-04": "environment_blocked",
+    "PG-05": "environment_blocked"
+  },
+  "substitution_warning": "Existing SQLite results were not used as PostgreSQL evidence."
+}

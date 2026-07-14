@@ -1,0 +1,60 @@
+{
+  "schema_version": 1,
+  "test_date": "2026-07-14",
+  "component": "payload_standalone",
+  "target_runtime": {
+    "node": "22.23.1",
+    "npm": "10.9.8",
+    "payload": "3.86.0",
+    "next": "16.2.10",
+    "react": "19.2.7",
+    "database": "PostgreSQL",
+    "media": "S3-compatible object storage"
+  },
+  "checks": {
+    "clean_install": "environment_blocked",
+    "migration": "environment_blocked",
+    "seed": "environment_blocked",
+    "production_build": "environment_blocked",
+    "standalone_trace": "environment_blocked",
+    "sharp_runtime_files": "environment_blocked",
+    "start": "environment_blocked",
+    "health": "environment_blocked",
+    "root": "environment_blocked",
+    "admin": "environment_blocked",
+    "static": "environment_blocked",
+    "media": "environment_blocked",
+    "candidate_client": "environment_blocked",
+    "authorization_attacks": "environment_blocked",
+    "restart": "environment_blocked",
+    "persistence_after_restart": "environment_blocked"
+  },
+  "metrics": {
+    "npm_ci_ms": null,
+    "migration_ms": null,
+    "seed_ms": null,
+    "build_ms": null,
+    "cold_start_ms": null,
+    "restart_ms": null,
+    "health_ms": null,
+    "root_hot_ms": null,
+    "admin_hot_ms": null,
+    "upload_ms": null,
+    "thumbnail_first_ms": null,
+    "thumbnail_cached_ms": null,
+    "backup_ms": null,
+    "restore_ms": null,
+    "nft_warning": null
+  },
+  "gate_statuses": {
+    "PG-12": "environment_blocked",
+    "PG-13": "environment_blocked",
+    "PG-14": "environment_blocked"
+  },
+  "artifacts": {
+    "build_outputs_persisted": 0,
+    "runtime_secrets_persisted": 0,
+    "runtime_env_files_persisted": 0
+  },
+  "substitution_warning": "Historical SQLite and local-media standalone evidence was not used for the PostgreSQL and S3 production gate."
+}

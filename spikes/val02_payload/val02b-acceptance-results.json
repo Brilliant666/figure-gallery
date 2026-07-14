@@ -2,11 +2,11 @@
   "schema_version": 1,
   "contract_id": "val02b-acceptance-v1",
   "prototype": "payload",
-  "generated_at": "2026-07-14T06:14:18.496232Z",
+  "generated_at": "2026-07-14T09:23:29.668629Z",
   "generated_by": {
     "runner": "vitest-payload-val02b-runner",
     "command": "python spikes/val02_payload/scripts/run_val02b_acceptance.py",
-    "source_digest": "3990e8db73c11bae098911d284130c230564af3927307e1aa124cb519490b76d",
+    "source_digest": "6a52338786b26f4c7ce628b7c7a0c8338e5475ae31a9d96880bdc23ea9d3d990",
     "source_files": [
       "spikes/val02_contract/fixtures/domain_fixture.json",
       "spikes/val02_contract/python_candidate_client/client.py",
@@ -53,6 +53,7 @@
       "spikes/val02_payload/src/components/admin/DomainOperationsClient.tsx",
       "spikes/val02_payload/src/components/admin/DomainOperationsView.tsx",
       "spikes/val02_payload/src/components/frontend/GalleryGrid.tsx",
+      "spikes/val02_payload/src/databaseRuntime.ts",
       "spikes/val02_payload/src/domain/export.ts",
       "spikes/val02_payload/src/domain/fixture.ts",
       "spikes/val02_payload/src/domain/payloadDomainService.ts",
@@ -68,6 +69,7 @@
       "spikes/val02_payload/src/hooks/protectMainImage.ts",
       "spikes/val02_payload/src/hooks/sourceBoundary.ts",
       "spikes/val02_payload/src/lib/gallery.ts",
+      "spikes/val02_payload/src/migrations-postgres/index.ts",
       "spikes/val02_payload/src/migrations/20260713_190619_val02_initial_schema.json",
       "spikes/val02_payload/src/migrations/20260713_190619_val02_initial_schema.ts",
       "spikes/val02_payload/src/migrations/20260714_044222_val02b_decision_gates.json",
@@ -441,10 +443,10 @@
       "failed": 0,
       "total": 44
     },
-    "implementation_loc_excluding_generated_and_migrations": 6019,
-    "test_loc": 2885,
+    "implementation_loc_excluding_generated_and_migrations": 6085,
+    "test_loc": 2926,
     "admin_ui_loc": 641,
-    "endpoint_loc": 1439
+    "endpoint_loc": 1444
   },
   "security": {
     "candidate_credential_storage": "runtime token represented only by SHA-256 hash",
