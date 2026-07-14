@@ -2,11 +2,11 @@
   "schema_version": 1,
   "contract_id": "val02-acceptance-v1",
   "prototype": "wagtail",
-  "generated_at": "2026-07-13T20:50:20.251213Z",
+  "generated_at": "2026-07-14T05:52:50.301302Z",
   "generated_by": {
     "runner": "django-test-suite",
     "command": "python manage.py test gallery.tests -v 1 --testrunner gallery.acceptance_runner.RecordingDiscoverRunner",
-    "source_digest": "89b09dc4d3fa7b9a9a9dacd40eebb6eb9cb25796b425441526b2c21e18a409ee",
+    "source_digest": "fed1562c328d118179981f152256551b3bdf202535cc82a1727644fff45ac44e",
     "source_files": [
       "spikes/val02_contract/acceptance_contract.json",
       "spikes/val02_contract/acceptance_result.py",
@@ -21,16 +21,21 @@
       "spikes/val02_wagtail/gallery/__init__.py",
       "spikes/val02_wagtail/gallery/acceptance_runner.py",
       "spikes/val02_wagtail/gallery/apps.py",
+      "spikes/val02_wagtail/gallery/candidate_media.py",
       "spikes/val02_wagtail/gallery/candidate_service.py",
+      "spikes/val02_wagtail/gallery/client_identity.py",
       "spikes/val02_wagtail/gallery/exports.py",
       "spikes/val02_wagtail/gallery/forms.py",
       "spikes/val02_wagtail/gallery/management/__init__.py",
       "spikes/val02_wagtail/gallery/management/commands/__init__.py",
       "spikes/val02_wagtail/gallery/management/commands/export_gallery.py",
       "spikes/val02_wagtail/gallery/management/commands/generate_acceptance.py",
+      "spikes/val02_wagtail/gallery/management/commands/generate_val02b_acceptance.py",
+      "spikes/val02_wagtail/gallery/management/commands/provision_val02b_browser.py",
       "spikes/val02_wagtail/gallery/management/commands/seed_synthetic.py",
       "spikes/val02_wagtail/gallery/migrations/0001_initial.py",
       "spikes/val02_wagtail/gallery/migrations/0002_alter_candidateimage_image_and_more.py",
+      "spikes/val02_wagtail/gallery/migrations/0003_val02b_decision_gates.py",
       "spikes/val02_wagtail/gallery/migrations/__init__.py",
       "spikes/val02_wagtail/gallery/models.py",
       "spikes/val02_wagtail/gallery/network_guard.py",
@@ -38,6 +43,7 @@
       "spikes/val02_wagtail/gallery/static/gallery/gallery.css",
       "spikes/val02_wagtail/gallery/static/gallery/gallery.js",
       "spikes/val02_wagtail/gallery/templates/gallery/admin/candidate_review.html",
+      "spikes/val02_wagtail/gallery/templates/gallery/admin/domain_operations.html",
       "spikes/val02_wagtail/gallery/templates/gallery/character_gallery.html",
       "spikes/val02_wagtail/gallery/templates/gallery/home.html",
       "spikes/val02_wagtail/gallery/templates/gallery/public_disabled.html",
@@ -47,7 +53,9 @@
       "spikes/val02_wagtail/gallery/tests/test_candidate_boundary.py",
       "spikes/val02_wagtail/gallery/tests/test_domain_services.py",
       "spikes/val02_wagtail/gallery/tests/test_frontend_export_security.py",
+      "spikes/val02_wagtail/gallery/tests/test_val02b_gates.py",
       "spikes/val02_wagtail/gallery/tests/test_wagtail_capabilities.py",
+      "spikes/val02_wagtail/gallery/treebeard_compat.py",
       "spikes/val02_wagtail/gallery/urls.py",
       "spikes/val02_wagtail/gallery/views.py",
       "spikes/val02_wagtail/gallery/wagtail_hooks.py",
@@ -56,7 +64,7 @@
       "spikes/val02_wagtail/requirements.txt"
     ]
   },
-  "fixture_sha256": "3ff832622a8b9d4244ec39fc70668c270cb78204ca975004941761ddb9df9529",
+  "fixture_sha256": "9a55a00d0290281b6ca6b2a2e7041c2f858e256e77303431ee551de89132440b",
   "assertions": [
     {
       "id": "AC-01",
@@ -407,25 +415,26 @@
     "processes_required": 1
   },
   "metrics": {
-    "test_count": 52,
+    "test_count": 70,
     "test_exit_code": 0,
-    "custom_implementation_lines": 2904,
-    "test_lines": 1499,
-    "admin_ui_customization_lines": 220,
-    "migration_files": 2,
-    "direct_dependencies": 3
+    "custom_implementation_lines": 5263,
+    "test_lines": 2476,
+    "admin_ui_customization_lines": 317,
+    "migration_files": 3,
+    "direct_dependencies": 4
   },
   "exports": {
     "json_parseable": true,
-    "csv_relational_tables": 10,
+    "csv_relational_tables": 13,
     "contains_binary_media": false,
     "candidate_image_records": 11
   },
   "security": {
     "hpoi_process_guard": true,
-    "candidate_api_token_from_environment": true,
+    "candidate_api_credentials": "per-client, hashed, revocable",
     "candidate_http_surface": [
-      "candidate_upsert"
+      "candidate_upsert",
+      "candidate_media_upload"
     ],
     "cloud_connection_performed": false,
     "browser_interaction": "not_run: Chrome control extension/native host unavailable; server-render and static DOM substitutes used"

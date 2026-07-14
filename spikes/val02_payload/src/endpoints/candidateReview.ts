@@ -1,11 +1,11 @@
 import type { Endpoint, PayloadRequest } from 'payload'
 
+import { withinPayloadTransaction } from '@/domain/payloadDomainService'
 import {
-  mergePrototypes,
-  splitPrototype,
-  undoLastMergeOrSplit,
-  withinPayloadTransaction,
-} from '@/domain/payloadDomainService'
+  createFormalTargetForReview,
+  updateSystemSettings,
+  validateAndAdvanceReviewWorkItem,
+} from '@/domain/val02bDomainService'
 import { requireAdmin } from '@/security/roles'
 
 type ReviewBody = {
@@ -16,32 +16,22 @@ type ReviewBody = {
     | 'create-prototype'
     | 'defer'
     | 'ignore'
-    | 'merge'
     | 'reject-field'
     | 'set-manufacturer-status'
     | 'set-prototype-publication'
     | 'select-main-image'
-    | 'split'
-    | 'undo'
     | 'update-settings'
   candidateID?: number | string
+  expectedVersion?: number | string
   field?: string
   manufacturerID?: number | string
   manufacturerStatus?: 'active' | 'draft' | 'hidden'
   mediaID?: number | string
-  mergedPrototypeID?: number | string
   newPrototype?: Record<string, unknown>
   newManufacturerName?: string
   prototypeID?: number | string
   publicationStatus?: 'draft' | 'hidden' | 'published'
   reason?: string
-  relationshipIDs?: {
-    candidateIDs?: (number | string)[]
-    mediaIDs?: (number | string)[]
-    sourceIDs?: (number | string)[]
-    versionIDs?: (number | string)[]
-  }
-  retainedPrototypeID?: number | string
   settings?: {
     galleryPageSize?: number
     publicReadEnabled?: boolean
@@ -50,6 +40,7 @@ type ReviewBody = {
   softDeleted?: boolean
   value?: unknown
   versionID?: number | string
+  workItemID?: number | string
 }
 
 const requiredID = (value: unknown, label: string): number => {
@@ -66,6 +57,19 @@ const relationID = (value: unknown): number | undefined => {
   }
   return undefined
 }
+
+const authorizeReviewAction = async (
+  req: PayloadRequest,
+  body: ReviewBody,
+  targetID?: number,
+) =>
+  validateAndAdvanceReviewWorkItem(req, {
+    candidateID: requiredID(body.candidateID, 'candidateID'),
+    expectedVersion: requiredID(body.expectedVersion, 'expectedVersion'),
+    reason: body.reason,
+    targetID,
+    workItemID: requiredID(body.workItemID, 'workItemID'),
+  })
 
 const logReviewAction = async (
   req: PayloadRequest,
@@ -122,6 +126,7 @@ const setManufacturerStatus = async (req: PayloadRequest, body: ReviewBody) => {
   if (!body.reason?.trim()) throw new Error('A reason is required to change manufacturer status.')
 
   return withinPayloadTransaction(req, async () => {
+    await authorizeReviewAction(req, body)
     const payload = req.payload as any
     const before = await payload.findByID({
       collection: 'manufacturers',
@@ -160,6 +165,7 @@ const setPrototypePublication = async (req: PayloadRequest, body: ReviewBody) =>
   if (!body.reason?.trim()) throw new Error('A reason is required to change publication state.')
 
   return withinPayloadTransaction(req, async () => {
+    await authorizeReviewAction(req, body, prototypeID)
     const payload = req.payload as any
     const before = await payload.findByID({
       collection: 'figure-prototypes',
@@ -208,48 +214,10 @@ const setPrototypePublication = async (req: PayloadRequest, body: ReviewBody) =>
 }
 
 const updateSettings = async (req: PayloadRequest, body: ReviewBody) => {
-  const settings = body.settings
-  if (!settings || typeof settings !== 'object') throw new Error('settings is required.')
-  const allowed = new Set(['galleryPageSize', 'publicReadEnabled', 'showAdultImages'])
-  const keys = Object.keys(settings)
-  if (!keys.length || keys.some((key) => !allowed.has(key))) {
-    throw new Error('settings must contain only supported public gallery fields.')
-  }
-  if (
-    settings.galleryPageSize !== undefined &&
-    (!Number.isInteger(settings.galleryPageSize) ||
-      settings.galleryPageSize < 1 ||
-      settings.galleryPageSize > 100)
-  ) {
-    throw new Error('galleryPageSize must be an integer from 1 to 100.')
-  }
-  for (const key of ['publicReadEnabled', 'showAdultImages'] as const) {
-    if (settings[key] !== undefined && typeof settings[key] !== 'boolean') {
-      throw new Error(`${key} must be a boolean.`)
-    }
-  }
-  if (!body.reason?.trim()) throw new Error('A reason is required to update settings.')
-
-  return withinPayloadTransaction(req, async () => {
-    const payload = req.payload as any
-    const before = await payload.findGlobal({
-      overrideAccess: true,
-      req,
-      slug: 'system-settings',
-    })
-    const updated = await payload.updateGlobal({
-      data: settings,
-      overrideAccess: true,
-      req,
-      slug: 'system-settings',
-    })
-    await logReviewAction(
-      req,
-      body,
-      Object.fromEntries(keys.map((key) => [key, before[key]])),
-      Object.fromEntries(keys.map((key) => [key, updated[key]])),
-    )
-    return updated
+  if (!body.settings) throw new Error('settings is required.')
+  return updateSystemSettings(req, {
+    reason: body.reason?.trim() ?? '',
+    settings: body.settings,
   })
 }
 
@@ -257,6 +225,7 @@ const createDraftManufacturer = async (req: PayloadRequest, body: ReviewBody) =>
   const name = body.newManufacturerName?.trim()
   if (!name) throw new Error('newManufacturerName is required.')
   return withinPayloadTransaction(req, async () => {
+    await authorizeReviewAction(req, body)
     const manufacturer = await (req.payload as any).create({
       collection: 'manufacturers',
       data: { canonicalName: name, status: 'draft' },
@@ -288,6 +257,7 @@ const reviewCandidate = async (req: PayloadRequest, body: ReviewBody) => {
 
   if (body.action === 'defer' || body.action === 'ignore') {
     if (!body.reason?.trim()) throw new Error('A reason is required to defer or ignore a candidate.')
+    await authorizeReviewAction(req, body)
     const updated = await payload.update({
       collection: 'candidate-records',
       data: { reason: body.reason, status: body.action === 'defer' ? 'deferred' : 'ignored' },
@@ -308,6 +278,7 @@ const reviewCandidate = async (req: PayloadRequest, body: ReviewBody) => {
     const current = (candidate[targetField] as Record<string, unknown> | undefined) ?? {}
     const next = { ...current, [body.field]: body.value }
     if (body.action === 'reject-field') {
+      await authorizeReviewAction(req, body)
       const updated = await payload.update({
         collection: 'candidate-records',
         data: { [targetField]: next },
@@ -344,6 +315,7 @@ const reviewCandidate = async (req: PayloadRequest, body: ReviewBody) => {
     })
     const mappedValue = mapping.map ? mapping.map(body.value) : body.value
     return withinPayloadTransaction(req, async () => {
+      await authorizeReviewAction(req, body, requiredID(prototypeID, 'prototypeID'))
       const updated = await payload.update({
         collection: 'candidate-records',
         data: { acceptedFields: next },
@@ -370,28 +342,18 @@ const reviewCandidate = async (req: PayloadRequest, body: ReviewBody) => {
   }
 
   if (body.action === 'create-prototype') {
-    const prototype = await payload.create({
-      collection: 'figure-prototypes',
-      data: {
+    const created = await createFormalTargetForReview(req, {
+      candidateID,
+      expectedVersion: requiredID(body.expectedVersion, 'expectedVersion'),
+      newPrototype: {
         ...(body.newPrototype ?? {}),
-        mainImage: null,
-        publicationStatus: 'draft',
         title: body.newPrototype?.title ?? candidate.rawTitle,
       },
-      draft: true,
-      overrideAccess: true,
-      req,
+      reason: body.reason?.trim() ?? '',
+      workItemID: requiredID(body.workItemID, 'workItemID'),
     })
-    const updated = await payload.update({
-      collection: 'candidate-records',
-      data: { status: 'accepted', targetPrototype: prototype.id },
-      id: candidateID,
-      overrideAccess: true,
-      req,
-    })
-    body.prototypeID = prototype.id
-    await logReviewAction(req, body, { targetPrototype: null }, { targetPrototype: prototype.id })
-    return updated
+    body.prototypeID = created.prototype.id
+    return created
   }
 
   if (body.action === 'attach-version') {
@@ -409,6 +371,7 @@ const reviewCandidate = async (req: PayloadRequest, body: ReviewBody) => {
     if (String(versionPrototypeID) !== String(prototypeID)) {
       throw new Error('The selected version does not belong to the selected prototype.')
     }
+    await authorizeReviewAction(req, body, prototypeID)
     const updated = await payload.update({
       collection: 'candidate-records',
       data: { status: 'merged', targetPrototype: prototypeID, targetVersion: versionID },
@@ -428,7 +391,9 @@ const selectMainImage = async (req: PayloadRequest, body: ReviewBody) => {
   const candidateID = requiredID(body.candidateID, 'candidateID')
   const mediaID = requiredID(body.mediaID, 'mediaID')
   const prototypeID = requiredID(body.prototypeID, 'prototypeID')
-  const [candidate, media, prototype] = await Promise.all([
+  return withinPayloadTransaction(req, async () => {
+    await authorizeReviewAction(req, body, prototypeID)
+    const [candidate, media, prototype] = await Promise.all([
     payload.findByID({
       collection: 'candidate-records',
       depth: 0,
@@ -450,25 +415,24 @@ const selectMainImage = async (req: PayloadRequest, body: ReviewBody) => {
       overrideAccess: true,
       req,
     }),
-  ])
-  if (relationID(candidate.targetPrototype) !== prototypeID) {
-    throw new Error('The candidate is not matched to the selected prototype.')
-  }
-  const candidateImageIDs = (candidate.images ?? [])
-    .map(relationID)
-    .filter((id: number | undefined): id is number => id !== undefined)
-  if (!candidateImageIDs.includes(mediaID) || relationID(media.candidate) !== candidateID) {
-    throw new Error('The selected media does not belong to the reviewed candidate.')
-  }
-  const mediaPrototypeID = relationID(media.prototype)
-  if (mediaPrototypeID !== undefined && mediaPrototypeID !== prototypeID) {
-    throw new Error('The selected media already belongs to another formal prototype.')
-  }
-  if (!media.storageKey || !media.filename || !media.url) {
-    throw new Error('The selected media must have a local file and stable storage key.')
-  }
-  const previousMainID = relationID(prototype.mainImage)
-  return withinPayloadTransaction(req, async () => {
+    ])
+    if (relationID(candidate.targetPrototype) !== prototypeID) {
+      throw new Error('The candidate is not matched to the selected prototype.')
+    }
+    const candidateImageIDs = (candidate.images ?? [])
+      .map(relationID)
+      .filter((id: number | undefined): id is number => id !== undefined)
+    if (!candidateImageIDs.includes(mediaID) || relationID(media.candidate) !== candidateID) {
+      throw new Error('The selected media does not belong to the reviewed candidate.')
+    }
+    const mediaPrototypeID = relationID(media.prototype)
+    if (mediaPrototypeID !== undefined && mediaPrototypeID !== prototypeID) {
+      throw new Error('The selected media already belongs to another formal prototype.')
+    }
+    if (!media.storageKey || !media.filename || !media.url) {
+      throw new Error('The selected media must have a local file and stable storage key.')
+    }
+    const previousMainID = relationID(prototype.mainImage)
     if (previousMainID && String(previousMainID) !== String(mediaID)) {
       await payload.update({
         collection: 'media',
@@ -538,34 +502,25 @@ export const candidateReviewEndpoint: Endpoint = {
         result = await updateSettings(req, body)
       } else if (body.action === 'select-main-image') {
         result = await selectMainImage(req, body)
-      } else if (body.action === 'merge') {
-        result = await mergePrototypes(req, {
-          mergedPrototypeID: requiredID(body.mergedPrototypeID, 'mergedPrototypeID'),
-          reason: body.reason ?? 'Admin merge',
-          retainedPrototypeID: requiredID(body.retainedPrototypeID, 'retainedPrototypeID'),
-        })
-      } else if (body.action === 'split') {
-        const relationshipIDs = Object.fromEntries(
-          Object.entries(body.relationshipIDs ?? {}).map(([key, values]) => [
-            key,
-            values?.map((value) => requiredID(value, key)),
-          ]),
-        )
-        result = await splitPrototype(req, {
-          ...relationshipIDs,
-          newPrototype: body.newPrototype ?? {},
-          originPrototypeID: requiredID(body.prototypeID, 'prototypeID'),
-          reason: body.reason ?? 'Admin split',
-        })
-      } else if (body.action === 'undo') {
-        result = await undoLastMergeOrSplit(req, body.reason ?? 'Admin undo')
       } else {
         throw new Error(`Unsupported action: ${body.action}`)
       }
-      return Response.json({ ok: true, result })
+      const workItemVersion = body.workItemID
+        ? Number((await (req.payload as any).findByID({
+            collection: 'review-work-items',
+            depth: 0,
+            id: requiredID(body.workItemID, 'workItemID'),
+            overrideAccess: true,
+            req,
+          })).lockVersion)
+        : undefined
+      return Response.json({ ok: true, result, workItemVersion })
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Review action failed.'
-      return Response.json({ error: message }, { status: message.includes('Administrator') ? 403 : 400 })
+      return Response.json(
+        { error: message },
+        { status: message.includes('Administrator') ? 403 : message.includes('conflict') ? 409 : 400 },
+      )
     }
   },
 }

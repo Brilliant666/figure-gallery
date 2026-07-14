@@ -1,0 +1,74 @@
+{
+  "schema_version": 1,
+  "recorded_at": "2026-07-14",
+  "hpoi_request_attempts": 0,
+  "synthetic_fixtures_only": true,
+  "results": {
+    "shared_val02b_contract": {
+      "passed": 78,
+      "failed": 0
+    },
+    "wagtail": {
+      "tests_passed": 70,
+      "tests_failed": 0,
+      "browser_tests": "3/3 pass",
+      "django_system_check": "pass with two visible treebeard.E001 warnings",
+      "migration_check": "no changes detected",
+      "collectstatic": "214 files collected to a temporary directory",
+      "bg_counts": {
+        "pass": 17,
+        "fail": 0,
+        "not_run": 0,
+        "environment_blocked": 13
+      }
+    },
+    "payload": {
+      "tests_passed": 44,
+      "tests_failed": 0,
+      "browser_tests": "3/3 pass",
+      "typecheck": "pass",
+      "eslint": "pass",
+      "production_build": "pass",
+      "standalone_smoke": "health, root, admin, and static assets returned HTTP 200 on loopback",
+      "nft_tracing_warning": false,
+      "bg_counts": {
+        "pass": 17,
+        "fail": 0,
+        "not_run": 0,
+        "environment_blocked": 13
+      }
+    },
+    "val02_regression_pair": {
+      "wagtail": "29 pass / 0 fail / 1 not_run",
+      "payload": "29 pass / 0 fail / 1 not_run",
+      "pair_valid": true
+    },
+    "val02b_pair": {
+      "wagtail": "17 pass / 0 fail / 0 not_run / 13 environment_blocked",
+      "payload": "17 pass / 0 fail / 0 not_run / 13 environment_blocked",
+      "pair_valid": true,
+      "hard_failures_per_candidate": 0
+    }
+  },
+  "environment_blocked": [
+    "PostgreSQL migration, backup, restore, and post-restore contract verification",
+    "S3-compatible object storage lifecycle verification",
+    "clean production-shape startup with PostgreSQL and S3"
+  ],
+  "repository_checks": {
+    "json_evidence_parse": "pass",
+    "thirty_bg_rows_per_candidate": "pass",
+    "local_markdown_links": "pass",
+    "credential_scan": "pass",
+    "large_file_and_binary_scan": "pass",
+    "git_diff_check": "pass",
+    "allowed_scope_check": "pass"
+  },
+  "cleanup": {
+    "temporary_test_directories_remaining": 0,
+    "task_ports_listening": 0,
+    "docker_containers_started": 0,
+    "database_or_object_store_artifacts_retained": false,
+    "runtime_secrets_retained": false
+  }
+}

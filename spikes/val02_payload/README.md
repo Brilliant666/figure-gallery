@@ -61,16 +61,20 @@ npm run seed
 
 ## 共享 Python CandidateClient 的真实 HTTP 验证
 
-候选入口只接受 `candidate-client` API key；共享客户端只接受 loopback URL，且本地 `dev`/`start` 脚本默认绑定 `127.0.0.1`。endpoint handler 本身不把可伪造的转发头当作远端地址门禁；如果未来部署并暴露该路由，必须另加可信网络层限制。管理员 session、通用 Candidate/Source/Media REST/GraphQL 写入和正式实体字段均被拒绝。
+候选入口只接受每客户端独立、可撤销的 `candidate-client` 运行时凭据；数据库只保存 token SHA-256，不保存明文。共享客户端只接受 loopback URL；本地 `dev` 脚本固定绑定 `127.0.0.1`，standalone `start` 必须通过运行时 `HOSTNAME=127.0.0.1` 绑定 loopback。endpoint 在服务端重新读取 client active/owner 状态；通用 Candidate/Source/Media CRUD、正式实体写入和主图替换均被拒绝。
 
 ```powershell
 $env:NODE_ENV = 'production'
+$env:HOSTNAME = '127.0.0.1'
+$env:PORT = '3000'
 $env:VAL02_PAYLOAD_CANDIDATE_TOKEN = ([guid]::NewGuid().ToString('N')) + ([guid]::NewGuid().ToString('N'))
+$env:VAL02_PAYLOAD_CANDIDATE_CLIENT_ID = "payload-client-$([guid]::NewGuid().ToString('N'))"
 $env:VAL02_PAYLOAD_CANDIDATE_ENDPOINT = 'http://127.0.0.1:3000/api/candidate-records/upsert'
+$env:VAL02_PAYLOAD_CANDIDATE_UPLOAD_ENDPOINT = 'http://127.0.0.1:3000/api/val02b/candidate-media/upload'
 
 npx payload migrate
 npm run provision:client
-npm start -- -p 3000
+npm start
 ```
 
 在第二个 shell 继承相同 token 和 endpoint 后运行：
@@ -79,9 +83,27 @@ npm start -- -p 3000
 npm run smoke:python-client
 ```
 
-脚本实例化 `spikes/val02_contract/python_candidate_client/client.py` 的同一个 `CandidateClient`，对两个合成候选执行首次写入、重复写入，并发送正式主图字段攻击。它强制断言首次均为 `created=true`、重复均为 `created=false`、候选/来源/媒体 ID 不变、攻击为 HTTP 403；不会打印 token。
+脚本实例化 `spikes/val02_contract/python_candidate_client/client.py` 的同一个 `CandidateClient`，执行候选幂等 upsert、真实 multipart 合成 PNG 上传、改名同内容去重和正式主图攻击。服务端验证 PNG/JPEG magic、声明 MIME、尺寸、大小、SHA-256 与 aHash，生成 thumbnail/preview；文本、超限文件和 MIME 欺骗在创建正式记录前被拒绝。脚本不会打印 token，也不会提交生成图片。
 
-Node/Payload 与共享 Python 客户端构成双运行时边界。Python 只发送候选 JSON 和图片元数据，不发送图片字节，也没有正式实体写 API。
+Node/Payload 与共享 Python 客户端构成双运行时边界。Python 可以发送候选 JSON 和受控图片 bytes，但没有任何正式实体或主图写 API。
+
+## VAL-02B 浏览器与共享门禁
+
+浏览器 fixture 使用运行时管理员，只生成/复用合成数据，并为同一角色准备 3 个图库卡片（`galleryPageSize=2` 时可验证两页）：
+
+```powershell
+$env:VAL02_PAYLOAD_ADMIN_EMAIL = "val02b-$([guid]::NewGuid().ToString('N'))@synthetic.invalid"
+$env:VAL02_PAYLOAD_ADMIN_PASSWORD = ([guid]::NewGuid().ToString('N'))
+npm run provision:browser
+```
+
+输出仅包含 `/admin`、`/admin/candidate-review`、候选/工作项 ID、合成角色 alias 和图库路径，不输出密码。审核页每个写动作都必须携带 `ReviewWorkItem` ID 与乐观锁版本；服务端强制候选归属和 allowedTargets，只有“新建正式原型”服务能在同一事务中创建并扩展目标集合。管理员领域命令位于 `/admin/domain-operations`，包含 settings、正式资料维护、merge/split 和按 operation ID undo；通用 Admin CRUD 不能绕过领域服务或 OperationLog。
+
+共享 30 门禁结果由以下命令生成；浏览器与真实 loopback 结果必须显式传入，缺失时对应门禁只能是 `not_run`：
+
+```powershell
+npm run acceptance:val02b -- --browser-results "$env:TEMP/payload-browser.json" --loopback-results "$env:TEMP/payload-loopback.json"
+```
 
 ## 领域模型与工作流
 
@@ -91,11 +113,11 @@ Node/Payload 与共享 Python 客户端构成双运行时边界。Python 只发�
 - `FigurePrototypes`、`FigureVersions`
 - `SourceRecords`、`CandidateRecords`、`Media`
 - append-only `OperationLogs`
-- `SystemSettings` global
+- `SystemSettings` global、`ReviewWorkItems`
 
 候选 upsert 以稳定来源 ID 优先、规范化 URL 兜底；同来源只能有一个候选。候选来源带运行时 owner，候选媒体不能抢占正式或其他候选媒体。已被人工提升为主图的同候选媒体在后续同步中只复用稳定 ID，不会被降回候选或解绑正式原型。相同重采集返回 `unchanged`；已 accepted/merged 候选发生字段、来源或图片变化时进入 `update_pending`，不会自动改正式数据。
 
-管理员审核工作台支持：创建 draft 厂商与原型、归入已有版本、逐字段采纳/拒绝、暂缓/忽略、人工选主图。管理员通用 formal/global CRUD 已关闭；厂商状态、原型发布生命周期和公开图库设置只能通过管理员专用 action 修改，并与 OperationLog 位于同一 SQLite 事务。主图在默认 Admin 中只读，只有审核 action 的受控 context 可修改。merge、split、undo 也使用事务、完整关系归属和 split 闭包检查。
+管理员审核工作台支持：创建 draft 厂商与原型、归入已有版本、逐字段采纳/拒绝、暂缓/忽略、人工选主图。每次审核写都推进工作项版本，完成后须审计 reopen；两个管理员的后提交者收到明确冲突。管理员通用 formal/global CRUD 已关闭；正式资料和公开图库设置只能通过管理员领域 service 修改，并与 OperationLog 位于同一事务。主图在默认 Admin 中只读。merge/split 使用稳定 operation ID、原型乐观锁、显式依赖和关系闭包；undo 必须指定 operation ID，依赖或后续重叠作用域会阻止不安全撤销。
 
 公开前台提供极简搜索、唯一结果直达、同名作品消歧、角色图库、4/3/2 列、原比例图片、分页和当前页灯箱。没有前台详情或下载按钮。
 
@@ -105,7 +127,7 @@ Node/Payload 与共享 Python 客户端构成双运行时边界。Python 只发�
 
 必须自建的部分：候选协议和 owner 隔离、审核工作台、不可绕过的审计入口、受控 formal 生命周期、主图保护、幂等/差异检测、merge/split/undo、开放 JSON/CSV 导出、公开图库查询、Hpoi 网络硬禁令（包括可选 S3 endpoint）。
 
-当前 `src/`、`scripts/`、`tests/` 中排除生成迁移/types/import map 后约 5.1k 行，说明该方案是“框架能力可复用、业务模型和治理仍需显著自建”，不是开箱即用图库。
+当前机器生成统计（排除 migration、生成 types/import map）：实现 `6019` LOC、测试 `2885` LOC、Admin UI `641` LOC、endpoint `1439` LOC，说明该方案是“框架能力可复用、业务模型和治理仍需显著自建”，不是开箱即用图库。
 
 ## 导出和对象存储边界
 
@@ -115,13 +137,9 @@ Node/Payload 与共享 Python 客户端构成双运行时边界。Python 只发�
 
 ## 已知限制与未运行项
 
-- AC-29 未运行真实浏览器/DOM 灯箱交互；当前环境 Chrome 控制不可用，只保留 SSR/CSS 静态替代证据。
-- 自定义 Admin 候选切换做了 ID 归一化单测，但没有完整浏览器交互回归；merge/split/undo、原型发布生命周期和公开设置目前只有受控 service 与集成测试，没有对应的 Admin 控件。
-- 为确保所有已暴露领域写都可审计，通用 Works/Characters/Manufacturers/FigureVersions/FigurePrototypes/SystemSettings 写入口均关闭。当前 POC 尚未提供 Work/Character/Version 的正式元数据维护 service，也没有完整的 Manufacturer 编辑 UI；这是真实的审核体验和领域适配缺口，不能把 Payload 原生 drafts/settings/lifecycle 当作已开箱可操作。
-- 当前 undo 只撤销全局最新一条未撤销的 merge/split，不能由管理员指定某条操作；并发管理员或多条操作链需要额外的作用域、冲突检测和 UI。
-- 共享 Python client 按合同只发送图片元数据；当前没有受控的候选图片 bytes 下载/导入服务，而 Media 通用写入口已关闭。因此真实 client 写入会显示“Preview pending local upload”，不能直接进入要求 `filename/url` 的主图选择；client → 本地候选预览 → 主图的完整链路仅由 seed 合成文件验证，尚未端到端闭合。
-- `publicReadEnabled` 同时约束前台查询和匿名 Works/Characters/Manufacturers/FigurePrototypes/Media collection read；关闭后集成测试确认五类公开查询都被拒绝。FigureVersions、候选、来源与审计日志始终不对匿名访问开放。
-- S3、云端部署、生产备份恢复、并发压测、真实邮件 adapter 均未验证。
-- `next build` 可通过；本轮没有部署。`output: standalone` 的实际生产启动/静态资产打包仍需 VAL-02 后续决策，不在本轮定案。
+- `publicReadEnabled` 同时约束前台查询和匿名 Works/Characters/Manufacturers/FigurePrototypes/Media collection read；FigureVersions、候选、来源与审计日志始终不对匿名访问开放。
+- 当前机器没有可运行的 Docker engine、PostgreSQL 或 MinIO，因此 PostgreSQL migration/backup/restore、S3 闭环和含 PostgreSQL+S3 的完整非生产启动必须记为 `environment_blocked`，不能用 SQLite/本地媒体结果替代。
+- `next build` 与 standalone 只验证本地、合成、非生产形态；没有云部署、生产凭据、生产数据或真实邮件 adapter。
+- 真实浏览器结果和共享 Python loopback 结果由外部 harness 以机器 JSON 注入；未传入时生成器明确写 `not_run`，不会以静态检查冒充浏览器或传输通过。
 
 这些限制必须进入技术底座比较；不得据此选择最终栈或开始正式开发。

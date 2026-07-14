@@ -76,6 +76,7 @@ export interface Config {
     'figure-versions': FigureVersion;
     'source-records': SourceRecord;
     'candidate-records': CandidateRecord;
+    'review-work-items': ReviewWorkItem;
     'operation-logs': OperationLog;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
@@ -93,6 +94,7 @@ export interface Config {
     'figure-versions': FigureVersionsSelect<false> | FigureVersionsSelect<true>;
     'source-records': SourceRecordsSelect<false> | SourceRecordsSelect<true>;
     'candidate-records': CandidateRecordsSelect<false> | CandidateRecordsSelect<true>;
+    'review-work-items': ReviewWorkItemsSelect<false> | ReviewWorkItemsSelect<true>;
     'operation-logs': OperationLogsSelect<false> | OperationLogsSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
@@ -144,6 +146,12 @@ export interface UserAuthOperations {
 export interface User {
   id: number;
   role: 'admin' | 'candidate-client';
+  /**
+   * Stable runtime-provisioned client identity; not a credential.
+   */
+  candidateClientID?: string | null;
+  candidateActive: boolean;
+  candidateTokenHash?: string | null;
   updatedAt: string;
   createdAt: string;
   enableAPIKey?: boolean | null;
@@ -225,6 +233,9 @@ export interface Media {
   fixtureID?: string | null;
   candidateOnly: boolean;
   candidate?: (number | null) | CandidateRecord;
+  candidateOwner?: (number | null) | User;
+  clientCandidateID?: string | null;
+  idempotencyKey?: string | null;
   prototype?: (number | null) | FigurePrototype;
   sourceUrl: string;
   storageKey: string;
@@ -276,6 +287,7 @@ export interface Media {
 export interface CandidateRecord {
   id: number;
   externalKey: string;
+  candidateOwner?: (number | null) | User;
   source: number | SourceRecord;
   rawTitle: string;
   rawCharacterNames?: string[] | null;
@@ -380,6 +392,7 @@ export interface FigurePrototype {
   isAdult: boolean;
   publicationStatus: 'draft' | 'published' | 'hidden' | 'merged';
   softDeleted: boolean;
+  lockVersion: number;
   /**
    * Read-only here; use Candidate review workbench so the change is audited.
    */
@@ -406,15 +419,55 @@ export interface FigureVersion {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "review-work-items".
+ */
+export interface ReviewWorkItem {
+  id: number;
+  candidate: number | CandidateRecord;
+  allowedTargets?: (number | FigurePrototype)[] | null;
+  reviewer: number | User;
+  status: 'open' | 'completed' | 'cancelled';
+  lockVersion: number;
+  startedAt: string;
+  completedAt?: string | null;
+  decisionReason?: string | null;
+  updatedAt: string;
+  createdAt: string;
+  deletedAt?: string | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "operation-logs".
  */
 export interface OperationLog {
   id: number;
   fixtureID?: string | null;
+  operationID?: string | null;
+  operationVersion: number;
+  scope?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  dependsOn?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
   actor?: (number | null) | User;
   actorLabel: string;
   operationType:
     | 'candidate_upsert'
+    | 'candidate_media_upload'
+    | 'client_revoked'
     | 'create_manufacturer'
     | 'create_prototype'
     | 'attach_version'
@@ -429,7 +482,11 @@ export interface OperationLog {
     | 'merge'
     | 'split'
     | 'undo_merge'
-    | 'undo_split';
+    | 'undo_split'
+    | 'review_work_item_opened'
+    | 'review_work_item_reopened'
+    | 'review_work_item_completed'
+    | 'maintain_formal';
   reason: string;
   beforeState:
     | {
@@ -532,6 +589,10 @@ export interface PayloadLockedDocument {
         value: number | CandidateRecord;
       } | null)
     | ({
+        relationTo: 'review-work-items';
+        value: number | ReviewWorkItem;
+      } | null)
+    | ({
         relationTo: 'operation-logs';
         value: number | OperationLog;
       } | null);
@@ -583,6 +644,9 @@ export interface PayloadMigration {
  */
 export interface UsersSelect<T extends boolean = true> {
   role?: T;
+  candidateClientID?: T;
+  candidateActive?: T;
+  candidateTokenHash?: T;
   updatedAt?: T;
   createdAt?: T;
   enableAPIKey?: T;
@@ -658,6 +722,9 @@ export interface MediaSelect<T extends boolean = true> {
   fixtureID?: T;
   candidateOnly?: T;
   candidate?: T;
+  candidateOwner?: T;
+  clientCandidateID?: T;
+  idempotencyKey?: T;
   prototype?: T;
   sourceUrl?: T;
   storageKey?: T;
@@ -725,6 +792,7 @@ export interface FigurePrototypesSelect<T extends boolean = true> {
   isAdult?: T;
   publicationStatus?: T;
   softDeleted?: T;
+  lockVersion?: T;
   mainImage?: T;
   mergedInto?: T;
   updatedAt?: T;
@@ -773,6 +841,7 @@ export interface SourceRecordsSelect<T extends boolean = true> {
  */
 export interface CandidateRecordsSelect<T extends boolean = true> {
   externalKey?: T;
+  candidateOwner?: T;
   source?: T;
   rawTitle?: T;
   rawCharacterNames?: T;
@@ -798,10 +867,31 @@ export interface CandidateRecordsSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "review-work-items_select".
+ */
+export interface ReviewWorkItemsSelect<T extends boolean = true> {
+  candidate?: T;
+  allowedTargets?: T;
+  reviewer?: T;
+  status?: T;
+  lockVersion?: T;
+  startedAt?: T;
+  completedAt?: T;
+  decisionReason?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  deletedAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "operation-logs_select".
  */
 export interface OperationLogsSelect<T extends boolean = true> {
   fixtureID?: T;
+  operationID?: T;
+  operationVersion?: T;
+  scope?: T;
+  dependsOn?: T;
   actor?: T;
   actorLabel?: T;
   operationType?: T;

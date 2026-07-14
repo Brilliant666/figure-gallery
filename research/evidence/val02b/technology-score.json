@@ -1,0 +1,48 @@
+{
+  "schema_version": 1,
+  "observed_date": "2026-07-14",
+  "weights": {
+    "domain_model_fit": 20,
+    "review_experience": 20,
+    "candidate_formal_isolation": 15,
+    "merge_split_undo_control": 15,
+    "image_and_storage": 10,
+    "frontend_efficiency": 5,
+    "export_and_portability": 5,
+    "operations_complexity": 5,
+    "license_and_lock_in": 5
+  },
+  "wagtail": {
+    "domain_model_fit": 17.0,
+    "review_experience": 18.0,
+    "candidate_formal_isolation": 14.5,
+    "merge_split_undo_control": 12.0,
+    "image_and_storage": 5.5,
+    "frontend_efficiency": 4.5,
+    "export_and_portability": 2.0,
+    "operations_complexity": 1.5,
+    "license_and_lock_in": 4.0,
+    "total": 79.0
+  },
+  "payload_cms_nextjs": {
+    "domain_model_fit": 16.5,
+    "review_experience": 17.5,
+    "candidate_formal_isolation": 14.5,
+    "merge_split_undo_control": 12.0,
+    "image_and_storage": 5.5,
+    "frontend_efficiency": 4.5,
+    "export_and_portability": 2.0,
+    "operations_complexity": 2.0,
+    "license_and_lock_in": 4.0,
+    "total": 78.5
+  },
+  "decision": "Undecided",
+  "decision_gate": {
+    "wagtail_hard_failures": 0,
+    "payload_hard_failures": 0,
+    "environment_blocked_per_candidate": 13,
+    "blocked_hard_gate_families_per_candidate": 3,
+    "selection_allowed": false,
+    "reason": "Core PostgreSQL restore, S3 formal-main-image retention and complete clean production start remain unexecuted."
+  }
+}

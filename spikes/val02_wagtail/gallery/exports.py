@@ -5,13 +5,16 @@ import json
 from pathlib import Path
 
 from .models import (
+    CandidateClientCredential,
     CandidateImage,
     CandidateRecord,
+    CandidateUploadReceipt,
     Character,
     FigurePrototype,
     FigureVersion,
     Manufacturer,
     OperationLog,
+    ReviewWorkItem,
     SourceRecord,
     SystemSetting,
     Work,
@@ -106,6 +109,8 @@ def build_export_bundle():
             {
                 "id": item.pk,
                 "source_id": item.source_id,
+                "owner_client_id": item.owner.client_id if item.owner_id else None,
+                "client_candidate_id": item.client_candidate_id,
                 "status": item.status,
                 "raw_title": item.raw_title,
                 "raw_character_names": item.raw_character_names,
@@ -129,6 +134,8 @@ def build_export_bundle():
                 "prototype_id": item.prototype_id,
                 "media_id": item.image_id,
                 "original_url": item.original_url,
+                "client_filename": item.client_filename,
+                "content_type": item.content_type,
                 "storage_key": item.storage_key,
                 "file_size": item.file_size,
                 "width": item.width,
@@ -143,9 +150,52 @@ def build_export_bundle():
             }
             for item in CandidateImage.objects.order_by("pk")
         ],
+        "candidate_clients": [
+            {
+                "id": item.pk,
+                "client_id": item.client_id,
+                "status": item.status,
+                "disabled_at": _iso(item.disabled_at),
+                "created_at": _iso(item.created_at),
+                "updated_at": _iso(item.updated_at),
+                "credential_digest_included": False,
+            }
+            for item in CandidateClientCredential.objects.order_by("pk")
+        ],
+        "candidate_upload_receipts": [
+            {
+                "id": item.pk,
+                "owner_client_id": item.owner.client_id,
+                "candidate_id": item.candidate_id,
+                "candidate_image_id": item.candidate_image_id,
+                "idempotency_key": item.idempotency_key,
+                "sha256": item.sha256,
+            }
+            for item in CandidateUploadReceipt.objects.select_related("owner").order_by("pk")
+        ],
+        "review_work_items": [
+            {
+                "id": item.pk,
+                "candidate_id": item.candidate_id,
+                "allowed_target_ids": list(
+                    item.allowed_targets.order_by("pk").values_list("pk", flat=True)
+                ),
+                "reviewer_id": item.reviewer_id,
+                "status": item.status,
+                "lock_version": item.lock_version,
+                "started_at": _iso(item.started_at),
+                "completed_at": _iso(item.completed_at),
+                "decision_reason": item.decision_reason,
+                "reopen_count": item.reopen_count,
+            }
+            for item in ReviewWorkItem.objects.prefetch_related("allowed_targets").order_by("pk")
+        ],
         "operation_logs": [
             {
                 "id": item.pk,
+                "operation_id": str(item.operation_id),
+                "scope": item.scope,
+                "scope_version": item.scope_version,
                 "actor_id": item.actor_id,
                 "actor_label": item.actor_label,
                 "created_at": _iso(item.created_at),
@@ -156,8 +206,11 @@ def build_export_bundle():
                 "related_records": item.related_records,
                 "is_undone": item.is_undone,
                 "undo_of_id": item.undo_of_id,
+                "undo_of_operation_id": (
+                    str(item.undo_of.operation_id) if item.undo_of_id else None
+                ),
             }
-            for item in OperationLog.objects.order_by("pk")
+            for item in OperationLog.objects.select_related("undo_of").order_by("pk")
         ],
         "system_settings": [
             {

@@ -14,13 +14,16 @@ from wagtail.models import Collection
 
 from gallery.candidate_service import normalize_source_url, upsert_candidate
 from gallery.models import (
+    CandidateClientCredential,
     CandidateImage,
     CandidateRecord,
+    CandidateUploadReceipt,
     Character,
     FigurePrototype,
     FigureVersion,
     Manufacturer,
     OperationLog,
+    ReviewWorkItem,
     SourceRecord,
     SystemSetting,
     Work,
@@ -86,6 +89,8 @@ class Command(BaseCommand):
 
         collection = _synthetic_collection()
         if options["reset"]:
+            CandidateUploadReceipt.objects.all().delete()
+            ReviewWorkItem.objects.all().delete()
             OperationLog.objects.all().delete()
             CandidateImage.objects.all().delete()
             CandidateRecord.objects.all().delete()
@@ -96,6 +101,7 @@ class Command(BaseCommand):
             Work.objects.all().delete()
             Manufacturer.objects.all().delete()
             SystemSetting.objects.all().delete()
+            CandidateClientCredential.objects.all().delete()
             get_image_model().objects.filter(collection=collection).delete()
 
         if Work.objects.exists() or FigurePrototype.objects.exists():

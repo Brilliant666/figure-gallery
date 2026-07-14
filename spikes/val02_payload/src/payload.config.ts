@@ -12,9 +12,11 @@ import { FigureVersions } from '@/collections/FigureVersions'
 import { Manufacturers } from '@/collections/Manufacturers'
 import { Media } from '@/collections/Media'
 import { OperationLogs } from '@/collections/OperationLogs'
+import { ReviewWorkItems } from '@/collections/ReviewWorkItems'
 import { SourceRecords } from '@/collections/SourceRecords'
 import { Users } from '@/collections/Users'
 import { Works } from '@/collections/Works'
+import { rootCandidateMediaUploadEndpoint } from '@/endpoints/candidateMediaUpload'
 import { SystemSettings } from '@/globals/SystemSettings'
 import { migrations } from '@/migrations'
 import { guardedS3Endpoint } from '@/security/networkGuard'
@@ -51,12 +53,21 @@ const optionalS3Plugin = (): Plugin[] => {
 }
 
 export default buildConfig({
+  endpoints: [rootCandidateMediaUploadEndpoint],
   admin: {
+    // Keep the disposable admin fully local during validation. Payload's
+    // default Gravatar avatar would otherwise issue a browser request to an
+    // unrelated third-party host after login.
+    avatar: 'default',
     components: {
       views: {
         candidateReview: {
           Component: '/components/admin/CandidateReviewView#CandidateReviewView',
           path: '/candidate-review',
+        },
+        domainOperations: {
+          Component: '/components/admin/DomainOperationsView#DomainOperationsView',
+          path: '/domain-operations',
         },
       },
     },
@@ -73,6 +84,7 @@ export default buildConfig({
     FigureVersions,
     SourceRecords,
     CandidateRecords,
+    ReviewWorkItems,
     OperationLogs,
   ],
   db: sqliteAdapter({
@@ -84,5 +96,6 @@ export default buildConfig({
   plugins: optionalS3Plugin(),
   secret: required('PAYLOAD_SECRET'),
   sharp,
+  telemetry: false,
   typescript: { outputFile: path.resolve(dirname, 'payload-types.ts') },
 })

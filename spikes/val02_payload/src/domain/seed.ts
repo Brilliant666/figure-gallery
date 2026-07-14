@@ -67,10 +67,22 @@ export const generateSyntheticPNG = async (generator: {
 }
 
 export const calculateAverageHash = async (bytes: Buffer): Promise<string> => {
-  const pixels = await sharp(bytes).resize(8, 8, { fit: 'fill' }).greyscale().raw().toBuffer()
-  const mean = pixels.reduce((sum, value) => sum + value, 0) / pixels.length
+  // Match the framework-neutral Python CandidateClient exactly: sample the
+  // top-left pixel of each 1/8 cell and use integer BT.601 luminance.
+  const { data, info } = await sharp(bytes).ensureAlpha().raw().toBuffer({ resolveWithObject: true })
+  const samples: number[] = []
+  for (let sampleY = 0; sampleY < 8; sampleY += 1) {
+    const y = Math.min(info.height - 1, Math.floor((sampleY * info.height) / 8))
+    for (let sampleX = 0; sampleX < 8; sampleX += 1) {
+      const x = Math.min(info.width - 1, Math.floor((sampleX * info.width) / 8))
+      const offset = (y * info.width + x) * info.channels
+      const [red, green, blue] = [data[offset], data[offset + 1], data[offset + 2]]
+      samples.push(Math.floor((299 * red + 587 * green + 114 * blue) / 1000))
+    }
+  }
+  const mean = samples.reduce((sum, value) => sum + value, 0) / samples.length
   let bits = ''
-  for (const value of pixels) bits += value >= mean ? '1' : '0'
+  for (const value of samples) bits += value >= mean ? '1' : '0'
   return BigInt(`0b${bits}`).toString(16).padStart(16, '0')
 }
 

@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "observed_date": "2026-07-14",
+  "installed": {
+    "wagtail": "7.4.2",
+    "django_treebeard": "5.3.0",
+    "requirements_pin_exact": true
+  },
+  "upstream": {
+    "wagtail_tag": {
+      "name": "v7.4.2",
+      "commit": "213059f2472a78363098ba9f62e2cdcd3d91e649",
+      "url": "https://github.com/wagtail/wagtail/tree/v7.4.2"
+    },
+    "treebeard_tag": {
+      "name": "5.3.0",
+      "commit": "98ee4ac209c1614ffb24e4e1081f2bdd3739226c",
+      "url": "https://github.com/django-treebeard/django-treebeard/tree/5.3.0"
+    },
+    "warning_source": {
+      "url": "https://github.com/django-treebeard/django-treebeard/blob/5.3.0/treebeard/mp_tree.py#L1138-L1153",
+      "check_id": "treebeard.E001",
+      "meaning": "The model default manager does not subclass MP_NodeManager; Treebeard 5.3 warns that this becomes an error in Treebeard 6."
+    },
+    "tracked_change": {
+      "issue": 44,
+      "state": "OPEN",
+      "title": "Use a Model Manager for object creation",
+      "url": "https://github.com/django-treebeard/django-treebeard/issues/44"
+    }
+  },
+  "runtime_compatibility_check": {
+    "status": "pass_with_pin",
+    "guard": "GalleryConfig.ready fails closed unless django-treebeard is exactly 5.3.0",
+    "automated_test": "treebeard.E001 remains visible; Page/Collection tree operations pass; simulated 6.0.0 is rejected",
+    "upgrade_rule": "Do not upgrade Wagtail/treebeard until the guard and tree-operation test are deliberately revalidated"
+  },
+  "warning_was_silenced": false,
+  "hpoi_requests": 0
+}

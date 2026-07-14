@@ -8,6 +8,10 @@ class GalleryConfig(AppConfig):
     def ready(self):
         from django.conf import settings
 
+        from .treebeard_compat import enforce_validated_treebeard_version
+
+        enforce_validated_treebeard_version()
+
         if settings.VAL02_BLOCK_HPOI:
             from .network_guard import install_hpoi_guard
 

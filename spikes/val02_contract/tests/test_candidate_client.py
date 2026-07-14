@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import os
+import subprocess
 import sys
 import unittest
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -20,8 +21,10 @@ from python_candidate_client.client import (  # noqa: E402
     ADAPTERS,
     CandidateClient,
     CandidateClientError,
+    _multipart_body,
     _stdlib_transport,
     prepare_candidate_envelope,
+    prepare_candidate_media_upload,
 )
 
 
@@ -143,9 +146,190 @@ class CandidateClientTests(unittest.TestCase):
 
     def test_client_has_no_formal_entity_write_surface(self) -> None:
         public = {name for name in dir(CandidateClient) if not name.startswith("_")}
-        self.assertEqual(public, {"adapter_name", "from_environment", "upsert_candidate", "upsert_candidates"})
+        self.assertEqual(
+            public,
+            {
+                "adapter_name",
+                "from_environment",
+                "upload_candidate_image",
+                "upsert_candidate",
+                "upsert_candidates",
+            },
+        )
         forbidden_terms = {"prototype", "character", "manufacturer", "version", "main_image"}
         self.assertFalse(public & forbidden_terms)
+
+    def test_media_upload_requires_runtime_client_identity(self) -> None:
+        transport = CapturingTransport()
+        with patch.dict(os.environ, {"VAL02_WAGTAIL_CANDIDATE_TOKEN": "runtime-test-value"}, clear=True):
+            client = CandidateClient.from_environment("wagtail", transport)
+            with self.assertRaisesRegex(CandidateClientError, "CANDIDATE_CLIENT_ID"):
+                client.upload_candidate_image(
+                    candidate_id=self.candidate["id"],
+                    client_candidate_id="client-row-001",
+                    image=self.candidate["images"][0],
+                )
+        self.assertEqual(transport.requests, [])
+
+    def test_media_upload_is_multipart_with_runtime_identity_and_synthetic_png(self) -> None:
+        transport = CapturingTransport(body=b'{"outcome":"new","media_id":"media-1"}')
+        environment = {
+            "VAL02_WAGTAIL_CANDIDATE_TOKEN": "runtime-secret-not-in-body",
+            "VAL02_WAGTAIL_CANDIDATE_CLIENT_ID": "client-a",
+        }
+        with patch.dict(os.environ, environment, clear=True):
+            client = CandidateClient.from_environment("wagtail", transport)
+            result = client.upload_candidate_image(
+                candidate_id=self.candidate["id"],
+                client_candidate_id="client-row-001",
+                image=self.candidate["images"][0],
+                idempotency_key="idem-client-row-001",
+                filename="renamed-synthetic.png",
+            )
+        self.assertEqual(result["media_id"], "media-1")
+        request, timeout = transport.requests[0]
+        self.assertEqual(request.full_url, ADAPTERS["wagtail"].default_upload_endpoint)
+        self.assertEqual(request.get_header("X-candidate-client-id"), "client-a")
+        self.assertEqual(request.get_header("Idempotency-key"), "idem-client-row-001")
+        self.assertIn("multipart/form-data; boundary=", request.get_header("Content-type"))
+        self.assertIn(b'form-data; name="metadata"', request.data)
+        self.assertIn(b'form-data; name="file"; filename="renamed-synthetic.png"', request.data)
+        self.assertIn(b"\x89PNG\r\n\x1a\n", request.data)
+        self.assertNotIn(b"runtime-secret-not-in-body", request.data)
+        self.assertEqual(timeout, 10.0)
+
+    def test_media_metadata_has_stable_content_identity_when_filename_changes(self) -> None:
+        image = self.candidate["images"][0]
+        first, first_binary = prepare_candidate_media_upload(
+            client_id="client-a",
+            candidate_id=self.candidate["id"],
+            client_candidate_id="client-row-001",
+            image=image,
+            filename="first.png",
+        )
+        second, second_binary = prepare_candidate_media_upload(
+            client_id="client-a",
+            candidate_id=self.candidate["id"],
+            client_candidate_id="client-row-001",
+            image=image,
+            filename="second.png",
+        )
+        self.assertEqual(first_binary, second_binary)
+        self.assertEqual(first["sha256"], second["sha256"])
+        self.assertEqual(first["perceptual_hash"], second["perceptual_hash"])
+        self.assertEqual(first["idempotency_key"], second["idempotency_key"])
+        self.assertNotEqual(first["filename"], second["filename"])
+
+    def test_multipart_builder_never_serializes_binary_as_base64_or_json(self) -> None:
+        metadata, binary = prepare_candidate_media_upload(
+            client_id="client-a",
+            candidate_id=self.candidate["id"],
+            client_candidate_id="client-row-001",
+            image=self.candidate["images"][0],
+        )
+        boundary, body = _multipart_body(metadata, binary)
+        self.assertTrue(boundary.startswith("figure-gallery-val02b-"))
+        self.assertEqual(body.count(binary), 1)
+        self.assertNotIn(b"content_base64", body)
+        self.assertNotIn(b'"bytes"', body)
+
+    def test_unsafe_upload_filename_is_rejected(self) -> None:
+        with self.assertRaisesRegex(CandidateClientError, "unsafe"):
+            prepare_candidate_media_upload(
+                client_id="client-a",
+                candidate_id=self.candidate["id"],
+                client_candidate_id="client-row-001",
+                image=self.candidate["images"][0],
+                filename="bad\r\nheader.png",
+            )
+
+    def test_upload_endpoint_override_must_remain_loopback(self) -> None:
+        environment = {
+            "VAL02_PAYLOAD_CANDIDATE_TOKEN": "runtime-test-value",
+            "VAL02_PAYLOAD_CANDIDATE_CLIENT_ID": "client-a",
+            "VAL02_PAYLOAD_CANDIDATE_UPLOAD_ENDPOINT": "https://example.invalid/upload",
+        }
+        with patch.dict(os.environ, environment, clear=True):
+            with self.assertRaisesRegex(CandidateClientError, "loopback"):
+                CandidateClient.from_environment("payload", CapturingTransport())
+
+    def test_upload_failure_does_not_echo_runtime_token(self) -> None:
+        transport = CapturingTransport(status=413, body=b'{"error":"too_large"}')
+        environment = {
+            "VAL02_PAYLOAD_CANDIDATE_TOKEN": "never-echo-this",
+            "VAL02_PAYLOAD_CANDIDATE_CLIENT_ID": "client-a",
+        }
+        with patch.dict(os.environ, environment, clear=True):
+            client = CandidateClient.from_environment("payload", transport)
+            with self.assertRaisesRegex(CandidateClientError, "HTTP 413") as caught:
+                client.upload_candidate_image(
+                    candidate_id=self.candidate["id"],
+                    client_candidate_id="client-row-001",
+                    image=self.candidate["images"][0],
+                )
+        self.assertNotIn("never-echo-this", str(caught.exception))
+
+    def test_runtime_client_identity_is_header_safe(self) -> None:
+        environment = {
+            "VAL02_WAGTAIL_CANDIDATE_TOKEN": "runtime-test-value",
+            "VAL02_WAGTAIL_CANDIDATE_CLIENT_ID": "client-a\r\nX-Injected: yes",
+        }
+        with patch.dict(os.environ, environment, clear=True):
+            with self.assertRaisesRegex(CandidateClientError, "safe identifier"):
+                CandidateClient.from_environment("wagtail", CapturingTransport())
+
+    def test_idempotency_key_is_header_safe(self) -> None:
+        with self.assertRaisesRegex(CandidateClientError, "safe identifier"):
+            prepare_candidate_media_upload(
+                client_id="client-a",
+                candidate_id=self.candidate["id"],
+                client_candidate_id="client-row-001",
+                image=self.candidate["images"][0],
+                idempotency_key="unsafe key with spaces",
+            )
+
+    def test_payload_upload_uses_runtime_api_key_and_client_identity(self) -> None:
+        transport = CapturingTransport(body=b'{"outcome":"new","media_id":"media-2"}')
+        environment = {
+            "VAL02_PAYLOAD_CANDIDATE_TOKEN": "payload-runtime-token",
+            "VAL02_PAYLOAD_CANDIDATE_CLIENT_ID": "payload-client-a",
+        }
+        with patch.dict(os.environ, environment, clear=True):
+            client = CandidateClient.from_environment("payload", transport)
+            client.upload_candidate_image(
+                candidate_id=self.candidate["id"],
+                client_candidate_id="client-row-001",
+                image=self.candidate["images"][0],
+            )
+        request, _ = transport.requests[0]
+        self.assertEqual(request.full_url, ADAPTERS["payload"].default_upload_endpoint)
+        self.assertEqual(request.get_header("Authorization"), "users API-Key payload-runtime-token")
+        self.assertEqual(request.get_header("X-candidate-client-id"), "payload-client-a")
+        self.assertNotIn(b"payload-runtime-token", request.data)
+
+    def test_upload_dry_run_never_needs_credentials_or_writes_media(self) -> None:
+        command = [
+            sys.executable,
+            str(CONTRACT_DIR / "python_candidate_client" / "client.py"),
+            "--adapter",
+            "wagtail",
+            "--candidate-id",
+            self.candidate["id"],
+            "--dry-run-upload",
+        ]
+        completed = subprocess.run(
+            command,
+            check=True,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            env={key: value for key, value in os.environ.items() if not key.startswith("VAL02_")},
+        )
+        output = json.loads(completed.stdout)
+        self.assertTrue(output["dry_run_upload"])
+        self.assertTrue(output["requests"])
+        self.assertTrue(all(item["contains_binary_part"] for item in output["requests"]))
+        self.assertFalse(any((CONTRACT_DIR / "python_candidate_client").glob("*.png")))
 
     def test_non_success_response_is_rejected_without_echoing_token(self) -> None:
         transport = CapturingTransport(status=403, body=b'{"error":"forbidden"}')

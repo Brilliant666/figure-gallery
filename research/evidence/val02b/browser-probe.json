@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "probe": "val02b-project-local-browser",
+  "observed_date": "2026-07-14",
+  "status": "pass",
+  "playwright": "1.61.1",
+  "node": "22.23.1",
+  "channel": "chrome",
+  "browser_version": "150.0.7871.102",
+  "headless": true,
+  "duration_ms": 333.82,
+  "network": "no external navigation",
+  "forbidden_attempt_count": 0,
+  "screenshot": false,
+  "video": false,
+  "browser_download_performed": false,
+  "global_install_performed": false,
+  "hpoi_requests": 0
+}

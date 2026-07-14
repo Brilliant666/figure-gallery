@@ -27,6 +27,7 @@ describe('Payload-native configuration', () => {
         : [],
     ).toEqual([
       '/upsert',
+      '/upload-media',
       '/review-action',
     ])
   })
@@ -41,6 +42,46 @@ describe('Payload-native configuration', () => {
     expect(view).not.toContain('src={image.sourceUrl}')
   })
 
+  it('exposes all required audited domain commands in the administrator UI', async () => {
+    const [view, client, config] = await Promise.all([
+      readFile(path.resolve('src/components/admin/DomainOperationsView.tsx'), 'utf8'),
+      readFile(path.resolve('src/components/admin/DomainOperationsClient.tsx'), 'utf8'),
+      readFile(path.resolve('src/payload.config.ts'), 'utf8'),
+    ])
+    for (const label of [
+      'Work',
+      'Character / aliases',
+      'Manufacturer status',
+      'FigurePrototype',
+      'FigureVersion',
+      'Source invalidation',
+      'CandidateRecord',
+      'CandidateImage',
+      'SystemSetting',
+      'ReviewWorkItem',
+      'OperationLog',
+      'merge / split / specified undo',
+      'hide / restore / manual main image',
+    ]) {
+      expect(view).toContain(`'${label}'`)
+    }
+    for (const action of [
+      'maintain-record',
+      'open-review',
+      'reopen-review',
+      'complete-review',
+      'revoke-client',
+      'merge',
+      'split',
+      'undo-operation',
+      'update-settings',
+    ]) {
+      expect(client).toContain(`'${action}'`)
+    }
+    expect(config).toContain("path: '/domain-operations'")
+    expect(view).toContain('/api/operation-logs/domain-action')
+  })
+
   it('configures real SQLite transactions and optional official S3 storage', async () => {
     const config = await readFile(path.resolve('src/payload.config.ts'), 'utf8')
     const packageDocument = JSON.parse(await readFile(path.resolve('package.json'), 'utf8')) as {
@@ -51,7 +92,9 @@ describe('Payload-native configuration', () => {
     expect(config).toContain("if (process.env.S3_ENABLED !== 'true') return []")
     expect(config).toContain("required('S3_ACCESS_KEY_ID')")
     expect(config).toContain('guardedS3Endpoint(process.env.S3_ENDPOINT)')
+    expect(config).toContain("avatar: 'default'")
+    expect(config).toContain('telemetry: false')
     expect(packageDocument.scripts.dev).toContain('-H 127.0.0.1')
-    expect(packageDocument.scripts.start).toContain('-H 127.0.0.1')
+    expect(packageDocument.scripts.start).toBe('node .next/standalone/server.js')
   })
 })

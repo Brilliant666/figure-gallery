@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto'
 import type { Payload, PayloadRequest } from 'payload'
 
 type RecordID = number
@@ -10,6 +11,9 @@ type RelationshipSnapshot = {
 }
 
 type MergeInput = {
+  dependsOn?: string[]
+  expectedMergedVersion?: number
+  expectedRetainedVersion?: number
   mergedPrototypeID: RecordID
   reason: string
   retainedPrototypeID: RecordID
@@ -22,6 +26,8 @@ type MergeTestHooks = {
 
 type SplitInput = {
   candidateIDs?: RecordID[]
+  dependsOn?: string[]
+  expectedOriginVersion?: number
   mediaIDs?: RecordID[]
   newPrototype: Record<string, unknown>
   originPrototypeID: RecordID
@@ -48,6 +54,24 @@ const actor = (req: PayloadRequest): { actor?: RecordID; actorLabel: string } =>
       ? String((req.user as { email?: unknown }).email ?? '')
       : ''
   return { actor: id, actorLabel: email || (id ? `user:${id}` : 'system') }
+}
+
+const validateDependencies = async (req: PayloadRequest, operationIDs: string[] | undefined) => {
+  for (const operationID of [...new Set(operationIDs ?? [])]) {
+    if (!operationID.trim()) throw new Error('Dependency operation IDs cannot be blank.')
+    const result = await req.payload.find({
+      collection: 'operation-logs',
+      depth: 0,
+      limit: 2,
+      overrideAccess: true,
+      req,
+      where: { operationID: { equals: operationID } },
+    })
+    const operation = result.docs[0]
+    if (!operation || operation.undone || !['merge', 'split'].includes(String(operation.operationType))) {
+      throw new Error(`Dependency operation ${operationID} is missing, undone, or not merge/split.`)
+    }
+  }
 }
 
 const findRelationIDs = async (
@@ -238,6 +262,7 @@ const createOperationLog = async (
     afterState: Record<string, unknown>
     beforeState: Record<string, unknown>
     inversePayload?: Record<string, unknown>
+    dependsOn?: string[]
     operationType:
       | 'accept_field'
       | 'attach_version'
@@ -253,11 +278,20 @@ const createOperationLog = async (
       | 'undo_split'
     reason: string
     relatedRecords: Record<string, unknown>
+    scope?: Record<string, unknown>
   },
 ) =>
   req.payload.create({
     collection: 'operation-logs',
-    data: { ...actor(req), ...input, undone: false },
+    data: {
+      ...actor(req),
+      ...input,
+      dependsOn: input.dependsOn ?? [],
+      operationID: randomUUID(),
+      operationVersion: 1,
+      scope: input.scope ?? {},
+      undone: false,
+    },
     overrideAccess: true,
     req,
   })
@@ -268,6 +302,7 @@ export const mergePrototypes = async (
   testHooks: MergeTestHooks = {},
 ) =>
   withinPayloadTransaction(req, async () => {
+    await validateDependencies(req, input.dependsOn)
     if (input.retainedPrototypeID === input.mergedPrototypeID) {
       throw new Error('A prototype cannot be merged into itself.')
     }
@@ -290,6 +325,19 @@ export const mergePrototypes = async (
       snapshotRelationships(req.payload, req, input.mergedPrototypeID),
     ])
 
+    if (
+      input.expectedRetainedVersion !== undefined &&
+      retained.lockVersion !== input.expectedRetainedVersion
+    ) {
+      throw new Error('Retained prototype version conflict.')
+    }
+    if (
+      input.expectedMergedVersion !== undefined &&
+      merged.lockVersion !== input.expectedMergedVersion
+    ) {
+      throw new Error('Merged prototype version conflict.')
+    }
+
     const retainedCharacterIDs = (retained.characters ?? [])
       .map(relationID)
       .filter((id): id is number => id !== undefined)
@@ -299,7 +347,7 @@ export const mergePrototypes = async (
     const mergedCharacterSet = [...new Set([...retainedCharacterIDs, ...mergedCharacterIDs])]
     await req.payload.update({
       collection: 'figure-prototypes',
-      data: { characters: mergedCharacterSet },
+      data: { characters: mergedCharacterSet, lockVersion: Number(retained.lockVersion ?? 1) + 1 },
       id: input.retainedPrototypeID,
       overrideAccess: true,
       req,
@@ -320,7 +368,11 @@ export const mergePrototypes = async (
     })
     await req.payload.update({
       collection: 'figure-prototypes',
-      data: { mergedInto: input.retainedPrototypeID, publicationStatus: 'merged' },
+      data: {
+        lockVersion: Number(merged.lockVersion ?? 1) + 1,
+        mergedInto: input.retainedPrototypeID,
+        publicationStatus: 'merged',
+      },
       id: input.mergedPrototypeID,
       overrideAccess: true,
       req,
@@ -341,19 +393,37 @@ export const mergePrototypes = async (
         mergedPrototypeID: input.mergedPrototypeID,
         moved,
         retainedCharacterIDs,
+        retainedLockVersion: retained.lockVersion,
         retainedPrototypeID: input.retainedPrototypeID,
+        mergedLockVersion: merged.lockVersion,
       },
+      dependsOn: input.dependsOn,
       operationType: 'merge',
       reason: input.reason,
       relatedRecords: {
         mergedPrototypeID: input.mergedPrototypeID,
         retainedPrototypeID: input.retainedPrototypeID,
       },
+      scope: { prototypeIDs: [input.retainedPrototypeID, input.mergedPrototypeID] },
     })
   })
 
 export const splitPrototype = async (req: PayloadRequest, input: SplitInput) =>
   withinPayloadTransaction(req, async () => {
+    await validateDependencies(req, input.dependsOn)
+    const origin = await req.payload.findByID({
+      collection: 'figure-prototypes',
+      depth: 0,
+      id: input.originPrototypeID,
+      overrideAccess: true,
+      req,
+    })
+    if (
+      input.expectedOriginVersion !== undefined &&
+      origin.lockVersion !== input.expectedOriginVersion
+    ) {
+      throw new Error('Origin prototype version conflict.')
+    }
     const moved: RelationshipSnapshot = {
       candidateIDs: input.candidateIDs ?? [],
       mediaIDs: input.mediaIDs ?? [],
@@ -401,6 +471,14 @@ export const splitPrototype = async (req: PayloadRequest, input: SplitInput) =>
       req,
     })
 
+    await req.payload.update({
+      collection: 'figure-prototypes',
+      data: { lockVersion: Number(origin.lockVersion ?? 1) + 1 },
+      id: input.originPrototypeID,
+      overrideAccess: true,
+      req,
+    })
+
     await updateIDs(req.payload, req, 'figure-versions', moved.versionIDs, {
       prototype: newPrototype.id,
     })
@@ -415,49 +493,113 @@ export const splitPrototype = async (req: PayloadRequest, input: SplitInput) =>
     return createOperationLog(req, {
       afterState: { moved, newPrototypeID: newPrototype.id },
       beforeState: { moved, originPrototypeID: input.originPrototypeID },
-      inversePayload: { moved, newPrototypeID: newPrototype.id, originPrototypeID: input.originPrototypeID },
+      inversePayload: {
+        moved,
+        newPrototypeID: newPrototype.id,
+        originLockVersion: origin.lockVersion,
+        originPrototypeID: input.originPrototypeID,
+      },
+      dependsOn: input.dependsOn,
       operationType: 'split',
       reason: input.reason,
       relatedRecords: {
         newPrototypeID: newPrototype.id,
         originPrototypeID: input.originPrototypeID,
       },
+      scope: { prototypeIDs: [input.originPrototypeID, newPrototype.id] },
     })
   })
 
-export const undoLastMergeOrSplit = async (req: PayloadRequest, reason: string) =>
+type MergeInverse = {
+  mergedInto?: null | RecordID
+  mergedLockVersion?: number
+  mergedPrototypeID: RecordID
+  mergedPublicationStatus: 'draft' | 'hidden' | 'merged' | 'published'
+  moved: RelationshipSnapshot
+  retainedCharacterIDs: RecordID[]
+  retainedLockVersion?: number
+  retainedPrototypeID: RecordID
+}
+
+type SplitInverse = {
+  moved: RelationshipSnapshot
+  newPrototypeID: RecordID
+  originLockVersion?: number
+  originPrototypeID: RecordID
+}
+
+const stringList = (value: unknown): string[] =>
+  (Array.isArray(value) ? value : []).filter((item): item is string => typeof item === 'string')
+
+const scopePrototypeIDs = (value: unknown): Set<number> => {
+  if (!value || typeof value !== 'object' || !('prototypeIDs' in value)) return new Set()
+  const raw = (value as { prototypeIDs?: unknown }).prototypeIDs
+  return new Set(
+    (Array.isArray(raw) ? raw : [])
+      .map(relationID)
+      .filter((id): id is number => id !== undefined),
+  )
+}
+
+/** Undo one explicitly selected operation; no global-latest semantics are used. */
+export const undoOperationByID = async (
+  req: PayloadRequest,
+  operationID: string,
+  reason: string,
+) =>
   withinPayloadTransaction(req, async () => {
-    const result = await req.payload.find({
+    if (!operationID.trim()) throw new Error('A stable operation ID is required.')
+    const matches = await req.payload.find({
       collection: 'operation-logs',
       depth: 0,
-      limit: 1,
+      limit: 2,
       overrideAccess: true,
       req,
-      sort: '-createdAt',
-      where: {
-        and: [
-          { operationType: { in: ['merge', 'split'] } },
-          { undone: { equals: false } },
-        ],
-      },
+      where: { operationID: { equals: operationID } },
     })
-    const original = result.docs[0]
-    if (!original) throw new Error('No merge or split operation is available to undo.')
-    const inverse = original.inversePayload as
-      | {
-          mergedInto?: null | RecordID
-          mergedPrototypeID: RecordID
-          mergedPublicationStatus: 'draft' | 'hidden' | 'merged' | 'published'
-          moved: RelationshipSnapshot
-          retainedCharacterIDs: RecordID[]
-          retainedPrototypeID: RecordID
-        }
-      | {
-          moved: RelationshipSnapshot
-          newPrototypeID: RecordID
-          originPrototypeID: RecordID
-        }
+    const original = matches.docs[0]
+    if (!original || !['merge', 'split'].includes(String(original.operationType))) {
+      throw new Error('The specified merge or split operation does not exist.')
+    }
+    if (original.undone) throw new Error('The specified operation was already undone.')
 
+    const active = await req.payload.find({
+      collection: 'operation-logs',
+      depth: 0,
+      limit: 0,
+      overrideAccess: true,
+      req,
+      where: { undone: { equals: false } },
+    })
+    const dependent = active.docs.find(
+      (item) => item.id !== original.id && stringList(item.dependsOn).includes(operationID),
+    )
+    if (dependent) {
+      throw new Error(
+        `Operation ${operationID} cannot be undone because active operation ${dependent.operationID ?? dependent.id} depends on it.`,
+      )
+    }
+
+    // Explicit dependency metadata is authoritative. This overlap check is a
+    // conservative safety net for older or malformed callers that omitted it.
+    const originalScope = scopePrototypeIDs(original.scope)
+    const scopeDependent = active.docs.find((item) => {
+      if (
+        item.id === original.id ||
+        !['merge', 'split'].includes(String(item.operationType)) ||
+        Number(item.id) <= Number(original.id)
+      ) {
+        return false
+      }
+      return [...scopePrototypeIDs(item.scope)].some((prototypeID) => originalScope.has(prototypeID))
+    })
+    if (scopeDependent) {
+      throw new Error(
+        `Operation ${operationID} cannot be undone because later active operation ${scopeDependent.operationID ?? scopeDependent.id} overlaps its prototype scope.`,
+      )
+    }
+
+    const inverse = original.inversePayload as MergeInverse | SplitInverse
     if (original.operationType === 'merge' && 'mergedPrototypeID' in inverse) {
       await updateIDs(req.payload, req, 'figure-versions', inverse.moved.versionIDs, {
         prototype: inverse.mergedPrototypeID,
@@ -474,6 +616,7 @@ export const undoLastMergeOrSplit = async (req: PayloadRequest, reason: string) 
       await req.payload.update({
         collection: 'figure-prototypes',
         data: {
+          lockVersion: inverse.mergedLockVersion ?? 1,
           mergedInto: inverse.mergedInto ?? null,
           publicationStatus: inverse.mergedPublicationStatus,
         },
@@ -483,7 +626,10 @@ export const undoLastMergeOrSplit = async (req: PayloadRequest, reason: string) 
       })
       await req.payload.update({
         collection: 'figure-prototypes',
-        data: { characters: inverse.retainedCharacterIDs },
+        data: {
+          characters: inverse.retainedCharacterIDs,
+          lockVersion: inverse.retainedLockVersion ?? 1,
+        },
         id: inverse.retainedPrototypeID,
         overrideAccess: true,
         req,
@@ -508,20 +654,29 @@ export const undoLastMergeOrSplit = async (req: PayloadRequest, reason: string) 
         overrideAccess: true,
         req,
       })
+      await req.payload.update({
+        collection: 'figure-prototypes',
+        data: { lockVersion: inverse.originLockVersion ?? 1 },
+        id: inverse.originPrototypeID,
+        overrideAccess: true,
+        req,
+      })
     }
 
     await req.payload.update({
       collection: 'operation-logs',
-      data: { undone: true },
+      data: { operationVersion: Number(original.operationVersion ?? 1) + 1, undone: true },
       id: original.id,
       overrideAccess: true,
       req,
     })
     return createOperationLog(req, {
       afterState: { restored: inverse },
-      beforeState: { originalOperationID: original.id },
+      beforeState: { originalOperationID: operationID },
+      dependsOn: [operationID],
       operationType: original.operationType === 'merge' ? 'undo_merge' : 'undo_split',
       reason,
-      relatedRecords: { originalOperationID: original.id },
+      relatedRecords: { originalOperationID: operationID },
+      scope: (original.scope as Record<string, unknown>) ?? {},
     })
   })

@@ -1,13 +1,28 @@
 from django.urls import path, reverse
 from django.contrib.auth import get_user_model
 from wagtail import hooks
+from wagtail.admin.menu import MenuItem
 from wagtail.admin.widgets import Button
 from wagtail.snippets.models import register_snippet
 from wagtail.snippets.views.snippets import SnippetViewSet
 from wagtail.permission_policies import ModelPermissionPolicy
 
 from . import views
-from .models import CandidateRecord, FigurePrototype, Manufacturer, SystemSetting
+from .models import (
+    CandidateClientCredential,
+    CandidateImage,
+    CandidateRecord,
+    CandidateUploadReceipt,
+    Character,
+    FigurePrototype,
+    FigureVersion,
+    Manufacturer,
+    OperationLog,
+    ReviewWorkItem,
+    SourceRecord,
+    SystemSetting,
+    Work,
+)
 
 
 class ReadOnlySnippetPermissionPolicy(ModelPermissionPolicy):
@@ -79,6 +94,30 @@ register_snippet(FigurePrototypeViewSet)
 register_snippet(ManufacturerViewSet)
 register_snippet(SystemSettingViewSet)
 
+for model, label, order in (
+    (Work, "Works (read only)", 120),
+    (Character, "Characters (read only)", 121),
+    (FigureVersion, "Figure versions (read only)", 122),
+    (SourceRecord, "Sources (read only)", 123),
+    (CandidateImage, "Candidate images (read only)", 124),
+    (ReviewWorkItem, "Review work items (read only)", 125),
+    (OperationLog, "Operation logs (read only)", 126),
+    (CandidateClientCredential, "Candidate clients (read only)", 127),
+    (CandidateUploadReceipt, "Upload receipts (read only)", 128),
+):
+    viewset = type(
+        f"{model.__name__}ReadOnlyViewSet",
+        (ReadOnlySnippetViewSet,),
+        {
+            "model": model,
+            "icon": "list-ul",
+            "menu_label": label,
+            "menu_order": order,
+            "__module__": __name__,
+        },
+    )
+    register_snippet(viewset)
+
 
 @hooks.register("register_admin_urls")
 def register_candidate_review_url():
@@ -87,8 +126,23 @@ def register_candidate_review_url():
             "candidate-review/<int:pk>/",
             views.candidate_review,
             name="candidate_review",
-        )
+        ),
+        path(
+            "domain-operations/",
+            views.domain_operations,
+            name="domain_operations",
+        ),
     ]
+
+
+@hooks.register("register_admin_menu_item")
+def register_domain_operations_menu_item():
+    return MenuItem(
+        "Audited domain operations",
+        reverse("domain_operations"),
+        icon_name="cogs",
+        order=90,
+    )
 
 
 @hooks.register("construct_snippet_listing_buttons")

@@ -8,7 +8,10 @@ import {
 } from '@/security/roles'
 import { candidateMediaBoundary } from '@/hooks/candidateMediaBoundary'
 
-const staticDir = path.resolve(process.env.MEDIA_DIR ?? path.join(process.cwd(), 'media'))
+// The fallback is bounded to one runtime directory. The Turbopack hint keeps
+// standalone NFT tracing from treating the entire project as media input.
+const defaultMediaDir = path.join(/* turbopackIgnore: true */ process.cwd(), 'media')
+const staticDir = process.env.MEDIA_DIR ?? defaultMediaDir
 
 export const Media: CollectionConfig = {
   slug: 'media',
@@ -49,6 +52,14 @@ export const Media: CollectionConfig = {
     { name: 'fixtureID', type: 'text', index: true, unique: true },
     { name: 'candidateOnly', type: 'checkbox', defaultValue: true, required: true },
     { name: 'candidate', type: 'relationship', relationTo: 'candidate-records' },
+    {
+      name: 'candidateOwner',
+      type: 'relationship',
+      access: { create: adminFieldOnly, update: adminFieldOnly },
+      relationTo: 'users',
+    },
+    { name: 'clientCandidateID', type: 'text', index: true },
+    { name: 'idempotencyKey', type: 'text', index: true },
     {
       name: 'prototype',
       type: 'relationship',

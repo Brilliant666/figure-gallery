@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "prototype": "payload",
+  "observed_date": "2026-07-14",
+  "transport": "shared Python CandidateClient over a real loopback HTTP socket",
+  "adapter": "payload",
+  "status": "passed",
+  "first_created": [true, true],
+  "repeat_created": [false, false],
+  "multipart_created": [true, false],
+  "multipart_media_stable": true,
+  "attack_http_403": true,
+  "candidate_ids": [
+    "val02b-live-candidate-main-image-attack",
+    "val02b-live-candidate-new-unmatched"
+  ],
+  "fixture": {
+    "synthetic_only": true,
+    "deterministic_client_namespace": "val02b-live",
+    "seeded_database_collision_avoided": true,
+    "generated_files_committed": false
+  },
+  "security": {
+    "loopback_only": true,
+    "runtime_token_printed": false,
+    "formal_or_main_image_write_surface": false,
+    "hpoi_request_attempt_count": 0
+  }
+}

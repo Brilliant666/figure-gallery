@@ -1,0 +1,455 @@
+{
+  "schema_version": 1,
+  "contract_id": "val02b-acceptance-v1",
+  "prototype": "payload",
+  "generated_at": "2026-07-14T06:14:18.496232Z",
+  "generated_by": {
+    "runner": "vitest-payload-val02b-runner",
+    "command": "python spikes/val02_payload/scripts/run_val02b_acceptance.py",
+    "source_digest": "3990e8db73c11bae098911d284130c230564af3927307e1aa124cb519490b76d",
+    "source_files": [
+      "spikes/val02_contract/fixtures/domain_fixture.json",
+      "spikes/val02_contract/python_candidate_client/client.py",
+      "spikes/val02_contract/val02b_acceptance_contract.json",
+      "spikes/val02_contract/val02b_acceptance_result.py",
+      "spikes/val02_payload/.env.example",
+      "spikes/val02_payload/README.md",
+      "spikes/val02_payload/eslint.config.mjs",
+      "spikes/val02_payload/next.config.mjs",
+      "spikes/val02_payload/package-lock.json",
+      "spikes/val02_payload/package.json",
+      "spikes/val02_payload/scripts/export.ts",
+      "spikes/val02_payload/scripts/live_python_client_smoke.py",
+      "spikes/val02_payload/scripts/provision-browser-fixture.ts",
+      "spikes/val02_payload/scripts/provision-client.ts",
+      "spikes/val02_payload/scripts/run_acceptance.py",
+      "spikes/val02_payload/scripts/run_val02b_acceptance.py",
+      "spikes/val02_payload/scripts/seed.ts",
+      "spikes/val02_payload/src/app/(frontend)/characters/[id]/page.tsx",
+      "spikes/val02_payload/src/app/(frontend)/layout.tsx",
+      "spikes/val02_payload/src/app/(frontend)/page.tsx",
+      "spikes/val02_payload/src/app/(frontend)/search/page.tsx",
+      "spikes/val02_payload/src/app/(frontend)/styles.css",
+      "spikes/val02_payload/src/app/(payload)/admin/[[...segments]]/page.tsx",
+      "spikes/val02_payload/src/app/(payload)/admin/importMap.js",
+      "spikes/val02_payload/src/app/(payload)/api/[...slug]/route.ts",
+      "spikes/val02_payload/src/app/(payload)/api/graphql-playground/route.ts",
+      "spikes/val02_payload/src/app/(payload)/api/graphql/route.ts",
+      "spikes/val02_payload/src/app/(payload)/layout.tsx",
+      "spikes/val02_payload/src/app/health/route.ts",
+      "spikes/val02_payload/src/collections/CandidateRecords.ts",
+      "spikes/val02_payload/src/collections/Characters.ts",
+      "spikes/val02_payload/src/collections/FigurePrototypes.ts",
+      "spikes/val02_payload/src/collections/FigureVersions.ts",
+      "spikes/val02_payload/src/collections/Manufacturers.ts",
+      "spikes/val02_payload/src/collections/Media.ts",
+      "spikes/val02_payload/src/collections/OperationLogs.ts",
+      "spikes/val02_payload/src/collections/ReviewWorkItems.ts",
+      "spikes/val02_payload/src/collections/SourceRecords.ts",
+      "spikes/val02_payload/src/collections/Users.ts",
+      "spikes/val02_payload/src/collections/Works.ts",
+      "spikes/val02_payload/src/components/admin/CandidateReviewClient.tsx",
+      "spikes/val02_payload/src/components/admin/CandidateReviewView.tsx",
+      "spikes/val02_payload/src/components/admin/DomainOperationsClient.tsx",
+      "spikes/val02_payload/src/components/admin/DomainOperationsView.tsx",
+      "spikes/val02_payload/src/components/frontend/GalleryGrid.tsx",
+      "spikes/val02_payload/src/domain/export.ts",
+      "spikes/val02_payload/src/domain/fixture.ts",
+      "spikes/val02_payload/src/domain/payloadDomainService.ts",
+      "spikes/val02_payload/src/domain/seed.ts",
+      "spikes/val02_payload/src/domain/sourceKey.ts",
+      "spikes/val02_payload/src/domain/val02bDomainService.ts",
+      "spikes/val02_payload/src/endpoints/adminDomain.ts",
+      "spikes/val02_payload/src/endpoints/candidateMediaUpload.ts",
+      "spikes/val02_payload/src/endpoints/candidateReview.ts",
+      "spikes/val02_payload/src/endpoints/candidateUpsert.ts",
+      "spikes/val02_payload/src/globals/SystemSettings.ts",
+      "spikes/val02_payload/src/hooks/candidateMediaBoundary.ts",
+      "spikes/val02_payload/src/hooks/protectMainImage.ts",
+      "spikes/val02_payload/src/hooks/sourceBoundary.ts",
+      "spikes/val02_payload/src/lib/gallery.ts",
+      "spikes/val02_payload/src/migrations/20260713_190619_val02_initial_schema.json",
+      "spikes/val02_payload/src/migrations/20260713_190619_val02_initial_schema.ts",
+      "spikes/val02_payload/src/migrations/20260714_044222_val02b_decision_gates.json",
+      "spikes/val02_payload/src/migrations/20260714_044222_val02b_decision_gates.ts",
+      "spikes/val02_payload/src/migrations/index.ts",
+      "spikes/val02_payload/src/payload-types.ts",
+      "spikes/val02_payload/src/payload.config.ts",
+      "spikes/val02_payload/src/security/networkGuard.ts",
+      "spikes/val02_payload/src/security/roles.ts",
+      "spikes/val02_payload/tests/configuration.test.ts",
+      "spikes/val02_payload/tests/integration.test.ts",
+      "spikes/val02_payload/tests/security.test.ts",
+      "spikes/val02_payload/tests/ui.test.tsx",
+      "spikes/val02_payload/tsconfig.json",
+      "spikes/val02_payload/vitest.config.ts"
+    ]
+  },
+  "fixture_sha256": "9a55a00d0290281b6ca6b2a2e7041c2f858e256e77303431ee551de89132440b",
+  "assertions": [
+    {
+      "id": "BG-01",
+      "status": "pass",
+      "evidence": [
+        {
+          "kind": "browser_test",
+          "reference": "spikes/val02b_infra/tests/browser-gates.spec.ts::BG-01 real Chrome administrator login",
+          "observed": "{\"playwright_status\":\"passed\",\"duration_ms\":1582,\"clicks\":1,\"console_error_count\":0,\"forbidden_request_count\":0,\"hpoi_request_attempt_count\":0,\"main_frame_navigations\":3,\"network_failure_count\":0}"
+        }
+      ]
+    },
+    {
+      "id": "BG-02",
+      "status": "pass",
+      "evidence": [
+        {
+          "kind": "browser_test",
+          "reference": "spikes/val02b_infra/tests/browser-gates.spec.ts::BG-02 complete candidate review through the real browser",
+          "observed": "{\"playwright_status\":\"passed\",\"duration_ms\":1560,\"clicks\":6,\"console_error_count\":0,\"forbidden_request_count\":0,\"hpoi_request_attempt_count\":0,\"main_frame_navigations\":5,\"network_failure_count\":0}"
+        }
+      ]
+    },
+    {
+      "id": "BG-03",
+      "status": "pass",
+      "evidence": [
+        {
+          "kind": "browser_test",
+          "reference": "spikes/val02b_infra/tests/browser-gates.spec.ts::BG-03/BG-04 public search, gallery, lightbox and responsive layout",
+          "observed": "{\"playwright_status\":\"passed\",\"duration_ms\":4189,\"clicks\":15,\"console_error_count\":0,\"forbidden_request_count\":0,\"hpoi_request_attempt_count\":0,\"keyboard_actions\":1,\"main_frame_navigations\":22,\"network_failure_count\":9,\"interaction\":\"lightbox/zoom/previous/next/close\"}"
+        }
+      ]
+    },
+    {
+      "id": "BG-04",
+      "status": "pass",
+      "evidence": [
+        {
+          "kind": "browser_test",
+          "reference": "spikes/val02b_infra/tests/browser-gates.spec.ts::BG-03/BG-04 public search, gallery, lightbox and responsive layout",
+          "observed": "{\"playwright_status\":\"passed\",\"duration_ms\":4189,\"clicks\":15,\"console_error_count\":0,\"forbidden_request_count\":0,\"hpoi_request_attempt_count\":0,\"keyboard_actions\":1,\"main_frame_navigations\":22,\"network_failure_count\":9,\"responsive_layout\":\"computed 4/3/2 columns and contain geometry\"}"
+        }
+      ]
+    },
+    {
+      "id": "BG-05",
+      "status": "pass",
+      "evidence": [
+        {
+          "kind": "file_upload_test",
+          "reference": "scripts/live_python_client_smoke.py over a real loopback Next/Payload server",
+          "observed": "Shared CandidateClient created a multipart media record, then a renamed identical upload reused media identity=True."
+        }
+      ]
+    },
+    {
+      "id": "BG-06",
+      "status": "pass",
+      "evidence": [
+        {
+          "kind": "file_upload_test",
+          "reference": "closes the synthetic multipart candidate-media loop",
+          "observed": "Server decoded PNG bytes and verified SHA-256, 64-bit aHash, MIME type, dimensions and byte size."
+        }
+      ]
+    },
+    {
+      "id": "BG-07",
+      "status": "pass",
+      "evidence": [
+        {
+          "kind": "file_upload_test",
+          "reference": "closes the synthetic multipart candidate-media loop",
+          "observed": "Renamed identical bytes reused one media ID; changed bytes under a reused idempotency key returned HTTP 409."
+        }
+      ]
+    },
+    {
+      "id": "BG-08",
+      "status": "pass",
+      "evidence": [
+        {
+          "kind": "file_upload_test",
+          "reference": "closes the synthetic multipart candidate-media loop",
+          "observed": "Text, MIME mismatch and oversize payloads were rejected before formal mutation; a valid retry created candidate-only media."
+        }
+      ]
+    },
+    {
+      "id": "BG-09",
+      "status": "pass",
+      "evidence": [
+        {
+          "kind": "auth_test",
+          "reference": "enforces current per-client identity, owner isolation, revocation and formal-data boundaries",
+          "observed": "Client B could neither upsert client A's source/candidate nor upload media into A's candidate."
+        }
+      ]
+    },
+    {
+      "id": "BG-10",
+      "status": "pass",
+      "evidence": [
+        {
+          "kind": "auth_test",
+          "reference": "enforces current per-client identity, owner isolation, revocation and formal-data boundaries",
+          "observed": "Hash-only runtime credential authenticated before revocation and returned HTTP 403 after server-side disable."
+        }
+      ]
+    },
+    {
+      "id": "BG-11",
+      "status": "pass",
+      "evidence": [
+        {
+          "kind": "api_permission_test",
+          "reference": "enforces current per-client identity, owner isolation, revocation and formal-data boundaries",
+          "observed": "Candidate identity and its generic CRUD path could not update FigurePrototype or other formal collections."
+        }
+      ]
+    },
+    {
+      "id": "BG-12",
+      "status": "pass",
+      "evidence": [
+        {
+          "kind": "api_permission_test",
+          "reference": "enforces current per-client identity, owner isolation, revocation and formal-data boundaries",
+          "observed": "Candidate main-image action returned HTTP 403 and candidate media remained selectedAsMain=false."
+        }
+      ]
+    },
+    {
+      "id": "BG-13",
+      "status": "pass",
+      "evidence": [
+        {
+          "kind": "admin_workflow_test",
+          "reference": "rejects review endpoint writes without work-item authorization or with stale/out-of-scope targets",
+          "observed": "The live review handler rejected missing work-item context and an out-of-scope target before any formal mutation; new targets can only be created atomically by the review service."
+        }
+      ]
+    },
+    {
+      "id": "BG-14",
+      "status": "pass",
+      "evidence": [
+        {
+          "kind": "concurrency_test",
+          "reference": "rejects review endpoint writes without work-item authorization or with stale/out-of-scope targets",
+          "observed": "The live review handler returned a version conflict to the second administrator's stale submit and did not silently overwrite."
+        }
+      ]
+    },
+    {
+      "id": "BG-15",
+      "status": "pass",
+      "evidence": [
+        {
+          "kind": "concurrency_test",
+          "reference": "uses stable scoped operation IDs for independent specified undo",
+          "observed": "Merge and split produced stable UUID operation IDs and each was undone by its requested ID."
+        }
+      ]
+    },
+    {
+      "id": "BG-16",
+      "status": "pass",
+      "evidence": [
+        {
+          "kind": "concurrency_test",
+          "reference": "propagates handler dependencies and blocks omitted dependencies by overlapping scope",
+          "observed": "The real administrator handler propagated dependency IDs; both explicit dependency and overlapping-scope fallback blocked unsafe prerequisite undo."
+        }
+      ]
+    },
+    {
+      "id": "BG-17",
+      "status": "environment_blocked",
+      "evidence": [
+        {
+          "kind": "blocker",
+          "reference": "research/evidence/val02b/environment.json",
+          "observed": "Docker engine, PostgreSQL and loopback S3 service were unavailable and task policy forbade installing or starting system infrastructure; partial SQLite/local observations are not counted as this gate."
+        }
+      ]
+    },
+    {
+      "id": "BG-18",
+      "status": "environment_blocked",
+      "evidence": [
+        {
+          "kind": "blocker",
+          "reference": "research/evidence/val02b/environment.json",
+          "observed": "Docker engine, PostgreSQL and loopback S3 service were unavailable and task policy forbade installing or starting system infrastructure; partial SQLite/local observations are not counted as this gate."
+        }
+      ]
+    },
+    {
+      "id": "BG-19",
+      "status": "environment_blocked",
+      "evidence": [
+        {
+          "kind": "blocker",
+          "reference": "research/evidence/val02b/environment.json",
+          "observed": "Docker engine, PostgreSQL and loopback S3 service were unavailable and task policy forbade installing or starting system infrastructure; partial SQLite/local observations are not counted as this gate."
+        }
+      ]
+    },
+    {
+      "id": "BG-20",
+      "status": "environment_blocked",
+      "evidence": [
+        {
+          "kind": "blocker",
+          "reference": "research/evidence/val02b/environment.json",
+          "observed": "Docker engine, PostgreSQL and loopback S3 service were unavailable and task policy forbade installing or starting system infrastructure; partial SQLite/local observations are not counted as this gate."
+        }
+      ]
+    },
+    {
+      "id": "BG-21",
+      "status": "environment_blocked",
+      "evidence": [
+        {
+          "kind": "blocker",
+          "reference": "research/evidence/val02b/environment.json",
+          "observed": "Docker engine, PostgreSQL and loopback S3 service were unavailable and task policy forbade installing or starting system infrastructure; partial SQLite/local observations are not counted as this gate."
+        }
+      ]
+    },
+    {
+      "id": "BG-22",
+      "status": "environment_blocked",
+      "evidence": [
+        {
+          "kind": "blocker",
+          "reference": "research/evidence/val02b/environment.json",
+          "observed": "Docker engine, PostgreSQL and loopback S3 service were unavailable and task policy forbade installing or starting system infrastructure; partial SQLite/local observations are not counted as this gate."
+        }
+      ]
+    },
+    {
+      "id": "BG-23",
+      "status": "environment_blocked",
+      "evidence": [
+        {
+          "kind": "blocker",
+          "reference": "research/evidence/val02b/environment.json",
+          "observed": "Docker engine, PostgreSQL and loopback S3 service were unavailable and task policy forbade installing or starting system infrastructure; partial SQLite/local observations are not counted as this gate."
+        }
+      ]
+    },
+    {
+      "id": "BG-24",
+      "status": "environment_blocked",
+      "evidence": [
+        {
+          "kind": "blocker",
+          "reference": "research/evidence/val02b/environment.json",
+          "observed": "Docker engine, PostgreSQL and loopback S3 service were unavailable and task policy forbade installing or starting system infrastructure; partial SQLite/local observations are not counted as this gate."
+        }
+      ]
+    },
+    {
+      "id": "BG-25",
+      "status": "environment_blocked",
+      "evidence": [
+        {
+          "kind": "blocker",
+          "reference": "research/evidence/val02b/environment.json",
+          "observed": "Docker engine, PostgreSQL and loopback S3 service were unavailable and task policy forbade installing or starting system infrastructure; partial SQLite/local observations are not counted as this gate."
+        }
+      ]
+    },
+    {
+      "id": "BG-26",
+      "status": "environment_blocked",
+      "evidence": [
+        {
+          "kind": "blocker",
+          "reference": "research/evidence/val02b/environment.json",
+          "observed": "Docker engine, PostgreSQL and loopback S3 service were unavailable and task policy forbade installing or starting system infrastructure; partial SQLite/local observations are not counted as this gate."
+        }
+      ]
+    },
+    {
+      "id": "BG-27",
+      "status": "environment_blocked",
+      "evidence": [
+        {
+          "kind": "blocker",
+          "reference": "research/evidence/val02b/environment.json",
+          "observed": "Docker engine, PostgreSQL and loopback S3 service were unavailable and task policy forbade installing or starting system infrastructure; partial SQLite/local observations are not counted as this gate."
+        }
+      ]
+    },
+    {
+      "id": "BG-28",
+      "status": "environment_blocked",
+      "evidence": [
+        {
+          "kind": "blocker",
+          "reference": "research/evidence/val02b/environment.json",
+          "observed": "Docker engine, PostgreSQL and loopback S3 service were unavailable and task policy forbade installing or starting system infrastructure; partial SQLite/local observations are not counted as this gate."
+        }
+      ]
+    },
+    {
+      "id": "BG-29",
+      "status": "environment_blocked",
+      "evidence": [
+        {
+          "kind": "blocker",
+          "reference": "research/evidence/val02b/environment.json",
+          "observed": "Docker engine, PostgreSQL and loopback S3 service were unavailable and task policy forbade installing or starting system infrastructure; partial SQLite/local observations are not counted as this gate."
+        }
+      ]
+    },
+    {
+      "id": "BG-30",
+      "status": "pass",
+      "evidence": [
+        {
+          "kind": "admin_ui_test",
+          "reference": "exposes all required audited domain commands in the administrator UI",
+          "observed": "Candidate review and domain command views expose the complete minimum command set, including SystemSetting and specified undo."
+        },
+        {
+          "kind": "api_permission_test",
+          "reference": "closes generic formal and global CRUD while controlled services remain available",
+          "observed": "Create/update/delete access was denied outside controlled services; OperationLog itself remained append-only."
+        }
+      ]
+    }
+  ],
+  "runtime": {
+    "node": "v22.23.1",
+    "npm": "npm@10.9.8",
+    "payload": "3.86.0",
+    "next": "16.2.10",
+    "database_executed": "SQLite"
+  },
+  "environment": {
+    "postgresql": "environment_blocked",
+    "s3_compatible_storage": "environment_blocked",
+    "full_production_shape": "environment_blocked without PostgreSQL/S3"
+  },
+  "metrics": {
+    "automated_tests": {
+      "passed": 44,
+      "failed": 0,
+      "total": 44
+    },
+    "implementation_loc_excluding_generated_and_migrations": 6019,
+    "test_loc": 2885,
+    "admin_ui_loc": 641,
+    "endpoint_loc": 1439
+  },
+  "security": {
+    "candidate_credential_storage": "runtime token represented only by SHA-256 hash",
+    "candidate_generic_crud": "closed",
+    "hpoi_network_guard": "enabled",
+    "owner_isolation": "server enforced"
+  }
+}

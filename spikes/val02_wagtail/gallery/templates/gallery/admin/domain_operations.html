@@ -1,0 +1,14 @@
+{% extends "wagtailadmin/base.html" %}
+{% block titletag %}Audited domain operations{% endblock %}
+{% block content %}
+  {% include "wagtailadmin/shared/header.html" with title="Audited domain operations" icon="cogs" %}
+  <div class="nice-padding" data-testid="domain-operations">
+    <p data-testid="domain-counts">Works {{ counts.works }} · Characters {{ counts.characters }} · Manufacturers {{ counts.manufacturers }} · Prototypes {{ counts.prototypes }} · Candidates {{ counts.candidates }} · Review items {{ counts.review_items }}</p>
+    <p>Generic snippet views are deliberately read only. Every mutation below calls a transactional domain service and writes an OperationLog.</p>
+    <form method="post" data-testid="domain-operation-form">
+      {% csrf_token %}
+      {{ form.as_p }}
+      <button class="button" data-testid="apply-domain-operation" type="submit">Apply audited domain operation</button>
+    </form>
+  </div>
+{% endblock %}

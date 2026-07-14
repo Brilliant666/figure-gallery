@@ -106,7 +106,7 @@ def _source_values(payload):
 
 
 @transaction.atomic
-def upsert_candidate(payload, *, actor_label="candidate-api"):
+def upsert_candidate(payload, *, actor_label="candidate-api", owner=None):
     """Idempotently write SourceRecord/CandidateRecord and candidate media only.
 
     It deliberately has no code path to create formal Character, Manufacturer,
@@ -188,16 +188,36 @@ def upsert_candidate(payload, *, actor_label="candidate-api"):
         candidate = CandidateRecord(source=source)
         candidate_created = True
 
+    if owner is not None and candidate.owner_id not in {None, owner.pk}:
+        raise CandidateIngressError("candidate belongs to another client")
+    client_candidate_id = str(
+        candidate_input.get("client_candidate_id") or candidate_input.get("id") or ""
+    ).strip()
+    if owner is not None and client_candidate_id:
+        conflicting = CandidateRecord.objects.filter(
+            owner=owner, client_candidate_id=client_candidate_id
+        ).exclude(pk=candidate.pk if candidate.pk else None)
+        if conflicting.exists():
+            raise CandidateIngressError("client_candidate_id already belongs to another candidate")
+
     candidate_before = {}
     if not candidate_created:
         candidate_before = {
             field: deepcopy(getattr(candidate, field)) for field in defaults
         }
-    changed = candidate_created or any(
+    ownership_changed = bool(
+        owner is not None
+        and (candidate.owner_id != owner.pk or (client_candidate_id and candidate.client_candidate_id != client_candidate_id))
+    )
+    changed = candidate_created or ownership_changed or any(
         candidate_before.get(field) != value for field, value in defaults.items()
     )
     for field, value in defaults.items():
         setattr(candidate, field, value)
+    if owner is not None:
+        candidate.owner = owner
+    if client_candidate_id:
+        candidate.client_candidate_id = client_candidate_id
     candidate.unmatched_character_names = _find_unmatched_characters(
         defaults["raw_character_names"]
     )
@@ -306,6 +326,7 @@ def upsert_candidate(payload, *, actor_label="candidate-api"):
             "candidate_image_ids": image_ids,
             "migrated_from_url_fallback": migrated_from_url_fallback,
         },
+        scope=f"candidate-client:{owner.client_id}" if owner is not None else "candidate-ingress",
     )
     requested_changes = candidate_input.get("requested_changes", {})
     rejected_fields = sorted(
