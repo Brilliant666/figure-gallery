@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # GitHub runner variables and the chmod-600 runtime env are supplied externally;
-# set -u and explicit :? guards keep them fail-closed at execution time.
-# shellcheck disable=SC2154
+# set -u and explicit :? guards keep them fail-closed at execution time. The
+# single-quoted inner commands intentionally expand inside their containers.
+# shellcheck disable=SC2016,SC2154
 set -Eeuo pipefail
 
 MODE="${1:-}"
@@ -10,7 +11,6 @@ PAYLOAD_DIR="$REPO_ROOT/spikes/val02_payload"
 COMPOSE_FILE="$REPO_ROOT/spikes/payload_prod_gate/compose.yaml"
 RUNTIME_ENV="${PAYLOAD_GATE_RUNTIME_ENV:-${RUNNER_TEMP:?RUNNER_TEMP is required}/payload-prod-gate.env}"
 RESULTS_DIR="${PAYLOAD_GATE_RESULTS_DIR:-${RUNNER_TEMP:?RUNNER_TEMP is required}/payload-prod-gate-results}"
-UPLOAD_DIR="${PAYLOAD_GATE_UPLOAD_DIR:-${RUNNER_TEMP:?RUNNER_TEMP is required}/payload-prod-gate-upload}"
 WORK_DIR="${RUNNER_TEMP:?RUNNER_TEMP is required}/payload-prod-gate-work"
 STATE_FILE="$WORK_DIR/media-state.json"
 PID_FILE="$WORK_DIR/standalone.pid"
@@ -181,20 +181,23 @@ record_environment() {
     echo 'Production gate shell script contains CRLF line endings.' >&2
     return 1
   fi
-  export GATE_OS="$(. /etc/os-release && printf '%s %s' "$NAME" "$VERSION_ID")"
-  export GATE_IMAGE_OS="${ImageOS:?GitHub hosted runner ImageOS is required}"
-  export GATE_IMAGE_VERSION="${ImageVersion:?GitHub hosted runner ImageVersion is required}"
-  export GATE_TIMEZONE="$(date +'%Z %z')"
-  export GATE_CPU="$(lscpu | awk -F: '/Model name/{sub(/^[[:space:]]+/, "", $2); print $2; exit}')"
-  export GATE_CORES="$(nproc)"
-  export GATE_MEMORY_BYTES="$(awk '/MemTotal/{print $2 * 1024}' /proc/meminfo)"
-  export GATE_DISK_BYTES="$(df -B1 --output=avail "$RUNNER_TEMP" | tail -1 | tr -d ' ')"
-  export GATE_DOCKER_CLIENT="$(docker version --format '{{.Client.Version}}')"
-  export GATE_DOCKER_SERVER="$(docker version --format '{{.Server.Version}}')"
-  export GATE_COMPOSE="$(docker compose version --short)"
-  export GATE_NODE="$(node --version)"
-  export GATE_NPM="$(npm --version)"
-  export GATE_PYTHON="$(python --version 2>&1)"
+  GATE_OS="$(python -c 'import platform; value=platform.freedesktop_os_release(); print(value["NAME"], value["VERSION_ID"])')"
+  GATE_IMAGE_OS="${ImageOS:?GitHub hosted runner ImageOS is required}"
+  GATE_IMAGE_VERSION="${ImageVersion:?GitHub hosted runner ImageVersion is required}"
+  GATE_TIMEZONE="$(date +'%Z %z')"
+  GATE_CPU="$(lscpu | awk -F: '/Model name/{sub(/^[[:space:]]+/, "", $2); print $2; exit}')"
+  GATE_CORES="$(nproc)"
+  GATE_MEMORY_BYTES="$(awk '/MemTotal/{print $2 * 1024}' /proc/meminfo)"
+  GATE_DISK_BYTES="$(df -B1 --output=avail "$RUNNER_TEMP" | tail -1 | tr -d ' ')"
+  GATE_DOCKER_CLIENT="$(docker version --format '{{.Client.Version}}')"
+  GATE_DOCKER_SERVER="$(docker version --format '{{.Server.Version}}')"
+  GATE_COMPOSE="$(docker compose version --short)"
+  GATE_NODE="$(node --version)"
+  GATE_NPM="$(npm --version)"
+  GATE_PYTHON="$(python --version 2>&1)"
+  export GATE_OS GATE_IMAGE_OS GATE_IMAGE_VERSION GATE_TIMEZONE GATE_CPU GATE_CORES
+  export GATE_MEMORY_BYTES GATE_DISK_BYTES GATE_DOCKER_CLIENT GATE_DOCKER_SERVER
+  export GATE_COMPOSE GATE_NODE GATE_NPM GATE_PYTHON
   python - "$RESULTS_DIR/environment.json" <<'PY'
 import json, os, pathlib, sys
 keys = {
@@ -246,12 +249,13 @@ start_infrastructure() {
     return 1
   fi
 
-  export PG_IMAGE_ID="$(docker image inspect --format '{{.Id}}' postgres:16.9-bookworm)"
-  export PG_IMAGE_DIGEST="$(docker image inspect --format '{{index .RepoDigests 0}}' postgres:16.9-bookworm)"
-  export MINIO_IMAGE_ID="$(docker image inspect --format '{{.Id}}' minio/minio:RELEASE.2025-04-22T22-12-26Z)"
-  export MINIO_IMAGE_DIGEST="$(docker image inspect --format '{{index .RepoDigests 0}}' minio/minio:RELEASE.2025-04-22T22-12-26Z)"
-  export MC_IMAGE_ID="$(docker image inspect --format '{{.Id}}' minio/mc:RELEASE.2025-04-16T18-13-26Z)"
-  export MC_IMAGE_DIGEST="$(docker image inspect --format '{{index .RepoDigests 0}}' minio/mc:RELEASE.2025-04-16T18-13-26Z)"
+  PG_IMAGE_ID="$(docker image inspect --format '{{.Id}}' postgres:16.9-bookworm)"
+  PG_IMAGE_DIGEST="$(docker image inspect --format '{{index .RepoDigests 0}}' postgres:16.9-bookworm)"
+  MINIO_IMAGE_ID="$(docker image inspect --format '{{.Id}}' minio/minio:RELEASE.2025-04-22T22-12-26Z)"
+  MINIO_IMAGE_DIGEST="$(docker image inspect --format '{{index .RepoDigests 0}}' minio/minio:RELEASE.2025-04-22T22-12-26Z)"
+  MC_IMAGE_ID="$(docker image inspect --format '{{.Id}}' minio/mc:RELEASE.2025-04-16T18-13-26Z)"
+  MC_IMAGE_DIGEST="$(docker image inspect --format '{{index .RepoDigests 0}}' minio/mc:RELEASE.2025-04-16T18-13-26Z)"
+  export PG_IMAGE_ID PG_IMAGE_DIGEST MINIO_IMAGE_ID MINIO_IMAGE_DIGEST MC_IMAGE_ID MC_IMAGE_DIGEST
   python - "$RESULTS_DIR/infrastructure.json" <<'PY'
 import json, os, pathlib, sys
 data = {
@@ -1162,7 +1166,8 @@ cleanup_all() {
       failed=1
     fi
   done
-  export CLEANUP_STATUS="$(if [[ "$failed" -eq 0 ]]; then printf pass; else printf fail; fi)"
+  CLEANUP_STATUS="$(if [[ "$failed" -eq 0 ]]; then printf pass; else printf fail; fi)"
+  export CLEANUP_STATUS
   export CLEANUP_CONTAINERS="$containers_remaining" CLEANUP_VOLUMES="$volumes_remaining"
   export CLEANUP_PORTS="${listening_ports[*]:-}"
   export CLEANUP_RUNTIME_ENV_REMOVED="$runtime_env_removed"
