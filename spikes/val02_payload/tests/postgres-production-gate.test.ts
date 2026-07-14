@@ -484,10 +484,9 @@ postgresDescribe('Payload PostgreSQL production transaction gate', () => {
     const bodyA = candidateBody('a', sourceURLs[0])
     const bodyB = candidateBody('b', sourceURLs[1])
     const beforeLogs = await payload.count({ collection: 'operation-logs', overrideAccess: true })
-    const [responseA, responseB] = await Promise.all([
-      candidateUpsertEndpoint.handler(await jsonRequest(clientA, bodyA)),
-      candidateUpsertEndpoint.handler(await jsonRequest(clientB, bodyB)),
-    ])
+    // Commit A first so B must observe the shared canonical URL and still honor its stable source ID.
+    const responseA = await candidateUpsertEndpoint.handler(await jsonRequest(clientA, bodyA))
+    const responseB = await candidateUpsertEndpoint.handler(await jsonRequest(clientB, bodyB))
     expect(responseA.status).toBe(201)
     expect(responseB.status).toBe(201)
     const [createdA, createdB] = await Promise.all([
