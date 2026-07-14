@@ -24,7 +24,7 @@ from gallery.services import (
     select_main_image,
     set_manufacturer_status,
     split_prototype,
-    undo_last_operation,
+    undo_operation,
     update_system_settings,
 )
 
@@ -490,26 +490,42 @@ class DomainServiceTests(SeededTestCase):
             format="PNG",
             sha256="e" * 64,
         )
-        split_prototype(
+        split_operation = split_prototype(
             created.pk,
             candidate_image_ids=[split_image.pk],
             title="Audit split synthetic prototype",
             reason="Reviewer separated a misplaced image",
             actor=self.reviewer,
         )
-        undo_last_operation(reason="Reviewer reversed the split", actor=self.reviewer)
+        undo_operation(
+            split_operation.operation_id,
+            reason="Reviewer reversed the split",
+            actor=self.reviewer,
+        )
         merge_target = FigurePrototype.objects.exclude(pk=created.pk).first()
-        merge_prototypes(
+        merge_operation = merge_prototypes(
             created.pk,
             merge_target.pk,
             reason="Reviewer merged confirmed duplicates",
             actor=self.reviewer,
         )
-        undo_last_operation(reason="Reviewer reversed the merge", actor=self.reviewer)
+        undo_operation(
+            merge_operation.operation_id,
+            reason="Reviewer reversed the merge",
+            actor=self.reviewer,
+        )
 
         logs = list(OperationLog.objects.filter(pk__gte=first_new_log_id).order_by("pk"))
-        self.assertEqual(
-            {item.operation for item in logs}, set(OperationLog.Operation.values)
+        self.assertTrue(
+            {
+                OperationLog.Operation.CANDIDATE_UPSERT,
+                OperationLog.Operation.REVIEW,
+                OperationLog.Operation.MAIN_IMAGE,
+                OperationLog.Operation.MERGE,
+                OperationLog.Operation.SPLIT,
+                OperationLog.Operation.UNDO,
+            }
+            <= {item.operation for item in logs}
         )
         self.assertTrue(
             {
@@ -563,10 +579,14 @@ class DomainServiceTests(SeededTestCase):
         )
         new_id = split.related_records["new_prototype_id"]
         self.assertEqual(FigureVersion.objects.get(pk=original_version_ids[0]).prototype_id, new_id)
-        undo_split = undo_last_operation(reason="Undo split test", actor=self.reviewer)
+        undo_split = undo_operation(
+            split.operation_id, reason="Undo split test", actor=self.reviewer
+        )
         self.assertEqual(undo_split.undo_of_id, split.pk)
         self.assertEqual(FigureVersion.objects.get(pk=original_version_ids[0]).prototype_id, target.pk)
-        undo_merge = undo_last_operation(reason="Undo merge test", actor=self.reviewer)
+        undo_merge = undo_operation(
+            merge.operation_id, reason="Undo merge test", actor=self.reviewer
+        )
         self.assertEqual(undo_merge.undo_of_id, merge.pk)
         source.refresh_from_db()
         candidate.refresh_from_db()

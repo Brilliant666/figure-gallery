@@ -52,6 +52,7 @@ export const FigurePrototypes: CollectionConfig = {
       required: true,
     },
     { name: 'softDeleted', type: 'checkbox', defaultValue: false, required: true },
+    { name: 'lockVersion', type: 'number', defaultValue: 1, min: 1, required: true },
     {
       name: 'mainImage',
       type: 'relationship',

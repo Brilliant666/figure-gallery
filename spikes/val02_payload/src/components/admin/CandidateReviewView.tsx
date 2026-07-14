@@ -1,7 +1,11 @@
 import type { AdminViewServerProps } from 'payload'
 
 import { isAdminUser } from '@/security/roles'
-import { CandidateReviewClient, type CandidateReviewItem } from './CandidateReviewClient'
+import {
+  CandidateReviewClient,
+  type CandidateReviewItem,
+  type ReviewWorkItemOption,
+} from './CandidateReviewClient'
 
 const relationID = (value: unknown): null | number | string => {
   if (typeof value === 'number' || typeof value === 'string') return value
@@ -26,7 +30,14 @@ export async function CandidateReviewView({ initPageResult }: AdminViewServerPro
     )
   }
 
-  const [candidateResult, prototypeResult, versionResult, characterResult, manufacturerResult] =
+  const [
+    candidateResult,
+    prototypeResult,
+    versionResult,
+    characterResult,
+    manufacturerResult,
+    workItemResult,
+  ] =
     await Promise.all([
       req.payload.find({
         collection: 'candidate-records',
@@ -63,6 +74,15 @@ export async function CandidateReviewView({ initPageResult }: AdminViewServerPro
         limit: 100,
         overrideAccess: true,
         req,
+      }),
+      req.payload.find({
+        collection: 'review-work-items',
+        depth: 0,
+        limit: 100,
+        overrideAccess: false,
+        req,
+        sort: '-updatedAt',
+        where: { status: { equals: 'open' } },
       }),
     ])
 
@@ -119,6 +139,15 @@ export async function CandidateReviewView({ initPageResult }: AdminViewServerPro
         label: `${doc.canonicalName} (${doc.status})`,
       }))}
       prototypes={prototypeResult.docs.map((doc) => ({ id: doc.id, label: String(doc.title) }))}
+      workItems={workItemResult.docs.map((doc) => ({
+        allowedTargetIDs: Array.isArray(doc.allowedTargets)
+          ? doc.allowedTargets.map(relationID).filter((id): id is number | string => id !== null)
+          : [],
+        candidateID: relationID(doc.candidate)!,
+        id: doc.id,
+        lockVersion: Number(doc.lockVersion),
+        status: String(doc.status),
+      })) satisfies ReviewWorkItemOption[]}
       versions={versionResult.docs.map((doc) => ({
         id: doc.id,
         label: String(doc.name),

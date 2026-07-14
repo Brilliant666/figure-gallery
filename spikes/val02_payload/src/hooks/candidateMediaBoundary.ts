@@ -33,6 +33,7 @@ export const candidateMediaBoundary: CollectionBeforeChangeHook = ({ data, origi
   return {
     ...data,
     candidate: candidateID,
+    candidateOwner: req.user?.id ?? data.candidateOwner ?? originalDoc?.candidateOwner,
     candidateOnly: true,
     prototype: null,
     selectedAsMain: false,

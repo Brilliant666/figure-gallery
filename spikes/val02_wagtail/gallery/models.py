@@ -1,5 +1,7 @@
 """Relationship-heavy domain model used only by the VAL-02 Wagtail spike."""
 
+import uuid
+
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
@@ -88,6 +90,7 @@ class FigurePrototype(
     is_hidden = models.BooleanField(default=False)
     is_soft_deleted = models.BooleanField(default=False)
     is_merged = models.BooleanField(default=False)
+    domain_version = models.PositiveBigIntegerField(default=1)
     merged_into = models.ForeignKey(
         "self",
         null=True,
@@ -227,6 +230,14 @@ class CandidateRecord(TimeStampedModel):
     source = models.OneToOneField(
         SourceRecord, on_delete=models.PROTECT, related_name="candidate"
     )
+    owner = models.ForeignKey(
+        "CandidateClientCredential",
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="candidates",
+    )
+    client_candidate_id = models.CharField(max_length=200, blank=True)
     raw_title = models.CharField(max_length=500)
     raw_character_names = models.JSONField(default=list, blank=True)
     raw_work_name = models.CharField(max_length=240, blank=True)
@@ -260,6 +271,15 @@ class CandidateRecord(TimeStampedModel):
     def __str__(self):
         return f"{self.raw_title} [{self.status}]"
 
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["owner", "client_candidate_id"],
+                condition=~Q(client_candidate_id=""),
+                name="gallery_unique_client_candidate_id",
+            )
+        ]
+
 
 class CandidateImage(TimeStampedModel):
     candidate = models.ForeignKey(
@@ -284,6 +304,9 @@ class CandidateImage(TimeStampedModel):
         related_name="figure_gallery_candidates",
     )
     original_url = models.URLField(max_length=1000, blank=True)
+    client_filename = models.CharField(max_length=255, blank=True)
+    content_type = models.CharField(max_length=100, blank=True)
+    idempotency_key = models.CharField(max_length=200, blank=True)
     storage_key = models.CharField(max_length=500)
     file_size = models.PositiveBigIntegerField(default=0)
     width = models.PositiveIntegerField(default=0)
@@ -307,10 +330,48 @@ class CandidateImage(TimeStampedModel):
                 condition=Q(candidate__isnull=False),
                 name="gallery_unique_candidate_storage_key",
             ),
+            models.UniqueConstraint(
+                fields=["candidate", "idempotency_key"],
+                condition=~Q(idempotency_key=""),
+                name="gallery_unique_candidate_media_idempotency",
+            ),
         ]
 
     def __str__(self):
         return self.storage_key
+
+
+class CandidateUploadReceipt(TimeStampedModel):
+    """Bind a client idempotency key to one validated content digest."""
+
+    owner = models.ForeignKey(
+        "CandidateClientCredential",
+        on_delete=models.PROTECT,
+        related_name="upload_receipts",
+    )
+    candidate = models.ForeignKey(
+        CandidateRecord,
+        on_delete=models.PROTECT,
+        related_name="upload_receipts",
+    )
+    candidate_image = models.ForeignKey(
+        CandidateImage,
+        on_delete=models.PROTECT,
+        related_name="upload_receipts",
+    )
+    idempotency_key = models.CharField(max_length=200)
+    sha256 = models.CharField(max_length=64)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["owner", "idempotency_key"],
+                name="gallery_unique_client_upload_idempotency",
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.owner.client_id}:{self.idempotency_key}"
 
 
 class OperationLog(models.Model):
@@ -318,6 +379,8 @@ class OperationLog(models.Model):
         CANDIDATE_UPSERT = "candidate_upsert", "Candidate upsert"
         REVIEW = "review", "Candidate review"
         MAIN_IMAGE = "main_image", "Main image selection"
+        CLIENT_IDENTITY = "client_identity", "Candidate client identity"
+        REVIEW_WORK = "review_work", "Review work item"
         MERGE = "merge", "Merge"
         SPLIT = "split", "Split"
         UNDO = "undo", "Undo"
@@ -329,6 +392,9 @@ class OperationLog(models.Model):
         on_delete=models.SET_NULL,
         related_name="figure_gallery_operations",
     )
+    operation_id = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
+    scope = models.CharField(max_length=200, default="gallery")
+    scope_version = models.PositiveBigIntegerField(default=1)
     actor_label = models.CharField(max_length=200)
     created_at = models.DateTimeField(auto_now_add=True)
     operation = models.CharField(max_length=32, choices=Operation.choices)
@@ -369,3 +435,61 @@ class SystemSetting(models.Model):
 
     def __str__(self):
         return "Gallery settings"
+
+
+class CandidateClientCredential(TimeStampedModel):
+    """Revocable candidate-only identity; the bearer secret is never stored."""
+
+    class Status(models.TextChoices):
+        ACTIVE = "active", "Active"
+        DISABLED = "disabled", "Disabled"
+
+    client_id = models.CharField(max_length=120, unique=True)
+    token_hash = models.CharField(max_length=64, unique=True)
+    status = models.CharField(
+        max_length=16, choices=Status.choices, default=Status.ACTIVE
+    )
+    disabled_at = models.DateTimeField(null=True, blank=True)
+
+    def __str__(self):
+        return f"{self.client_id} [{self.status}]"
+
+
+class ReviewWorkItem(TimeStampedModel):
+    """Explicit authorization and optimistic-lock boundary for one review."""
+
+    class Status(models.TextChoices):
+        OPEN = "open", "Open"
+        COMPLETED = "completed", "Completed"
+
+    candidate = models.ForeignKey(
+        CandidateRecord, on_delete=models.PROTECT, related_name="review_work_items"
+    )
+    allowed_targets = models.ManyToManyField(
+        FigurePrototype, blank=True, related_name="authorized_review_work_items"
+    )
+    reviewer = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="figure_gallery_review_work_items",
+    )
+    status = models.CharField(
+        max_length=16, choices=Status.choices, default=Status.OPEN
+    )
+    lock_version = models.PositiveBigIntegerField(default=1)
+    started_at = models.DateTimeField()
+    completed_at = models.DateTimeField(null=True, blank=True)
+    decision_reason = models.TextField(blank=True)
+    reopen_count = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["candidate"],
+                condition=Q(status="open"),
+                name="gallery_one_open_review_per_candidate",
+            )
+        ]
+
+    def __str__(self):
+        return f"Review {self.pk}: {self.candidate} [{self.status}]"

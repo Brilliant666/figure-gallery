@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "observed_date": "2026-07-14",
+  "wagtail": {
+    "implementation_loc": 5263,
+    "test_loc": 2476,
+    "admin_ui_loc": 331,
+    "endpoint_service_loc": 1280,
+    "migration_count": 3,
+    "direct_dependency_count": 4,
+    "automated_tests": {"passed": 70, "failed": 0, "total": 70},
+    "browser_review": {"duration_ms": 5896, "clicks": 6, "main_frame_navigations": 8},
+    "browser_gallery": {"duration_ms": 5406, "clicks": 15, "main_frame_navigations": 13},
+    "application_processes": 1
+  },
+  "payload": {
+    "implementation_loc": 6019,
+    "test_loc": 2885,
+    "admin_ui_loc": 641,
+    "endpoint_service_loc": 1439,
+    "migration_count": 2,
+    "direct_dependency_count": 9,
+    "automated_tests": {"passed": 44, "failed": 0, "total": 44},
+    "browser_review": {"duration_ms": 1560, "clicks": 6, "main_frame_navigations": 5},
+    "browser_gallery": {"duration_ms": 4189, "clicks": 15, "main_frame_navigations": 22},
+    "application_processes": 1
+  },
+  "not_comparably_measured": [
+    "candidate file import duration",
+    "complete production cold start",
+    "hot page response",
+    "complete PostgreSQL plus S3 deployment step count",
+    "merge/split/specified-undo browser duration"
+  ],
+  "note": "Counts were regenerated from the current VAL-02B source and machine results; they are not copied from VAL-02."
+}

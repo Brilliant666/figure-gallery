@@ -124,6 +124,10 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 WAGTAIL_SITE_NAME = "Figure Gallery VAL-02 (disposable)"
 WAGTAILADMIN_BASE_URL = "http://127.0.0.1:8000"
 WAGTAIL_WORKFLOW_ENABLED = True
+# Keep the disposable admin fully offline; Wagtail otherwise renders a remote
+# Gravatar URL and checks releases.wagtail.org for updates.
+WAGTAIL_GRAVATAR_PROVIDER_URL = None
+WAGTAIL_ENABLE_UPDATE_CHECK = False
 
 CANDIDATE_API_KEY = os.getenv(
     "VAL02_WAGTAIL_CANDIDATE_TOKEN", os.getenv("CANDIDATE_API_KEY", "")

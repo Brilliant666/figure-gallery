@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://figure-gallery.invalid/schemas/val02b-candidate-media-upload-v2.json",
+  "title": "VAL-02B candidate-only multipart upload metadata",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["protocol_version", "operation", "client_id", "candidate_id", "client_candidate_id", "idempotency_key", "filename", "content_type", "width", "height", "file_size", "sha256", "perceptual_hash"],
+  "properties": {
+    "protocol_version": {"const": 2},
+    "operation": {"const": "candidate_media_upload"},
+    "client_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"},
+    "candidate_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"},
+    "client_candidate_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"},
+    "idempotency_key": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{15,199}$"},
+    "filename": {"type": "string", "minLength": 1, "maxLength": 200, "pattern": "^[^\\\\/\\u0000-\\u001f\\\"]+$"},
+    "content_type": {"const": "image/png"},
+    "width": {"type": "integer", "minimum": 1, "maximum": 256},
+    "height": {"type": "integer", "minimum": 1, "maximum": 256},
+    "file_size": {"type": "integer", "minimum": 1, "maximum": 65536},
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "perceptual_hash": {"type": "string", "pattern": "^[0-9a-f]{16}$"}
+  }
+}

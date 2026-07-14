@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "prototype": "wagtail",
+  "observed_date": "2026-07-14",
+  "browser": "Chrome 150.0.7871.102 via Playwright 1.61.1 channel=chrome",
+  "result": {
+    "BG-01": "pass",
+    "BG-02": "pass",
+    "BG-03": "pass",
+    "BG-04": "pass"
+  },
+  "login": {
+    "duration_ms": 1666,
+    "clicks": 1,
+    "main_frame_navigations": 2
+  },
+  "review": {
+    "duration_ms": 5896,
+    "clicks": 6,
+    "main_frame_navigations": 8,
+    "operation_log_count_positive": true
+  },
+  "gallery": {
+    "duration_ms": 5406,
+    "clicks": 15,
+    "keyboard_actions": 1,
+    "main_frame_navigations": 13,
+    "page_one_cards": 2,
+    "page_two_cards": 1,
+    "responsive_columns": {"desktop": 4, "tablet": 3, "mobile": 2},
+    "object_fit": "contain",
+    "adult_default_hidden": true,
+    "adult_visible_after_audited_setting": true,
+    "lightbox_zoom_previous_next_close": true,
+    "pagination_clicked": true,
+    "download_button_absent": true,
+    "detail_panel_absent": true
+  },
+  "network": {
+    "console_error_count": 0,
+    "network_failure_count": 0,
+    "forbidden_request_count": 0,
+    "hpoi_request_attempt_count": 0
+  },
+  "fixture": {
+    "synthetic_only": true,
+    "pagination_clone_count": 2,
+    "new_media_created": 0,
+    "secrets_printed": false
+  },
+  "artifacts": {
+    "screenshots_committed": false,
+    "videos_committed": false,
+    "full_playwright_report_committed": false,
+    "runtime_database_or_media_retained": false
+  }
+}

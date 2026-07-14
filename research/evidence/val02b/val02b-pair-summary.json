@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "contract_id": "val02b-acceptance-v1",
+  "contract_sha256": "6a6633937f65f7dcc878a47bae761f3536e4349ff5833c42263a2a4edbb1ca0d",
+  "fixture_sha256": "9a55a00d0290281b6ca6b2a2e7041c2f858e256e77303431ee551de89132440b",
+  "results": {
+    "wagtail": {
+      "path": "spikes\\val02_wagtail\\val02b-acceptance-results.json",
+      "computed_counts": {
+        "pass": 17,
+        "fail": 0,
+        "not_run": 0,
+        "environment_blocked": 13
+      },
+      "hard_gates": {
+        "failed": [],
+        "environment_blocked": [
+          "postgresql-restore-consistency",
+          "formal-main-image-retention",
+          "clean-production-start"
+        ],
+        "not_run": []
+      }
+    },
+    "payload": {
+      "path": "spikes\\val02_payload\\val02b-acceptance-results.json",
+      "computed_counts": {
+        "pass": 17,
+        "fail": 0,
+        "not_run": 0,
+        "environment_blocked": 13
+      },
+      "hard_gates": {
+        "failed": [],
+        "environment_blocked": [
+          "postgresql-restore-consistency",
+          "formal-main-image-retention",
+          "clean-production-start"
+        ],
+        "not_run": []
+      }
+    }
+  },
+  "pair_valid": true
+}

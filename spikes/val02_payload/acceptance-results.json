@@ -2,11 +2,11 @@
   "schema_version": 1,
   "contract_id": "val02-acceptance-v1",
   "prototype": "payload",
-  "generated_at": "2026-07-13T20:49:59.251686Z",
+  "generated_at": "2026-07-14T06:13:50.842105Z",
   "generated_by": {
     "runner": "vitest-plus-payload-acceptance-runner",
     "command": "python spikes/val02_payload/scripts/run_acceptance.py",
-    "source_digest": "993a600fc97894083f2a2641bf2c8d6974b10533447004e22a08291fdd07a7b1",
+    "source_digest": "997b133c2f203cf717aac9d9b5946e91613b44d01ccf495c9989a9ce048510dc",
     "source_files": [
       "spikes/val02_contract/acceptance_contract.json",
       "spikes/val02_contract/acceptance_result.py",
@@ -24,8 +24,10 @@
       "spikes/val02_payload/package.json",
       "spikes/val02_payload/scripts/export.ts",
       "spikes/val02_payload/scripts/live_python_client_smoke.py",
+      "spikes/val02_payload/scripts/provision-browser-fixture.ts",
       "spikes/val02_payload/scripts/provision-client.ts",
       "spikes/val02_payload/scripts/run_acceptance.py",
+      "spikes/val02_payload/scripts/run_val02b_acceptance.py",
       "spikes/val02_payload/scripts/seed.ts",
       "spikes/val02_payload/src/app/(frontend)/characters/[id]/page.tsx",
       "spikes/val02_payload/src/app/(frontend)/layout.tsx",
@@ -38,6 +40,7 @@
       "spikes/val02_payload/src/app/(payload)/api/graphql-playground/route.ts",
       "spikes/val02_payload/src/app/(payload)/api/graphql/route.ts",
       "spikes/val02_payload/src/app/(payload)/layout.tsx",
+      "spikes/val02_payload/src/app/health/route.ts",
       "spikes/val02_payload/src/collections/CandidateRecords.ts",
       "spikes/val02_payload/src/collections/Characters.ts",
       "spikes/val02_payload/src/collections/FigurePrototypes.ts",
@@ -45,17 +48,23 @@
       "spikes/val02_payload/src/collections/Manufacturers.ts",
       "spikes/val02_payload/src/collections/Media.ts",
       "spikes/val02_payload/src/collections/OperationLogs.ts",
+      "spikes/val02_payload/src/collections/ReviewWorkItems.ts",
       "spikes/val02_payload/src/collections/SourceRecords.ts",
       "spikes/val02_payload/src/collections/Users.ts",
       "spikes/val02_payload/src/collections/Works.ts",
       "spikes/val02_payload/src/components/admin/CandidateReviewClient.tsx",
       "spikes/val02_payload/src/components/admin/CandidateReviewView.tsx",
+      "spikes/val02_payload/src/components/admin/DomainOperationsClient.tsx",
+      "spikes/val02_payload/src/components/admin/DomainOperationsView.tsx",
       "spikes/val02_payload/src/components/frontend/GalleryGrid.tsx",
       "spikes/val02_payload/src/domain/export.ts",
       "spikes/val02_payload/src/domain/fixture.ts",
       "spikes/val02_payload/src/domain/payloadDomainService.ts",
       "spikes/val02_payload/src/domain/seed.ts",
       "spikes/val02_payload/src/domain/sourceKey.ts",
+      "spikes/val02_payload/src/domain/val02bDomainService.ts",
+      "spikes/val02_payload/src/endpoints/adminDomain.ts",
+      "spikes/val02_payload/src/endpoints/candidateMediaUpload.ts",
       "spikes/val02_payload/src/endpoints/candidateReview.ts",
       "spikes/val02_payload/src/endpoints/candidateUpsert.ts",
       "spikes/val02_payload/src/globals/SystemSettings.ts",
@@ -65,6 +74,8 @@
       "spikes/val02_payload/src/lib/gallery.ts",
       "spikes/val02_payload/src/migrations/20260713_190619_val02_initial_schema.json",
       "spikes/val02_payload/src/migrations/20260713_190619_val02_initial_schema.ts",
+      "spikes/val02_payload/src/migrations/20260714_044222_val02b_decision_gates.json",
+      "spikes/val02_payload/src/migrations/20260714_044222_val02b_decision_gates.ts",
       "spikes/val02_payload/src/migrations/index.ts",
       "spikes/val02_payload/src/payload-types.ts",
       "spikes/val02_payload/src/payload.config.ts",
@@ -78,7 +89,7 @@
       "spikes/val02_payload/vitest.config.ts"
     ]
   },
-  "fixture_sha256": "3ff832622a8b9d4244ec39fc70668c270cb78204ca975004941761ddb9df9529",
+  "fixture_sha256": "9a55a00d0290281b6ca6b2a2e7041c2f858e256e77303431ee551de89132440b",
   "assertions": [
     {
       "id": "AC-01",
@@ -431,11 +442,11 @@
   },
   "metrics": {
     "automated_tests": {
-      "passed": 36,
+      "passed": 44,
       "failed": 0,
-      "total": 36
+      "total": 44
     },
-    "custom_loc_excluding_generated": 6212
+    "custom_loc_excluding_generated": 8904
   },
   "exports": {
     "formats": [

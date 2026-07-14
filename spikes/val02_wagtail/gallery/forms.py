@@ -19,7 +19,10 @@ class CandidateReviewForm(forms.Form):
         ("accept_field", "Accept one field"),
         ("reject_field", "Reject one field"),
         ("select_main", "Select main image manually"),
+        ("complete", "Complete review work item"),
     ]
+    work_item_id = forms.IntegerField(widget=forms.HiddenInput)
+    expected_version = forms.IntegerField(widget=forms.HiddenInput, min_value=1)
     action = forms.ChoiceField(choices=ACTIONS)
     reason = forms.CharField(widget=forms.Textarea, required=True)
     target_version = forms.ModelChoiceField(
@@ -48,14 +51,19 @@ class CandidateReviewForm(forms.Form):
         queryset=CandidateImage.objects.none(), required=False
     )
 
-    def __init__(self, *args, candidate=None, **kwargs):
+    def __init__(self, *args, candidate=None, work_item=None, **kwargs):
         super().__init__(*args, **kwargs)
+        allowed_targets = FigurePrototype.objects.none()
+        if work_item is not None:
+            allowed_targets = work_item.allowed_targets.filter(
+                is_soft_deleted=False, is_merged=False
+            )
+            self.fields["work_item_id"].initial = work_item.pk
+            self.fields["expected_version"].initial = work_item.lock_version
         self.fields["target_version"].queryset = FigureVersion.objects.select_related(
             "prototype"
-        ).order_by("prototype__title", "name")
-        self.fields["target_prototype"].queryset = FigurePrototype.objects.filter(
-            is_soft_deleted=False, is_merged=False
-        ).order_by("title")
+        ).filter(prototype__in=allowed_targets).order_by("prototype__title", "name")
+        self.fields["target_prototype"].queryset = allowed_targets.order_by("title")
         self.fields["manufacturer"].queryset = Manufacturer.objects.exclude(
             status=Manufacturer.Status.HIDDEN
         ).order_by("name")
@@ -83,3 +91,31 @@ class CandidateReviewForm(forms.Form):
             if value is None or value == "" or (field == "characters" and not value.exists()):
                 self.add_error(field, "This field is required for the selected action.")
         return cleaned
+
+
+class DomainOperationForm(forms.Form):
+    """Small audited command console; generic model forms remain read only."""
+
+    ACTIONS = [
+        ("work", "Create or update work"),
+        ("character", "Create or update character and aliases"),
+        ("manufacturer_create", "Create draft manufacturer"),
+        ("manufacturer_status", "Change manufacturer status"),
+        ("version", "Create or update figure version"),
+        ("prototype", "Update formal prototype"),
+        ("settings", "Update system settings"),
+        ("source_unavailable", "Mark source unavailable or available"),
+        ("hide", "Hide formal prototype"),
+        ("restore", "Restore formal prototype"),
+        ("main_image", "Select formal main image"),
+        ("merge", "Merge prototypes"),
+        ("split", "Split prototype"),
+        ("undo", "Undo specified operation ID"),
+        ("reopen_review", "Reopen completed review work item"),
+    ]
+    action = forms.ChoiceField(choices=ACTIONS)
+    reason = forms.CharField(widget=forms.Textarea, required=True)
+    payload = forms.JSONField(
+        widget=forms.Textarea,
+        help_text="Synthetic-only JSON arguments for the selected audited domain service.",
+    )

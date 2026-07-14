@@ -192,18 +192,20 @@ class Command(BaseCommand):
                     for path in admin_files
                 ),
                 "migration_files": len(list((project_dir / "gallery" / "migrations").glob("0*.py"))),
-                "direct_dependencies": 3,
+                "direct_dependencies": 4,
             },
             exports={
                 "json_parseable": True,
-                "csv_relational_tables": 10,
+                "csv_relational_tables": len(
+                    [value for value in bundle.values() if isinstance(value, list)]
+                ),
                 "contains_binary_media": bundle["contains_binary_media"],
                 "candidate_image_records": len(bundle["candidate_images"]),
             },
             security={
                 "hpoi_process_guard": settings.VAL02_BLOCK_HPOI,
-                "candidate_api_token_from_environment": True,
-                "candidate_http_surface": ["candidate_upsert"],
+                "candidate_api_credentials": "per-client, hashed, revocable",
+                "candidate_http_surface": ["candidate_upsert", "candidate_media_upload"],
                 "cloud_connection_performed": False,
                 "browser_interaction": (
                     "not_run: Chrome control extension/native host unavailable; "

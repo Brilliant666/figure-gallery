@@ -1,0 +1,114 @@
+{
+  "schema_version": 1,
+  "prototype": "payload",
+  "observed_date": "2026-07-14",
+  "browser": "Chrome 150.0.7871.102 via Playwright 1.61.1 channel=chrome",
+  "source_report": "playwright-results.json (temporary report deleted after summarization)",
+  "assertions": [
+    {
+      "id": "BG-01",
+      "status": "pass",
+      "evidence": [
+        {
+          "kind": "browser_test",
+          "reference": "spikes/val02b_infra/tests/browser-gates.spec.ts::BG-01 real Chrome administrator login",
+          "observed": "{\"playwright_status\":\"passed\",\"duration_ms\":1582,\"clicks\":1,\"console_error_count\":0,\"forbidden_request_count\":0,\"hpoi_request_attempt_count\":0,\"main_frame_navigations\":3,\"network_failure_count\":0}"
+        }
+      ]
+    },
+    {
+      "id": "BG-02",
+      "status": "pass",
+      "evidence": [
+        {
+          "kind": "browser_test",
+          "reference": "spikes/val02b_infra/tests/browser-gates.spec.ts::BG-02 complete candidate review through the real browser",
+          "observed": "{\"playwright_status\":\"passed\",\"duration_ms\":1560,\"clicks\":6,\"console_error_count\":0,\"forbidden_request_count\":0,\"hpoi_request_attempt_count\":0,\"main_frame_navigations\":5,\"network_failure_count\":0}"
+        }
+      ]
+    },
+    {
+      "id": "BG-03",
+      "status": "pass",
+      "evidence": [
+        {
+          "kind": "browser_test",
+          "reference": "spikes/val02b_infra/tests/browser-gates.spec.ts::BG-03/BG-04 public search, gallery, lightbox and responsive layout",
+          "observed": "{\"playwright_status\":\"passed\",\"duration_ms\":4189,\"clicks\":15,\"console_error_count\":0,\"forbidden_request_count\":0,\"hpoi_request_attempt_count\":0,\"keyboard_actions\":1,\"main_frame_navigations\":22,\"network_failure_count\":9,\"interaction\":\"lightbox/zoom/previous/next/close\"}"
+        }
+      ]
+    },
+    {
+      "id": "BG-04",
+      "status": "pass",
+      "evidence": [
+        {
+          "kind": "browser_test",
+          "reference": "spikes/val02b_infra/tests/browser-gates.spec.ts::BG-03/BG-04 public search, gallery, lightbox and responsive layout",
+          "observed": "{\"playwright_status\":\"passed\",\"duration_ms\":4189,\"clicks\":15,\"console_error_count\":0,\"forbidden_request_count\":0,\"hpoi_request_attempt_count\":0,\"keyboard_actions\":1,\"main_frame_navigations\":22,\"network_failure_count\":9,\"responsive_layout\":\"computed 4/3/2 columns and contain geometry\"}"
+        }
+      ]
+    }
+  ],
+  "metrics": {
+    "login": {
+      "playwright_duration_ms": 1582,
+      "fixture_duration_ms": 1457.96,
+      "clicks": 1,
+      "main_frame_navigations": 3,
+      "console_error_count": 0,
+      "network_failure_count": 0
+    },
+    "review": {
+      "playwright_duration_ms": 1560,
+      "fixture_duration_ms": 1466.96,
+      "clicks": 6,
+      "main_frame_navigations": 5,
+      "console_error_count": 0,
+      "network_failure_count": 0
+    },
+    "gallery": {
+      "playwright_duration_ms": 4189,
+      "fixture_duration_ms": 4100.04,
+      "clicks": 15,
+      "keyboard_actions": 1,
+      "main_frame_navigations": 22,
+      "console_error_count": 0,
+      "network_failure_count": 9,
+      "network_failures": [
+        {"error_text": "net::ERR_ABORTED", "method": "GET", "url": "http://127.0.0.1:13082/characters/1"},
+        {"error_text": "net::ERR_ABORTED", "method": "GET", "url": "http://127.0.0.1:13082/characters/2"},
+        {"error_text": "net::ERR_ABORTED", "method": "GET", "url": "http://127.0.0.1:13082/characters/1"},
+        {"error_text": "net::ERR_ABORTED", "method": "GET", "url": "http://127.0.0.1:13082/characters/2"},
+        {"error_text": "net::ERR_ABORTED", "method": "GET", "url": "http://127.0.0.1:13082/admin/candidate-review"},
+        {"error_text": "net::ERR_ABORTED", "method": "GET", "url": "http://127.0.0.1:13082/characters/1"},
+        {"error_text": "net::ERR_ABORTED", "method": "GET", "url": "http://127.0.0.1:13082/characters/1"},
+        {"error_text": "net::ERR_ABORTED", "method": "GET", "url": "http://127.0.0.1:13082/characters/1"},
+        {"error_text": "net::ERR_ABORTED", "method": "GET", "url": "http://127.0.0.1:13082/characters/1"}
+      ]
+    }
+  },
+  "gallery": {
+    "page_one_cards": 2,
+    "page_two_cards": 1,
+    "responsive_columns": {"desktop": 4, "tablet": 3, "mobile": 2},
+    "object_fit": "contain",
+    "adult_default_hidden": true,
+    "adult_visible_after_audited_setting": true,
+    "lightbox_zoom_previous_next_close": true,
+    "download_button_absent": true,
+    "detail_panel_absent": true
+  },
+  "network": {
+    "forbidden_request_count": 0,
+    "forbidden_request_hosts": [],
+    "hpoi_request_attempt_count": 0,
+    "note": "All requestfailed events were loopback GET requests with net::ERR_ABORTED while the test deliberately performed repeated navigation; no forbidden or external host was contacted."
+  },
+  "artifacts": {
+    "screenshots_committed": false,
+    "videos_committed": false,
+    "full_playwright_report_committed": false,
+    "runtime_database_or_media_retained": false
+  }
+}

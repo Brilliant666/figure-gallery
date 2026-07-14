@@ -1,0 +1,62 @@
+{
+  "schema_version": 1,
+  "observed_date": "2026-07-14",
+  "timezone": "Asia/Shanghai",
+  "repository": "Brilliant666/figure-gallery",
+  "pr4_head_sha": "6de89631047272fc3e2fb1e0221253950b1e1359",
+  "pr4_merge_sha": "249019d45cbefa377341502c633c48c860e29bb3",
+  "val02b_start_sha": "249019d45cbefa377341502c633c48c860e29bb3",
+  "branch": "research/val-02b-technology-decision-gates",
+  "runtime": {
+    "os": "Windows",
+    "python": "3.10.9",
+    "system_node": "18.17.0",
+    "system_npm": "9.8.1",
+    "task_local_portable_node": "22.23.1",
+    "chrome": "150.0.7871.102",
+    "chrome_path": "C:/Program Files/Google/Chrome/Application/chrome.exe",
+    "disk_free_bytes_at_inventory": 116880728064
+  },
+  "playwright": {
+    "initially_installed": false,
+    "task_local_install": "pass",
+    "version": "1.61.1",
+    "browser_target": "channel=chrome",
+    "chrome_probe": {
+      "status": "pass",
+      "browser_version": "150.0.7871.102",
+      "headless": true,
+      "duration_ms": 333.82,
+      "network": "no external navigation",
+      "forbidden_attempt_count": 0
+    },
+    "install_note": "Used the task-local Node runtime and command-local registry.npmjs.org because the user's configured Taobao registry certificate was expired; no permanent npm configuration was changed."
+  },
+  "docker": {
+    "client": "24.0.5",
+    "compose": "2.20.2-desktop.1",
+    "daemon_available": false,
+    "probe_error": "docker_engine named pipe was not present",
+    "desktop_service": "installed, stopped, manual start",
+    "service_was_started_or_modified": false
+  },
+  "postgresql": {
+    "psql_available": false,
+    "windows_service_found": false,
+    "loopback_5432_listener_found": false,
+    "status": "environment_blocked"
+  },
+  "s3_compatible_storage": {
+    "minio_cli_available": false,
+    "loopback_9000_or_9001_listener_found": false,
+    "docker_daemon_available": false,
+    "status": "environment_blocked"
+  },
+  "scope": {
+    "hpoi_requests": 0,
+    "real_figure_images_used": false,
+    "system_services_modified": false,
+    "permanent_proxy_modified": false,
+    "production_credentials_used": false
+  }
+}

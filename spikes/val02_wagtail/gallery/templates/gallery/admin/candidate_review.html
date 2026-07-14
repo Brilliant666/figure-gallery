@@ -3,8 +3,8 @@
 {% block titletag %}Review {{ candidate.raw_title }}{% endblock %}
 {% block content %}
   {% include "wagtailadmin/shared/header.html" with title="Candidate review" subtitle=candidate.raw_title icon="tasks" %}
-  <div class="nice-padding">
-    <section>
+  <div class="nice-padding" data-testid="candidate-review">
+    <section data-testid="candidate-fields">
       <h2>Candidate-only fields</h2>
       <dl>
         <dt>Source</dt><dd>{{ candidate.source.identity_key }}</dd>
@@ -16,17 +16,24 @@
         <dt>Status</dt><dd>{{ candidate.status }}</dd>
       </dl>
     </section>
-    <section>
+    <section data-testid="candidate-images">
       <h2>Candidate images</h2>
       <div style="display:flex;gap:1rem;flex-wrap:wrap">
         {% for item in candidate.images.all %}
-          <figure>{% if item.image %}{% image item.image max-240x240 %}{% else %}<span>metadata pending local media</span>{% endif %}<figcaption>#{{ item.pk }} · adult={{ item.is_adult }}</figcaption></figure>
+          <figure data-testid="candidate-image-{{ item.pk }}">{% if item.image %}{% image item.image max-240x240 %}{% else %}<span>metadata pending local media</span>{% endif %}<figcaption>#{{ item.pk }} · adult={{ item.is_adult }}</figcaption></figure>
         {% empty %}<p>No candidate images.</p>{% endfor %}
       </div>
     </section>
-    <section>
+    <section data-testid="review-work-item">
       <h2>Audited action</h2>
-      <form method="post">{% csrf_token %}{{ form.as_p }}<button class="button" type="submit">Apply reviewed action</button></form>
+      <p>Work item #{{ work_item.pk }} · version {{ work_item.lock_version }} · {{ work_item.status }}</p>
+      <p>Allowed targets: {% for target in work_item.allowed_targets.all %}#{{ target.pk }} {{ target.title }}{% empty %}new-target action only{% endfor %}</p>
+      <form method="post" data-testid="review-form">{% csrf_token %}{{ form.as_p }}<button class="button" data-testid="apply-review" type="submit">Apply reviewed action</button></form>
+    </section>
+    <section data-testid="operation-log-results">
+      <h2>OperationLog results</h2>
+      <p data-testid="operation-log-count">{{ operation_logs|length }} recent candidate operations</p>
+      <ol>{% for operation in operation_logs %}<li data-testid="operation-log-{{ operation.pk }}">{{ operation.operation }} · {{ operation.reason }}</li>{% empty %}<li>No operations yet.</li>{% endfor %}</ol>
     </section>
   </div>
 {% endblock %}

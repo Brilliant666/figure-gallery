@@ -3,7 +3,10 @@ import type { Endpoint, PayloadRequest } from 'payload'
 import { withinPayloadTransaction } from '@/domain/payloadDomainService'
 import { canonicalizeSourceURL, makeSourceKey } from '@/domain/sourceKey'
 import { assertNoHpoiURL } from '@/security/networkGuard'
-import { isCandidateClientUser, requireCandidateClient } from '@/security/roles'
+import {
+  isCandidateClientUser,
+  requireActiveCandidateClient,
+} from '@/security/roles'
 
 type CandidateImageInput = {
   file_size?: null | number
@@ -360,7 +363,7 @@ export const candidateUpsertEndpoint: Endpoint = {
   method: 'post',
   handler: async (req) => {
     try {
-      requireCandidateClient(req)
+      const activeClient = await requireActiveCandidateClient(req)
       req.context = { ...req.context, candidateSync: true }
       const payload = req.payload as any
       const { candidate } = await parseBody(req)
@@ -376,6 +379,7 @@ export const candidateUpsertEndpoint: Endpoint = {
           where: { source: { equals: source.id } },
         })
         const candidateData = {
+          candidateOwner: req.user?.id,
           externalKey: existing.docs[0]?.externalKey ?? candidate.id,
           matchState: candidate.match_state ?? 'character_pending',
           proposedManufacturerStatus: candidate.proposed_manufacturer_status ?? 'draft',
@@ -464,6 +468,7 @@ export const candidateUpsertEndpoint: Endpoint = {
           ok: true,
           outcome: outcome.wasCreated ? 'created' : outcome.changed ? 'updated' : 'unchanged',
           source_id: outcome.source.id,
+          client_id: activeClient.clientID,
         },
         { status: outcome.wasCreated ? 201 : 200 },
       )
@@ -471,7 +476,7 @@ export const candidateUpsertEndpoint: Endpoint = {
       const message = error instanceof Error ? error.message : 'Candidate upsert failed.'
       return jsonError(
         message,
-        message.includes('access') || message.includes('required') || message.includes('Forbidden')
+        message.includes('access') || message.includes('disabled') || message.includes('revoked') || message.includes('required') || message.includes('Forbidden')
           ? 403
           : 400,
       )

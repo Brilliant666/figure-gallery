@@ -1,13 +1,19 @@
 import type { CollectionConfig } from 'payload'
 
 import { adminOnly } from '@/security/roles'
+import { adminDomainEndpoint } from '@/endpoints/adminDomain'
 
 export const OperationLogs: CollectionConfig = {
   slug: 'operation-logs',
   admin: { defaultColumns: ['operationType', 'actorLabel', 'createdAt', 'undone'] },
   access: { create: () => false, delete: () => false, read: adminOnly, update: () => false },
+  endpoints: [adminDomainEndpoint],
   fields: [
     { name: 'fixtureID', type: 'text', index: true, unique: true },
+    { name: 'operationID', type: 'text', index: true, unique: true },
+    { name: 'operationVersion', type: 'number', defaultValue: 1, min: 1, required: true },
+    { name: 'scope', type: 'json' },
+    { name: 'dependsOn', type: 'json' },
     { name: 'actor', type: 'relationship', relationTo: 'users' },
     { name: 'actorLabel', type: 'text', required: true },
     {
@@ -15,6 +21,8 @@ export const OperationLogs: CollectionConfig = {
       type: 'select',
       options: [
         'candidate_upsert',
+        'candidate_media_upload',
+        'client_revoked',
         'create_manufacturer',
         'create_prototype',
         'attach_version',
@@ -30,6 +38,10 @@ export const OperationLogs: CollectionConfig = {
         'split',
         'undo_merge',
         'undo_split',
+        'review_work_item_opened',
+        'review_work_item_reopened',
+        'review_work_item_completed',
+        'maintain_formal',
       ],
       required: true,
     },

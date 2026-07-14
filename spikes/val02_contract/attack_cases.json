@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "catalog_id": "val02b-shared-attack-cases-v1",
+  "cases": [
+    {"id": "AUTH-01", "category": "candidate_auth", "mapped_gate": "BG-10", "title": "无 Token", "request": "candidate endpoint request without Authorization", "expected": "reject", "expected_error": "missing_credential"},
+    {"id": "AUTH-02", "category": "candidate_auth", "mapped_gate": "BG-10", "title": "错误 Token", "request": "candidate endpoint request with an unknown credential", "expected": "reject", "expected_error": "invalid_credential"},
+    {"id": "AUTH-03", "category": "candidate_auth", "mapped_gate": "BG-10", "title": "已撤销 Token", "request": "candidate endpoint request with a previously valid revoked credential", "expected": "reject", "expected_error": "revoked_credential"},
+    {"id": "AUTH-04", "category": "candidate_owner", "mapped_gate": "BG-09", "title": "跨客户端候选修改", "request": "client A changes a candidate owned by client B", "expected": "reject", "expected_error": "owner_mismatch"},
+    {"id": "AUTH-05", "category": "formal_boundary", "mapped_gate": "BG-11", "title": "写 FigurePrototype", "request": "candidate identity writes a formal FigurePrototype", "expected": "reject", "expected_error": "formal_write_forbidden"},
+    {"id": "AUTH-06", "category": "formal_boundary", "mapped_gate": "BG-11", "title": "写 FigureVersion", "request": "candidate identity writes a formal FigureVersion", "expected": "reject", "expected_error": "formal_write_forbidden"},
+    {"id": "AUTH-07", "category": "formal_boundary", "mapped_gate": "BG-12", "title": "替换正式主图", "request": "candidate identity changes a formal main image", "expected": "reject", "expected_error": "main_image_write_forbidden"},
+    {"id": "AUTH-08", "category": "formal_boundary", "mapped_gate": "BG-11", "title": "绕过专用 endpoint", "request": "candidate identity uses generic CRUD instead of the candidate handler", "expected": "reject", "expected_error": "generic_crud_forbidden"},
+    {"id": "MEDIA-01", "category": "candidate_media", "mapped_gate": "BG-08", "title": "非图片文本", "request": "multipart text/plain bytes", "expected": "reject", "expected_error": "unsupported_media_type"},
+    {"id": "MEDIA-02", "category": "candidate_media", "mapped_gate": "BG-08", "title": "超过测试大小限制", "request": "valid synthetic PNG larger than the shared test limit", "expected": "reject", "expected_error": "file_too_large"},
+    {"id": "MEDIA-03", "category": "candidate_media", "mapped_gate": "BG-08", "title": "声明类型与内容不一致", "request": "PNG bytes declared as text/plain", "expected": "reject", "expected_error": "content_type_mismatch"},
+    {"id": "REVIEW-01", "category": "review_scope", "mapped_gate": "BG-13", "title": "越权审核目标", "request": "review writes a formal target outside the work item's allowed target set", "expected": "reject", "expected_error": "target_not_allowed"},
+    {"id": "REVIEW-02", "category": "review_scope", "mapped_gate": "BG-13", "title": "完成后普通修改", "request": "ordinary review mutation after the work item completed", "expected": "reject", "expected_error": "review_closed"},
+    {"id": "REVIEW-03", "category": "concurrency", "mapped_gate": "BG-14", "title": "过期审核版本", "request": "second administrator submits a stale optimistic-lock version", "expected": "reject", "expected_error": "version_conflict"},
+    {"id": "UNDO-01", "category": "operation_undo", "mapped_gate": "BG-15", "title": "不存在的 operation ID", "request": "administrator requests undo for an unknown operation ID", "expected": "reject", "expected_error": "operation_not_found"},
+    {"id": "UNDO-02", "category": "operation_undo", "mapped_gate": "BG-16", "title": "有后续依赖的前置操作", "request": "administrator undoes a merge that a later operation depends on", "expected": "reject", "expected_error": "dependent_operation_conflict"},
+    {"id": "UNDO-03", "category": "concurrency", "mapped_gate": "BG-16", "title": "过期领域版本", "request": "second administrator mutates the same operation scope using a stale version", "expected": "reject", "expected_error": "version_conflict"}
+  ]
+}

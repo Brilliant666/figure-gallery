@@ -1,83 +1,44 @@
-# VAL-02 Wagtail proof of concept
+# VAL-02 / VAL-02B Wagtail proof of concept
 
-This directory is a disposable, offline comparison prototype. It is not a
-production project and does not choose the final stack. It uses only the shared
-synthetic fixture; seed images are generated in the runtime media directory and
-are never committed.
+This is a disposable, offline comparison spike. It is not the formal product
+and does not by itself select the final stack. Every fixture and generated PNG
+is synthetic; runtime databases, media, exports, credentials, screenshots and
+browser artifacts stay under `%TEMP%` and are not committed.
 
-## Verified runtime
+## Runtime and boundaries
 
-- Python 3.10.9
-- Django 5.2.16
-- Wagtail 7.4.2
-- django-storages 1.14.6 with the S3 extra
-- SQLite for local data
-- one Python process for the local application
+- Python 3.10.9, Django 5.2.16, Wagtail 7.4.2,
+  django-storages 1.14.6 and django-treebeard 5.3.0.
+- SQLite is the only database actually exercised in this spike environment.
+- `gallery.network_guard` blocks `hpoi.net` and all subdomains before DNS or
+  transport. No data-source fetcher exists here.
+- Candidate ingress exposes only `candidate_upsert` and
+  `candidate_media_upload`. It has no formal Work/Character/Manufacturer/
+  FigurePrototype/FigureVersion/main-image mutation method.
+- Each candidate client has an independent ID and bearer secret. Only a SHA-256
+  digest is stored; credentials are attributable, revocable and audited.
+- Candidate ownership is checked server-side for metadata and multipart media.
+  Client A cannot claim or update client B's candidate.
+- Candidate PNG/JPEG uploads are limited to 64 KiB, validated from bytes,
+  checked against declared MIME/size/dimensions/SHA-256/aHash, content-addressed
+  and deduplicated. Upload receipts bind each client idempotency key to a digest.
+  Failed writes roll back database rows and remove newly written storage files.
+- Wagtail Images stores candidate originals in a dedicated collection and
+  creates `fill-64x64` and `max-320x320` renditions. Only an audited staff
+  service can attach a reviewed candidate image and select it as formal main.
+- `ReviewWorkItem` contains the candidate, allowed formal targets, reviewer,
+  state, optimistic lock version, timestamps and decision reason. Completed
+  work cannot mutate until an explicit audited reopen.
+- Merge/split logs have stable UUID operation IDs, scopes and versions.
+  `undo_operation` takes an explicit ID; there is no global-latest undo API.
+  Active dependent or overlapping later operations block unsafe undo.
+- Generic Wagtail snippet forms are read only, even for a superuser. Candidate
+  review and the small domain-operation console call transactional services and
+  emit `OperationLog`; they are verification UI, not product UI.
 
-The versions above were stable formal releases in the task environment on
-2026-07-14. Direct versions are in `requirements.txt`; every installed
-transitive dependency is pinned in `requirements.lock`. The local virtual
-environment is `.venv/` and is ignored.
-
-## Safety boundaries
-
-- `gallery.network_guard` blocks `hpoi.net` and every subdomain before DNS or
-  `requests` transport. The prototype has no outbound data-source code.
-- Candidate HTTP writes expose one operation: `candidate_upsert`. It can only
-  upsert `SourceRecord`, `CandidateRecord`, and candidate media metadata. The
-  handler fails closed unless the actual socket peer address is loopback and
-  does not trust forwarded-address headers.
-- Candidate image objects reject the out-of-contract `image` and `image_id`
-  fields, so the candidate token cannot guess and attach an existing Wagtail
-  Image. If an upsert matches an image already attached to a formal prototype
-  or selected as main, the changed observation is audited while every stored
-  media/provenance field and the formal main-image reference are preserved.
-- A formal `SourceRecord` with no existing candidate cannot be claimed through
-  candidate ingress. A reviewed candidate whose source is now attached to a
-  prototype can still be re-collected, preserving the update-pending flow.
-- The candidate API cannot create formal characters, manufacturers, prototypes
-  or versions, cannot attach a candidate to formal data, and cannot select or
-  replace a main image.
-- Formal review, main-image selection, merge, split and undo require an
-  authenticated staff user and execute inside Django transactions.
-- Manufacturer draft creation/status changes and the adult/page-size/public
-  switches likewise use staff-only transactional services with `OperationLog`.
-  This spike does not add Wagtail UI controls for those services.
-- Seed creates `fixture-admin` with an unusable password; no administrator
-  password, API token, session, cookie or fixed Django secret is committed.
-- The Django secret is read from the environment or generated in memory for the
-  current process. The candidate token must exist in the runtime environment.
-- Database, generated media, renditions, static build output and exports default
-  to `%TEMP%/figure-gallery-val02-wagtail`, not the repository.
-
-## What Wagtail actually provides
-
-- Wagtail Images stores original synthetic PNGs and creates rebuildable
-  renditions through Django's Storage API.
-- `FigurePrototype` is a non-Page model using `RevisionMixin`,
-  `DraftStateMixin`, and `WorkflowMixin`. Automated tests save, deserialize and
-  publish a revision and start a real Wagtail workflow for this model.
-- `SnippetViewSet` supplies listings for candidate records and figure
-  prototypes. A custom Wagtail admin review page displays candidate fields and
-  multiple images and exposes explicit create/attach/field decision/main-image/
-  defer/ignore actions.
-
-Wagtail does not provide the relationship-heavy domain model, candidate/formal
-security boundary, cross-record merge/split/undo, reversible operation log,
-single-field decision semantics, or open relational export. Those parts remain
-custom code. The admin shell and image/revision infrastructure save work, but a
-high-frequency candidate workbench still needs a purpose-built view.
-
-The disposable undo service always targets the globally latest non-undone
-merge or split. It has no per-reviewer/per-work-item scope and was not tested
-under concurrent reviewers. Wagtail Admin also has no merge/split/undo,
-manufacturer-lifecycle, or system-setting controls in this spike; those paths
-exist only as tested domain services.
-
-`decide_candidate_field` lets a trusted staff caller supply an explicit target
-prototype rather than binding the write to the candidate's previous target.
-That flexibility is useful for this review spike, but a formal authorization
-model would need to constrain targets to the reviewer's current work item.
+The loopback check remains defense in depth for the disposable local client,
+but authorization does not depend on loopback: identity, owner and operation
+checks are performed by the service for every accepted candidate write.
 
 ## Local setup
 
@@ -86,60 +47,54 @@ PowerShell commands from this directory:
 ```powershell
 python -m venv .venv
 & .venv/Scripts/python.exe -m pip install -r requirements.lock
-$env:VAL02_WAGTAIL_RUNTIME_DIR = Join-Path $env:TEMP "figure-gallery-val02-wagtail"
+$env:VAL02_WAGTAIL_RUNTIME_DIR = Join-Path $env:TEMP "figure-gallery-val02b-wagtail"
 & .venv/Scripts/python.exe manage.py migrate --noinput
 & .venv/Scripts/python.exe manage.py seed_synthetic --reset
 & .venv/Scripts/python.exe manage.py runserver 127.0.0.1:8000 --noreload
 ```
 
-`VAL02_WAGTAIL_RUNTIME_DIR` is the actual runtime-directory setting. If it is
-unset, the same `%TEMP%/figure-gallery-val02-wagtail` path is used by default.
+The seed reads `../val02_contract/fixtures/domain_fixture.json`. It generates
+all PNG bytes at runtime and creates no usable password or committed token.
 
-The seed reads
-`../val02_contract/fixtures/domain_fixture.json`. It generates every PNG at
-runtime with Pillow, calculates SHA-256 and a 64-bit average hash, creates
-Wagtail images, and selects only fixture-declared manual main images.
+## TEMP-only browser scenario
 
-No usable admin password is seeded. To explore the UI interactively, create a
-temporary local superuser yourself and do not commit its credentials.
+The provisioning command consumes two runtime secrets and prints only a JSON
+manifest containing IDs, username and paths. Neither secret is printed or
+stored as plaintext:
+
+```powershell
+$env:VAL02B_ADMIN_PASSWORD = '<runtime-random-password>'
+$env:VAL02B_CANDIDATE_TOKEN = '<runtime-random-token>'
+& .venv/Scripts/python.exe manage.py provision_val02b_browser
+```
+
+The manifest exposes `/admin/login/` and
+`/admin/candidate-review/<candidate-id>/`. Stable browser selectors include
+`candidate-review`, `candidate-images`, `review-work-item`, `review-form`,
+`apply-review`, `operation-log-results` and `operation-log-count`.
+The minimal formal command console is `/admin/domain-operations/` with
+`domain-operations`, `domain-operation-form` and `apply-domain-operation`.
+
+The shared Playwright harness uses local Chrome and writes its JSON report only
+to `%TEMP%/figure-gallery-val02b-playwright/` by default. Screenshots and videos
+must not be added to Git.
 
 ## Candidate client
 
-The shared client sends the same envelope used by both prototypes:
-
-```json
-{"protocol_version": 1, "operation": "candidate_upsert", "candidate": {}}
-```
-
-For a local integration run, generate a temporary token in the current shell,
-start the server with the same environment value, then run the shared client:
+The shared client reads these runtime variables:
 
 ```powershell
-$bytes = New-Object byte[] 32
-$rng = [Security.Cryptography.RandomNumberGenerator]::Create()
-$rng.GetBytes($bytes)
-$env:VAL02_WAGTAIL_CANDIDATE_TOKEN = [Convert]::ToBase64String($bytes)
-$rng.Dispose()
-python ../val02_contract/python_candidate_client/client.py --adapter wagtail --dry-run
+$env:VAL02_WAGTAIL_CANDIDATE_CLIENT_ID = 'runtime-client-id'
+$env:VAL02_WAGTAIL_CANDIDATE_TOKEN = '<runtime-token-shown-once>'
+$env:VAL02_WAGTAIL_CANDIDATE_ENDPOINT = 'http://127.0.0.1:8000/api/val02/candidates/upsert/'
+$env:VAL02_WAGTAIL_CANDIDATE_UPLOAD_ENDPOINT = 'http://127.0.0.1:8000/api/val02b/candidates/media/upload/'
 ```
 
-The automated suite connects that real shared client to the Django endpoint
-through an in-process loopback-equivalent transport. It verifies repeat-run
-idempotence, formal-entity isolation, and main-image attack rejection.
+Client identities are created through `create_candidate_client`; plaintext is
+returned once to the runtime caller. The shared Python client's public surface
+contains candidate upsert and synthetic candidate-media upload only.
 
-The shared client transports metadata only. It does not upload a candidate
-file into Wagtail Images, so candidate-file import remains outside the proven
-end-to-end path. The token model is also a single prototype-wide ingress key:
-there is no per-client owner field, and multiple collectors sharing the key
-cannot be attributed or isolated from one another.
-
-Generic Wagtail Snippet forms for candidates, prototypes, manufacturers and
-settings are intentionally read-only, including for a superuser. This prevents
-default add/edit/delete routes from bypassing `OperationLog`; administrative
-writes in this spike go through the audited candidate-review/domain services,
-and generic prototype forms do not expose `main_image`.
-
-## Checks and generated acceptance result
+## Checks and machine results
 
 ```powershell
 & .venv/Scripts/python.exe manage.py check
@@ -147,46 +102,50 @@ and generic prototype forms do not expose `main_image`.
 & .venv/Scripts/python.exe manage.py test gallery.tests -v 2
 & .venv/Scripts/python.exe manage.py collectstatic --noinput
 & .venv/Scripts/python.exe manage.py generate_acceptance
+& .venv/Scripts/python.exe manage.py generate_val02b_acceptance `
+  --browser-results "$env:TEMP/figure-gallery-val02b-playwright/playwright-results.json"
 ```
 
-`generate_acceptance` runs the real Django suite in a subprocess and derives
-each executable status from its exact per-test outcome. AC-29 is deliberately
-recorded as `not_run` with an environment blocker instead of treating a static
-JavaScript assertion as browser interaction. It uses the shared
-`AcceptanceRecorder`, includes a digest of the actual implementation/test source
-files, and never hand-writes `overall` or `pass_count`.
+`generate_val02b_acceptance` reruns the real Django suite and derives BG-05
+through BG-16 and BG-30 from exact per-test outcomes. It consumes standard
+Playwright JSON for BG-01 through BG-04. If no browser report is supplied those
+items are `not_run`; static checks are never substituted for browser evidence.
+BG-17 through BG-29 are `environment_blocked` in this host because Docker's
+engine, PostgreSQL and local S3-compatible storage were unavailable. Local
+SQLite, filesystem storage and WSGI health checks are supplemental evidence,
+not replacements for those gates.
 
-Wagtail 7.4.2 currently resolves django-treebeard 5.3.0. Django system checks
-emit `treebeard.E001` warnings about manager compatibility with a future
-Treebeard 6; current migrations, seed, revision/workflow and runtime tests still
-pass. The warnings are not silenced and must be re-evaluated on upgrade.
+## Treebeard decision gate
+
+Wagtail 7.4.2's installed upstream package metadata declares
+`django-treebeard>=4.8,<6.0`. This spike pins the exact tested version 5.3.0 in
+both direct and lock requirements. `GalleryConfig.ready()` refuses any other
+installed version, forcing the manager/workflow/migration gate to be rerun on
+upgrade. Automated tests exercise both Page and Collection tree mutations and
+assert that the two `treebeard.E001` warnings remain visible; no system check is
+silenced.
+
+This is the allowed “exact compatible pin plus upgrade gate” conclusion, not a
+claim that the warnings have no effect. Treebeard 6 remains unsupported until
+Wagtail's generated managers satisfy its contract and all compatibility tests
+are rerun.
 
 ## Export and storage
 
-Open exports contain stable database IDs, relationship IDs, source URLs,
-storage keys and media hashes, but never image bytes:
+JSON and relational CSV exports contain relationship IDs, ReviewWorkItem,
+OperationLog UUID/scope, settings, storage keys, SHA-256 and aHash. They contain
+no media binary, plaintext token or token digest. Exports are written to TEMP:
 
 ```powershell
-& .venv/Scripts/python.exe manage.py export_gallery --format json --output "$env:TEMP/val02-wagtail.json"
-& .venv/Scripts/python.exe manage.py export_gallery --format csv --output "$env:TEMP/val02-wagtail-csv"
+& .venv/Scripts/python.exe manage.py export_gallery --format json --output "$env:TEMP/val02b-wagtail.json"
+& .venv/Scripts/python.exe manage.py export_gallery --format csv --output "$env:TEMP/val02b-wagtail-csv"
 ```
 
-See `EXPORT_SCHEMA.md` for field semantics. Local media uses
-`FileSystemStorage`. Setting `USE_S3_STORAGE=true` switches the same Storage API
-boundary to `storages.backends.s3.S3Storage`; no cloud connection or real
-credential was used during VAL-02.
+The S3 storage adapter remains configuration-only in this environment. No S3,
+PostgreSQL, backup/restore or clean non-production deployment gate is claimed
+as passed.
 
-## Read-only frontend
+## Scope stop
 
-The minimal frontend implements exact canonical-name/alias matching, same-name
-work disambiguation, one card per formal prototype, 16-item pagination, a
-4/3/2 responsive grid, original-ratio images, adult-image filtering and a
-current-page-only lightbox with close, zoom, previous and next. It intentionally
-has no detail panel and no download button.
-
-Search, disambiguation, pagination, multi-character visibility, version
-deduplication and adult filtering were exercised through Django HTTP rendering.
-Responsive CSS, intrinsic width/height and the lightbox DOM/JavaScript contract
-were checked statically. Real Chrome click/previous/next/boundary interaction
-could not run because the selected Chrome profile had no control extension and
-the native host was unavailable; this gap remains visible as AC-29 `not_run`.
+This directory remains under `spikes/`. It has not been moved into a formal
+application, deployed, connected to Hpoi or populated with real figure images.

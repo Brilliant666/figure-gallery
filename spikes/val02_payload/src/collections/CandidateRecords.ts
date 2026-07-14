@@ -2,6 +2,7 @@ import type { CollectionConfig } from 'payload'
 
 import { candidateUpsertEndpoint } from '@/endpoints/candidateUpsert'
 import { candidateReviewEndpoint } from '@/endpoints/candidateReview'
+import { candidateMediaUploadEndpoint } from '@/endpoints/candidateMediaUpload'
 import { adminFieldOnly, adminOnly } from '@/security/roles'
 
 export const CandidateRecords: CollectionConfig = {
@@ -16,11 +17,17 @@ export const CandidateRecords: CollectionConfig = {
     read: adminOnly,
     update: () => false,
   },
-  endpoints: [candidateUpsertEndpoint, candidateReviewEndpoint],
+  endpoints: [candidateUpsertEndpoint, candidateMediaUploadEndpoint, candidateReviewEndpoint],
   trash: true,
   versions: { maxPerDoc: 30 },
   fields: [
     { name: 'externalKey', type: 'text', index: true, required: true, unique: true },
+    {
+      name: 'candidateOwner',
+      type: 'relationship',
+      access: { create: adminFieldOnly, update: adminFieldOnly },
+      relationTo: 'users',
+    },
     {
       name: 'source',
       type: 'relationship',

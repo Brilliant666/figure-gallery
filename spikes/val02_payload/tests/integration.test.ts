@@ -11,10 +11,21 @@ import { loadDomainFixture } from '@/domain/fixture'
 import {
   mergePrototypes,
   splitPrototype,
-  undoLastMergeOrSplit,
+  undoOperationByID,
 } from '@/domain/payloadDomainService'
+import {
+  createFormalTargetForReview,
+  maintainFormalRecord,
+  openReviewWorkItem,
+  reopenReviewWorkItem,
+  revokeCandidateClient,
+  updateSystemSettings,
+  validateAndAdvanceReviewWorkItem,
+} from '@/domain/val02bDomainService'
 import { seedPayload } from '@/domain/seed'
 import { calculateAverageHash, generateSyntheticPNG } from '@/domain/seed'
+import { candidateMediaUploadEndpoint } from '@/endpoints/candidateMediaUpload'
+import { adminDomainEndpoint } from '@/endpoints/adminDomain'
 import { candidateReviewEndpoint } from '@/endpoints/candidateReview'
 import { candidateUpsertEndpoint } from '@/endpoints/candidateUpsert'
 import {
@@ -31,9 +42,14 @@ let mediaDir: string
 let maps: Awaited<ReturnType<typeof seedPayload>>
 let fixture: Doc
 let admin: Doc
+let secondAdmin: Doc
 let candidateUser: Doc
 let secondCandidateUser: Doc
 let candidateAPIKey: string
+let val02bCandidateBody: Doc
+let val02bCandidateExternalKey: string
+let val02bCandidateID: number
+let val02bMediaID: number
 
 const fixtureDoc = (map: Map<string, Doc>, id: string): Doc => {
   const doc = map.get(id)
@@ -46,6 +62,52 @@ const jsonRequest = async (user: Doc, body: Record<string, unknown>): Promise<Pa
   Object.defineProperty(req, 'json', {
     configurable: true,
     value: async () => structuredClone(body),
+  })
+  return req
+}
+
+const tokenJSONRequest = async (token: string, body: Record<string, unknown>): Promise<PayloadRequest> => {
+  const req = await createLocalReq({}, payload)
+  Object.defineProperty(req, 'headers', {
+    configurable: true,
+    value: new Headers({ authorization: `users API-Key ${token}` }),
+  })
+  Object.defineProperty(req, 'json', {
+    configurable: true,
+    value: async () => structuredClone(body),
+  })
+  return req
+}
+
+const openReviewGate = async (
+  candidateID: number,
+  allowedTargetIDs: number[] = [],
+): Promise<{ expectedVersion: number; workItemID: number }> => {
+  const req = await createLocalReq({ user: admin as any }, payload)
+  const item = await openReviewWorkItem(req, {
+    allowedTargetIDs,
+    candidateID,
+    reason: 'Open test-scoped bounded review work item',
+  })
+  return { expectedVersion: Number(item.lockVersion), workItemID: Number(item.id) }
+}
+
+const multipartRequest = async (
+  user: Doc,
+  metadata: Record<string, unknown>,
+  bytes: Buffer,
+  fileType = String(metadata.content_type ?? 'image/png'),
+): Promise<PayloadRequest> => {
+  const req = await createLocalReq({ user: user as any }, payload)
+  const form = new FormData()
+  form.set('metadata', JSON.stringify(metadata))
+  form.set(
+    'file',
+    new File([Uint8Array.from(bytes).buffer], String(metadata.filename ?? 'synthetic.png'), { type: fileType }),
+  )
+  Object.defineProperty(req, 'formData', {
+    configurable: true,
+    value: async () => form,
   })
   return req
 }
@@ -109,8 +171,20 @@ describe.sequential('real Payload SQLite integration', () => {
     admin = await payload.create({
       collection: 'users',
       data: {
+        candidateActive: true,
         email: `admin-${randomUUID()}@synthetic.invalid`,
         password: adminPassword,
+        role: 'admin',
+      },
+      overrideAccess: true,
+      showHiddenFields: true,
+    })
+    secondAdmin = await payload.create({
+      collection: 'users',
+      data: {
+        candidateActive: true,
+        email: `admin-second-${randomUUID()}@synthetic.invalid`,
+        password: randomBytes(24).toString('base64url'),
         role: 'admin',
       },
       overrideAccess: true,
@@ -121,6 +195,8 @@ describe.sequential('real Payload SQLite integration', () => {
       collection: 'users',
       data: {
         apiKey: candidateAPIKey,
+        candidateActive: true,
+        candidateClientID: `client-${randomUUID()}`,
         email: `candidate-${randomUUID()}@synthetic.invalid`,
         enableAPIKey: true,
         password: randomBytes(24).toString('base64url'),
@@ -133,6 +209,8 @@ describe.sequential('real Payload SQLite integration', () => {
       collection: 'users',
       data: {
         apiKey: randomBytes(32).toString('base64url'),
+        candidateActive: true,
+        candidateClientID: `client-${randomUUID()}`,
         email: `candidate-second-${randomUUID()}@synthetic.invalid`,
         enableAPIKey: true,
         password: randomBytes(24).toString('base64url'),
@@ -177,6 +255,7 @@ describe.sequential('real Payload SQLite integration', () => {
           actorLabel: 'forged',
           afterState: {},
           beforeState: {},
+          operationVersion: 1,
           operationType: 'candidate_upsert',
           reason: 'forged',
           relatedRecords: {},
@@ -796,6 +875,7 @@ describe.sequential('real Payload SQLite integration', () => {
     const beforeVersionCount = await payload.count({ collection: 'figure-versions', overrideAccess: true })
     const galleryCharacter = fixtureDoc(maps.characters, 'character-lin-orbit')
     const beforeGallery = await getCharacterGallery(galleryCharacter.id, 1)
+    const reviewGate = await openReviewGate(candidate.id, [prototype.id])
 
     const accepted = await candidateReviewEndpoint.handler(
       await jsonRequest(admin, {
@@ -805,6 +885,7 @@ describe.sequential('real Payload SQLite integration', () => {
         prototypeID: prototype.id,
         reason: 'Verify AC-11 whitelist update',
         value: '1/9',
+        ...reviewGate,
       }),
     )
     expect(accepted.status).toBe(200)
@@ -823,6 +904,8 @@ describe.sequential('real Payload SQLite integration', () => {
         prototypeID: prototype.id,
         reason: 'Verify AC-10 existing version link',
         versionID: version.id,
+        workItemID: reviewGate.workItemID,
+        expectedVersion: 2,
       }),
     )
     expect(attached.status).toBe(200)
@@ -867,6 +950,7 @@ describe.sequential('real Payload SQLite integration', () => {
     expect(created.status).toBe(201)
     const prototype = fixtureDoc(maps.prototypes, 'prototype-orbit-lin-aurora')
     const version = fixtureDoc(maps.versions, 'version-p1-standard')
+    const reviewGate = await openReviewGate(createdBody.candidate_id, [prototype.id])
     const attached = await candidateReviewEndpoint.handler(
       await jsonRequest(admin, {
         action: 'attach-version',
@@ -874,6 +958,7 @@ describe.sequential('real Payload SQLite integration', () => {
         prototypeID: prototype.id,
         reason: 'Prepare recollection review signal test',
         versionID: version.id,
+        ...reviewGate,
       }),
     )
     expect(attached.status).toBe(200)
@@ -908,6 +993,8 @@ describe.sequential('real Payload SQLite integration', () => {
 
   it('creates a new manufacturer only as audited draft before controlled activation', async () => {
     const name = `Reviewed manufacturer ${randomUUID()}`
+    const candidate = fixtureDoc(maps.candidates, 'candidate-new-unmatched')
+    const reviewGate = await openReviewGate(candidate.id)
     const genericReq = await createLocalReq({ user: admin as any }, payload)
     await expect(
       payload.create({
@@ -921,8 +1008,10 @@ describe.sequential('real Payload SQLite integration', () => {
     const createdResponse = await candidateReviewEndpoint.handler(
       await jsonRequest(admin, {
         action: 'create-manufacturer',
+        candidateID: candidate.id,
         newManufacturerName: name,
         reason: 'Create unverified manufacturer as draft',
+        ...reviewGate,
       }),
     )
     expect(createdResponse.status, await createdResponse.clone().text()).toBe(200)
@@ -940,9 +1029,12 @@ describe.sequential('real Payload SQLite integration', () => {
     const activatedResponse = await candidateReviewEndpoint.handler(
       await jsonRequest(admin, {
         action: 'set-manufacturer-status',
+        candidateID: candidate.id,
+        expectedVersion: 2,
         manufacturerID: draft.id,
         manufacturerStatus: 'active',
         reason: 'Synthetic manufacturer verification completed',
+        workItemID: reviewGate.workItemID,
       }),
     )
     expect(activatedResponse.status, await activatedResponse.clone().text()).toBe(200)
@@ -972,10 +1064,12 @@ describe.sequential('real Payload SQLite integration', () => {
 
   it('keeps defer/reject/create review writes atomic and auditable', async () => {
     const candidate = fixtureDoc(maps.candidates, 'candidate-new-unmatched')
+    const reviewGate = await openReviewGate(candidate.id)
     const failedReq = await jsonRequest(admin, {
       action: 'defer',
       candidateID: candidate.id,
       reason: 'Injected audit rollback',
+      ...reviewGate,
     })
     failedReq.context = { ...failedReq.context, testFailBeforeReviewOperationLog: true }
     const failed = await candidateReviewEndpoint.handler(failedReq)
@@ -993,6 +1087,7 @@ describe.sequential('real Payload SQLite integration', () => {
         action: 'defer',
         candidateID: candidate.id,
         reason: 'Wait for synthetic review',
+        ...reviewGate,
       }),
     )
     expect(deferred.status).toBe(200)
@@ -1008,7 +1103,9 @@ describe.sequential('real Payload SQLite integration', () => {
       await jsonRequest(admin, {
         action: 'ignore',
         candidateID: candidate.id,
+        expectedVersion: 2,
         reason: 'Synthetic duplicate',
+        workItemID: reviewGate.workItemID,
       }),
     )
     expect(ignored.status).toBe(200)
@@ -1024,9 +1121,11 @@ describe.sequential('real Payload SQLite integration', () => {
       await jsonRequest(admin, {
         action: 'reject-field',
         candidateID: candidate.id,
+        expectedVersion: 3,
         field: 'rawDate',
         reason: 'Unverified date',
         value: '2026-09',
+        workItemID: reviewGate.workItemID,
       }),
     )
     expect(rejected.status).toBe(200)
@@ -1035,6 +1134,7 @@ describe.sequential('real Payload SQLite integration', () => {
       await jsonRequest(admin, {
         action: 'create-prototype',
         candidateID: candidate.id,
+        expectedVersion: 4,
         newPrototype: {
           characters: [fixtureDoc(maps.characters, 'character-aya').id],
           figureType: 'scale',
@@ -1042,6 +1142,7 @@ describe.sequential('real Payload SQLite integration', () => {
           title: 'Synthetic reviewed prototype',
         },
         reason: 'Create draft from reviewed candidate',
+        workItemID: reviewGate.workItemID,
       }),
     )
     expect(created.status, await created.clone().text()).toBe(200)
@@ -1067,18 +1168,23 @@ describe.sequential('real Payload SQLite integration', () => {
       await jsonRequest(admin, {
         action: 'select-main-image',
         candidateID: candidate.id,
+        expectedVersion: 5,
         mediaID: candidateMain.id,
         prototypeID: createdPrototype.id,
         reason: 'Select local synthetic main before publication',
+        workItemID: reviewGate.workItemID,
       }),
     )
     expect(selectedMain.status, await selectedMain.clone().text()).toBe(200)
     const publishedResponse = await candidateReviewEndpoint.handler(
       await jsonRequest(admin, {
         action: 'set-prototype-publication',
+        candidateID: candidate.id,
+        expectedVersion: 6,
         prototypeID: createdPrototype.id,
         publicationStatus: 'published',
         reason: 'Publish reviewed synthetic prototype',
+        workItemID: reviewGate.workItemID,
       }),
     )
     expect(publishedResponse.status, await publishedResponse.clone().text()).toBe(200)
@@ -1121,13 +1227,16 @@ describe.sequential('real Payload SQLite integration', () => {
     const prototype = fixtureDoc(maps.prototypes, 'prototype-orbit-lin-aurora')
     const oldMain = fixtureDoc(maps.media, 'media-prototype-01-main')
     const newMain = fixtureDoc(maps.media, 'candidate-image-002-b')
+    const candidate = fixtureDoc(maps.candidates, 'candidate-main-image-attack')
+    const reviewGate = await openReviewGate(candidate.id, [prototype.id])
     const response = await candidateReviewEndpoint.handler(
       await jsonRequest(admin, {
         action: 'select-main-image',
-        candidateID: fixtureDoc(maps.candidates, 'candidate-main-image-attack').id,
+        candidateID: candidate.id,
         mediaID: newMain.id,
         prototypeID: prototype.id,
         reason: 'Manual main image selection test',
+        ...reviewGate,
       }),
     )
     expect(response.status).toBe(200)
@@ -1149,10 +1258,12 @@ describe.sequential('real Payload SQLite integration', () => {
     const invalid = await candidateReviewEndpoint.handler(
       await jsonRequest(admin, {
         action: 'select-main-image',
-        candidateID: fixtureDoc(maps.candidates, 'candidate-main-image-attack').id,
+        candidateID: candidate.id,
+        expectedVersion: 2,
         mediaID: wrongCandidateMedia.id,
         prototypeID: prototype.id,
         reason: 'Must reject cross-candidate media',
+        workItemID: reviewGate.workItemID,
       }),
     )
     expect(invalid.status).toBe(400)
@@ -1160,7 +1271,7 @@ describe.sequential('real Payload SQLite integration', () => {
     const candidateDoc = await payload.findByID({
       collection: 'candidate-records',
       depth: 0,
-      id: fixtureDoc(maps.candidates, 'candidate-main-image-attack').id,
+      id: candidate.id,
       overrideAccess: true,
     })
     await payload.update({
@@ -1411,7 +1522,11 @@ describe.sequential('real Payload SQLite integration', () => {
       ),
     ).toEqual([splitID, splitID, splitID, splitID])
 
-    const undoSplitLog = await undoLastMergeOrSplit(adminReq, 'Undo real split test')
+    const undoSplitLog = await undoOperationByID(
+      adminReq,
+      String(splitLog.operationID),
+      'Undo real split test',
+    )
     const restoredAfterSplit = await Promise.all([
       payload.findByID({
         collection: 'candidate-records',
@@ -1444,7 +1559,11 @@ describe.sequential('real Payload SQLite integration', () => {
       ),
     ).toEqual([retained.id, retained.id, retained.id, retained.id])
 
-    const undoMergeLog = await undoLastMergeOrSplit(adminReq, 'Undo real merge test')
+    const undoMergeLog = await undoOperationByID(
+      adminReq,
+      String(mergeLog.operationID),
+      'Undo real merge test',
+    )
     const [
       mergeRestoredCandidate,
       mergeRestoredCandidateMedia,
@@ -1629,6 +1748,7 @@ describe.sequential('real Payload SQLite integration', () => {
     const adultMedia = fixtureDoc(maps.media, 'candidate-image-003-a')
     const prototype = fixtureDoc(maps.prototypes, 'prototype-moon-lin-variants')
     const character = fixtureDoc(maps.characters, 'character-lin-moon')
+    const reviewGate = await openReviewGate(candidate.id, [prototype.id])
     const selected = await candidateReviewEndpoint.handler(
       await jsonRequest(admin, {
         action: 'select-main-image',
@@ -1636,6 +1756,7 @@ describe.sequential('real Payload SQLite integration', () => {
         mediaID: adultMedia.id,
         prototypeID: prototype.id,
         reason: 'Promote synthetic adult image for visibility boundary test',
+        ...reviewGate,
       }),
     )
     expect(selected.status, await selected.clone().text()).toBe(200)
@@ -1699,6 +1820,7 @@ describe.sequential('real Payload SQLite integration', () => {
           figureType: 'scale',
           isAdult: false,
           isGroup: false,
+          lockVersion: 1,
           manufacturer: manufacturer.id,
           publicationStatus: 'published',
           softDeleted: false,
@@ -1901,5 +2023,603 @@ describe.sequential('real Payload SQLite integration', () => {
     // The generated files exist only in the test TEMP media directory.
     const originalFilename = String(image.filename)
     await expect(readFile(path.join(mediaDir, originalFilename))).resolves.toBeInstanceOf(Buffer)
+  })
+
+  it('closes the synthetic multipart candidate-media loop with validation, hashes, renditions, dedupe and retry', async () => {
+    const marker = randomUUID()
+    val02bCandidateExternalKey = `val02b-candidate-${marker}`
+    val02bCandidateBody = {
+      candidate: {
+        id: val02bCandidateExternalKey,
+        images: [],
+        raw_character_names: ['Synthetic Lin'],
+        raw_manufacturer: 'Synthetic Maker',
+        raw_snapshot: { marker },
+        raw_title: 'VAL-02B synthetic multipart candidate',
+        source: {
+          source_item_id: `val02b-source-${marker}`,
+          source_status: 'active',
+          source_type: 'Synthetic',
+          source_url: `https://synthetic.invalid/val02b/${marker}`,
+        },
+        status: 'pending',
+      },
+      operation: 'candidate_upsert',
+      protocol_version: 1,
+    }
+    const upsert = await candidateUpsertEndpoint.handler(
+      await jsonRequest(candidateUser, val02bCandidateBody),
+    )
+    expect(upsert.status, await upsert.clone().text()).toBe(201)
+    val02bCandidateID = Number(((await upsert.clone().json()) as Doc).candidate_id)
+
+    const formalBefore = await payload.count({ collection: 'figure-prototypes', overrideAccess: true })
+    const bytes = await generateSyntheticPNG({ height: 53, rgba: [63, 127, 191, 255], width: 37 })
+    const digest = createHash('sha256').update(bytes).digest('hex')
+    const perceptualHash = await calculateAverageHash(bytes)
+    const metadata = {
+      candidate_id: val02bCandidateID,
+      client_candidate_id: val02bCandidateExternalKey,
+      client_id: candidateUser.candidateClientID,
+      content_type: 'image/png',
+      file_size: bytes.length,
+      filename: 'first-name.png',
+      height: 53,
+      idempotency_key: `upload-${marker}-0001`,
+      operation: 'candidate_media_upload',
+      perceptual_hash: perceptualHash,
+      protocol_version: 2,
+      sha256: digest,
+      width: 37,
+    }
+
+    const text = Buffer.from('not a synthetic image\n')
+    const textMetadata = {
+      ...metadata,
+      file_size: text.length,
+      idempotency_key: `upload-${marker}-text`,
+      sha256: createHash('sha256').update(text).digest('hex'),
+    }
+    const invalid = await candidateMediaUploadEndpoint.handler(
+      await multipartRequest(candidateUser, textMetadata, text),
+    )
+    expect(invalid.status).toBe(400)
+
+    const mismatch = await candidateMediaUploadEndpoint.handler(
+      await multipartRequest(candidateUser, metadata, bytes, 'text/plain'),
+    )
+    expect(mismatch.status).toBe(400)
+
+    const oversized = Buffer.alloc(64 * 1024 + 1, 7)
+    const oversizedResponse = await candidateMediaUploadEndpoint.handler(
+      await multipartRequest(candidateUser, {
+        ...metadata,
+        file_size: oversized.length,
+        idempotency_key: `upload-${marker}-large`,
+        sha256: createHash('sha256').update(oversized).digest('hex'),
+      }, oversized),
+    )
+    expect(oversizedResponse.status).toBe(413)
+
+    const first = await candidateMediaUploadEndpoint.handler(
+      await multipartRequest(candidateUser, metadata, bytes),
+    )
+    expect(first.status, await first.clone().text()).toBe(201)
+    const firstBody = (await first.clone().json()) as Doc
+    val02bMediaID = Number(firstBody.media_id)
+
+    const duplicate = await candidateMediaUploadEndpoint.handler(
+      await multipartRequest(candidateUser, {
+        ...metadata,
+        filename: 'same-content-new-name.png',
+        idempotency_key: `upload-${marker}-0002`,
+      }, bytes),
+    )
+    expect(duplicate.status).toBe(200)
+    expect((await duplicate.clone().json()) as Doc).toMatchObject({
+      created: false,
+      media_id: val02bMediaID,
+    })
+
+    const changedBytes = await generateSyntheticPNG({ height: 53, rgba: [191, 63, 127, 255], width: 37 })
+    const conflict = await candidateMediaUploadEndpoint.handler(
+      await multipartRequest(candidateUser, {
+        ...metadata,
+        file_size: changedBytes.length,
+        perceptual_hash: await calculateAverageHash(changedBytes),
+        sha256: createHash('sha256').update(changedBytes).digest('hex'),
+      }, changedBytes),
+    )
+    expect(conflict.status).toBe(409)
+
+    const media = await payload.findByID({
+      collection: 'media',
+      depth: 0,
+      id: val02bMediaID,
+      overrideAccess: true,
+    })
+    expect(media).toMatchObject({
+      candidateOnly: true,
+      perceptualHash,
+      pixelHeight: 53,
+      pixelWidth: 37,
+      selectedAsMain: false,
+      sha256: digest,
+    })
+    expect(relationID(media.candidateOwner)).toBe(candidateUser.id)
+    expect((media.sizes as Doc).thumbnail.url).toBeTruthy()
+    expect((media.sizes as Doc).preview.url).toBeTruthy()
+    const candidate = await payload.findByID({
+      collection: 'candidate-records', depth: 0, id: val02bCandidateID, overrideAccess: true,
+    })
+    expect((candidate.images ?? []).map(relationID)).toContain(val02bMediaID)
+    const formalAfter = await payload.count({ collection: 'figure-prototypes', overrideAccess: true })
+    expect(formalAfter.totalDocs).toBe(formalBefore.totalDocs)
+  })
+
+  it('enforces current per-client identity, owner isolation, revocation and formal-data boundaries server-side', async () => {
+    const crossOwnerUpsert = await candidateUpsertEndpoint.handler(
+      await jsonRequest(secondCandidateUser, val02bCandidateBody),
+    )
+    expect(crossOwnerUpsert.status).toBeGreaterThanOrEqual(400)
+
+    const bytes = await generateSyntheticPNG({ height: 53, rgba: [63, 127, 191, 255], width: 37 })
+    const crossOwnerUpload = await candidateMediaUploadEndpoint.handler(
+      await multipartRequest(secondCandidateUser, {
+        candidate_id: val02bCandidateID,
+        client_candidate_id: val02bCandidateExternalKey,
+        client_id: secondCandidateUser.candidateClientID,
+        content_type: 'image/png',
+        file_size: bytes.length,
+        filename: 'cross-owner.png',
+        height: 53,
+        idempotency_key: `cross-owner-${randomUUID()}`,
+        operation: 'candidate_media_upload',
+        perceptual_hash: await calculateAverageHash(bytes),
+        protocol_version: 2,
+        sha256: createHash('sha256').update(bytes).digest('hex'),
+        width: 37,
+      }, bytes),
+    )
+    expect(crossOwnerUpload.status).toBe(403)
+
+    const candidateReq = await createLocalReq({ user: candidateUser as any }, payload)
+    await expect(payload.update({
+      collection: 'figure-prototypes',
+      data: { publicationStatus: 'hidden' },
+      id: fixtureDoc(maps.prototypes, 'prototype-orbit-duo').id,
+      overrideAccess: false,
+      req: candidateReq,
+    })).rejects.toThrow()
+    const mainAttack = await candidateReviewEndpoint.handler(
+      await jsonRequest(candidateUser, {
+        action: 'select-main-image',
+        candidateID: val02bCandidateID,
+        mediaID: val02bMediaID,
+        prototypeID: fixtureDoc(maps.prototypes, 'prototype-orbit-duo').id,
+        reason: 'candidate attack',
+      }),
+    )
+    expect(mainAttack.status).toBe(403)
+
+    const runtimeToken = randomBytes(32).toString('base64url')
+    const tokenHash = createHash('sha256').update(runtimeToken, 'utf8').digest('hex')
+    const hashOnlyClient = await (payload as any).create({
+      collection: 'users',
+      data: {
+        candidateActive: true,
+        candidateClientID: `hash-only-${randomUUID()}`,
+        candidateTokenHash: tokenHash,
+        email: `hash-only-${randomUUID()}@synthetic.invalid`,
+        enableAPIKey: false,
+        password: randomBytes(24).toString('base64url'),
+        role: 'candidate-client',
+      },
+      overrideAccess: true,
+      showHiddenFields: true,
+    })
+    const tokenBody = {
+      ...val02bCandidateBody,
+      candidate: {
+        ...val02bCandidateBody.candidate,
+        id: `token-${randomUUID()}`,
+        source: {
+          ...val02bCandidateBody.candidate.source,
+          source_item_id: `token-${randomUUID()}`,
+          source_url: `https://synthetic.invalid/token/${randomUUID()}`,
+        },
+      },
+    }
+    const tokenUpsert = await candidateUpsertEndpoint.handler(
+      await tokenJSONRequest(runtimeToken, tokenBody),
+    )
+    expect(tokenUpsert.status, await tokenUpsert.clone().text()).toBe(201)
+    const persisted = await (payload as any).findByID({
+      collection: 'users',
+      depth: 0,
+      id: hashOnlyClient.id,
+      overrideAccess: true,
+      showHiddenFields: true,
+    })
+    expect(persisted.candidateTokenHash).toBe(tokenHash)
+    expect(JSON.stringify(persisted)).not.toContain(runtimeToken)
+
+    const adminReq = await createLocalReq({ user: admin as any }, payload)
+    await revokeCandidateClient(adminReq, {
+      clientUserID: hashOnlyClient.id,
+      reason: 'VAL-02B explicit hash-only credential revocation test',
+    })
+    const afterRevocation = await candidateUpsertEndpoint.handler(
+      await tokenJSONRequest(runtimeToken, {
+        ...tokenBody,
+        candidate: { ...tokenBody.candidate, id: `revoked-${randomUUID()}` },
+      }),
+    )
+    expect(afterRevocation.status).toBe(403)
+  })
+
+  it('enforces allowed review targets, completion/reopen audit and optimistic concurrency', async () => {
+    const allowed = fixtureDoc(maps.prototypes, 'prototype-orbit-duo')
+    const outside = fixtureDoc(maps.prototypes, 'prototype-moon-ren-prize')
+    const adminReq = await createLocalReq({ user: admin as any }, payload)
+    const secondAdminReq = await createLocalReq({ user: secondAdmin as any }, payload)
+    const item = await openReviewWorkItem(adminReq, {
+      allowedTargetIDs: [allowed.id],
+      candidateID: val02bCandidateID,
+      reason: 'Open VAL-02B bounded review',
+    })
+
+    await expect(validateAndAdvanceReviewWorkItem(adminReq, {
+      candidateID: val02bCandidateID,
+      expectedVersion: 1,
+      targetID: outside.id,
+      workItemID: item.id,
+    })).rejects.toThrow('outside the work item allowed target set')
+
+    const completed = await validateAndAdvanceReviewWorkItem(adminReq, {
+      candidateID: val02bCandidateID,
+      complete: true,
+      expectedVersion: 1,
+      reason: 'Complete bounded synthetic review',
+      targetID: allowed.id,
+      workItemID: item.id,
+    })
+    expect(completed).toMatchObject({ lockVersion: 2, status: 'completed' })
+    await expect(validateAndAdvanceReviewWorkItem(secondAdminReq, {
+      candidateID: val02bCandidateID,
+      complete: true,
+      expectedVersion: 1,
+      reason: 'Stale concurrent review',
+      targetID: allowed.id,
+      workItemID: item.id,
+    })).rejects.toThrow('version conflict')
+    await expect(validateAndAdvanceReviewWorkItem(adminReq, {
+      candidateID: val02bCandidateID,
+      expectedVersion: 2,
+      targetID: allowed.id,
+      workItemID: item.id,
+    })).rejects.toThrow('cannot be modified without reopen')
+
+    const reopened = await reopenReviewWorkItem(secondAdminReq, {
+      expectedVersion: 2,
+      reason: 'Explicit audited reopen',
+      workItemID: item.id,
+    })
+    expect(reopened).toMatchObject({ lockVersion: 3, status: 'open' })
+    const created = await createFormalTargetForReview(secondAdminReq, {
+      candidateID: val02bCandidateID,
+      expectedVersion: 3,
+      newPrototype: {
+        characters: [fixtureDoc(maps.characters, 'character-aya').id],
+        figureType: 'scale',
+        manufacturer: fixtureDoc(maps.manufacturers, 'manufacturer-aurora').id,
+        title: `Explicit review target ${randomUUID()}`,
+      },
+      reason: 'Create a new bounded target atomically',
+      workItemID: item.id,
+    })
+    expect(created.workItem.allowedTargets.map(relationID)).toContain(created.prototype.id)
+    expect(created.workItem.allowedTargets.map(relationID)).not.toContain(outside.id)
+
+    const logs = await payload.find({
+      collection: 'operation-logs', limit: 0, overrideAccess: true,
+      where: { operationType: { in: ['review_work_item_opened', 'review_work_item_completed', 'review_work_item_reopened'] } },
+    })
+    expect(new Set(logs.docs.map((log) => log.operationType))).toEqual(new Set([
+      'review_work_item_opened', 'review_work_item_completed', 'review_work_item_reopened',
+    ]))
+  })
+
+  it('rejects review endpoint writes without work-item authorization or with stale/out-of-scope targets', async () => {
+    const candidate = fixtureDoc(maps.candidates, 'candidate-main-image-attack')
+    const allowed = fixtureDoc(maps.prototypes, 'prototype-orbit-lin-aurora')
+    const outside = fixtureDoc(maps.prototypes, 'prototype-moon-ren-prize')
+    const beforeOutside = await payload.findByID({
+      collection: 'figure-prototypes',
+      depth: 0,
+      id: outside.id,
+      overrideAccess: true,
+    })
+    const missingGate = await candidateReviewEndpoint.handler(
+      await jsonRequest(admin, {
+        action: 'accept-field',
+        candidateID: candidate.id,
+        field: 'title',
+        prototypeID: allowed.id,
+        reason: 'Missing work item attack',
+        value: 'must not persist',
+      }),
+    )
+    expect(missingGate.status).toBe(400)
+
+    const gate = await openReviewGate(candidate.id, [allowed.id])
+    const outsideAttack = await candidateReviewEndpoint.handler(
+      await jsonRequest(admin, {
+        action: 'accept-field',
+        candidateID: candidate.id,
+        field: 'title',
+        prototypeID: outside.id,
+        reason: 'Out-of-scope target attack',
+        value: 'must not persist',
+        ...gate,
+      }),
+    )
+    expect(outsideAttack.status).toBe(400)
+    expect((await payload.findByID({
+      collection: 'figure-prototypes',
+      depth: 0,
+      id: outside.id,
+      overrideAccess: true,
+    })).title).toBe(beforeOutside.title)
+
+    const firstAdmin = await candidateReviewEndpoint.handler(
+      await jsonRequest(admin, {
+        action: 'reject-field',
+        candidateID: candidate.id,
+        field: 'rawScale',
+        reason: 'First administrator wins optimistic update',
+        value: 'synthetic rejection',
+        ...gate,
+      }),
+    )
+    expect(firstAdmin.status).toBe(200)
+    const staleAdmin = await candidateReviewEndpoint.handler(
+      await jsonRequest(secondAdmin, {
+        action: 'reject-field',
+        candidateID: candidate.id,
+        expectedVersion: gate.expectedVersion,
+        field: 'rawDate',
+        reason: 'Stale second administrator',
+        value: 'must not persist',
+        workItemID: gate.workItemID,
+      }),
+    )
+    expect(staleAdmin.status).toBe(409)
+  })
+
+  it('uses stable scoped operation IDs for independent specified undo, dependency rejection and version conflicts', async () => {
+    const character = fixtureDoc(maps.characters, 'character-aya')
+    const manufacturer = fixtureDoc(maps.manufacturers, 'manufacturer-aurora')
+    const work = fixtureDoc(maps.works, 'work-orbit-chronicles')
+    const createPrototype = (label: string) => payload.create({
+      collection: 'figure-prototypes',
+      data: {
+        characters: [character.id],
+        figureType: 'scale',
+        isAdult: false,
+        isGroup: false,
+        lockVersion: 1,
+        manufacturer: manufacturer.id,
+        publicationStatus: 'draft',
+        softDeleted: false,
+        title: `VAL-02B ${label} ${randomUUID()}`,
+        work: work.id,
+      },
+      draft: false,
+      overrideAccess: true,
+    })
+    const adminReq = await createLocalReq({ user: admin as any }, payload)
+    const secondAdminReq = await createLocalReq({ user: secondAdmin as any }, payload)
+    const x = await createPrototype('X')
+    const y = await createPrototype('Y')
+    const m = await createPrototype('M')
+    const merge = await mergePrototypes(adminReq, {
+      expectedMergedVersion: 1,
+      expectedRetainedVersion: 1,
+      mergedPrototypeID: y.id,
+      reason: 'Scenario A merge X/Y',
+      retainedPrototypeID: x.id,
+    })
+    const split = await splitPrototype(secondAdminReq, {
+      expectedOriginVersion: 1,
+      newPrototype: {
+        characters: [character.id],
+        figureType: 'scale',
+        manufacturer: manufacturer.id,
+        title: `VAL-02B N ${randomUUID()}`,
+        work: work.id,
+      },
+      originPrototypeID: m.id,
+      reason: 'Scenario A split M/N',
+    })
+    expect(merge.operationID).toMatch(/^[0-9a-f-]{36}$/)
+    expect(split.operationID).toMatch(/^[0-9a-f-]{36}$/)
+    await undoOperationByID(adminReq, String(merge.operationID), 'Undo non-latest merge by ID')
+    await undoOperationByID(secondAdminReq, String(split.operationID), 'Undo independent split by ID')
+    expect((await payload.findByID({ collection: 'figure-prototypes', id: y.id, overrideAccess: true })).publicationStatus).toBe('draft')
+
+    const same = await createPrototype('same')
+    const firstOther = await createPrototype('first-other')
+    const secondOther = await createPrototype('second-other')
+    await mergePrototypes(adminReq, {
+      expectedMergedVersion: 1,
+      expectedRetainedVersion: 1,
+      mergedPrototypeID: firstOther.id,
+      reason: 'First concurrent administrator wins',
+      retainedPrototypeID: same.id,
+    })
+    await expect(mergePrototypes(secondAdminReq, {
+      expectedMergedVersion: 1,
+      expectedRetainedVersion: 1,
+      mergedPrototypeID: secondOther.id,
+      reason: 'Stale concurrent administrator loses',
+      retainedPrototypeID: same.id,
+    })).rejects.toThrow('version conflict')
+
+    const dependencyRoot = await createPrototype('dependency-root')
+    const dependencyMerged = await createPrototype('dependency-merged')
+    const prior = await mergePrototypes(adminReq, {
+      expectedMergedVersion: 1,
+      expectedRetainedVersion: 1,
+      mergedPrototypeID: dependencyMerged.id,
+      reason: 'Scenario C prerequisite merge',
+      retainedPrototypeID: dependencyRoot.id,
+    })
+    const dependent = await splitPrototype(secondAdminReq, {
+      dependsOn: [String(prior.operationID)],
+      expectedOriginVersion: 2,
+      newPrototype: {
+        characters: [character.id],
+        figureType: 'scale',
+        manufacturer: manufacturer.id,
+        title: `Dependent split ${randomUUID()}`,
+        work: work.id,
+      },
+      originPrototypeID: dependencyRoot.id,
+      reason: 'Scenario C dependent split',
+    })
+    await expect(
+      undoOperationByID(adminReq, String(prior.operationID), 'Unsafe prerequisite undo'),
+    ).rejects.toThrow('depends on it')
+    await undoOperationByID(secondAdminReq, String(dependent.operationID), 'Undo dependent operation first')
+    await undoOperationByID(adminReq, String(prior.operationID), 'Undo prerequisite after dependency')
+  })
+
+  it('propagates handler dependencies and blocks omitted dependencies by overlapping scope', async () => {
+    const character = fixtureDoc(maps.characters, 'character-aya')
+    const manufacturer = fixtureDoc(maps.manufacturers, 'manufacturer-aurora')
+    const makePrototype = (label: string) => payload.create({
+      collection: 'figure-prototypes',
+      data: {
+        characters: [character.id],
+        figureType: 'scale',
+        lockVersion: 1,
+        manufacturer: manufacturer.id,
+        publicationStatus: 'draft',
+        title: `Endpoint dependency ${label} ${randomUUID()}`,
+      },
+      draft: true,
+      overrideAccess: true,
+    })
+    const invoke = async (body: Record<string, unknown>) => {
+      const response = await adminDomainEndpoint.handler(await jsonRequest(admin, body))
+      return { response, body: (await response.clone().json()) as Doc }
+    }
+
+    const x = await makePrototype('X')
+    const y = await makePrototype('Y')
+    const merged = await invoke({
+      action: 'merge',
+      expectedMergedVersion: 1,
+      expectedRetainedVersion: 1,
+      mergedPrototypeID: y.id,
+      reason: 'Create endpoint merge prerequisite',
+      retainedPrototypeID: x.id,
+    })
+    expect(merged.response.status, JSON.stringify(merged.body)).toBe(200)
+    const mergeID = String(merged.body.result.operationID)
+    const split = await invoke({
+      action: 'split',
+      dependsOn: [mergeID],
+      expectedOriginVersion: 2,
+      newPrototype: {
+        characters: [character.id],
+        figureType: 'scale',
+        manufacturer: manufacturer.id,
+        title: `Endpoint dependent split ${randomUUID()}`,
+      },
+      originPrototypeID: x.id,
+      reason: 'Create explicitly dependent endpoint split',
+      relationshipIDs: {},
+    })
+    expect(split.response.status, JSON.stringify(split.body)).toBe(200)
+    const splitID = String(split.body.result.operationID)
+    const blockedExplicit = await invoke({
+      action: 'undo-operation',
+      operationID: mergeID,
+      reason: 'Reject undo with declared endpoint dependency',
+    })
+    expect(blockedExplicit.response.status).toBe(400)
+    expect(blockedExplicit.body.error).toContain('depends on it')
+    expect((await invoke({ action: 'undo-operation', operationID: splitID, reason: 'Undo dependent split' })).response.status).toBe(200)
+    expect((await invoke({ action: 'undo-operation', operationID: mergeID, reason: 'Undo prerequisite merge' })).response.status).toBe(200)
+
+    const a = await makePrototype('A')
+    const b = await makePrototype('B')
+    const fallbackMerge = await invoke({
+      action: 'merge',
+      expectedMergedVersion: 1,
+      expectedRetainedVersion: 1,
+      mergedPrototypeID: b.id,
+      reason: 'Create scope-overlap prerequisite',
+      retainedPrototypeID: a.id,
+    })
+    expect(fallbackMerge.response.status).toBe(200)
+    const fallbackMergeID = String(fallbackMerge.body.result.operationID)
+    const fallbackSplit = await invoke({
+      action: 'split',
+      expectedOriginVersion: 2,
+      newPrototype: {
+        characters: [character.id],
+        figureType: 'scale',
+        manufacturer: manufacturer.id,
+        title: `Endpoint overlap split ${randomUUID()}`,
+      },
+      originPrototypeID: a.id,
+      reason: 'Exercise omitted dependency overlap fallback',
+      relationshipIDs: {},
+    })
+    expect(fallbackSplit.response.status).toBe(200)
+    const fallbackSplitID = String(fallbackSplit.body.result.operationID)
+    const blockedOverlap = await invoke({
+      action: 'undo-operation',
+      operationID: fallbackMergeID,
+      reason: 'Reject unsafe overlapping undo',
+    })
+    expect(blockedOverlap.response.status).toBe(400)
+    expect(blockedOverlap.body.error).toContain('overlaps its prototype scope')
+    expect((await invoke({ action: 'undo-operation', operationID: fallbackSplitID, reason: 'Undo overlap split' })).response.status).toBe(200)
+    expect((await invoke({ action: 'undo-operation', operationID: fallbackMergeID, reason: 'Undo overlap merge' })).response.status).toBe(200)
+  })
+
+  it('provides audited allowlisted formal maintenance while generic CRUD remains closed', async () => {
+    const work = fixtureDoc(maps.works, 'work-orbit-chronicles')
+    const req = await createLocalReq({ user: admin as any }, payload)
+    const renamed = await maintainFormalRecord(req, {
+      collection: 'works',
+      data: { aliases: ['VAL-02B audited alias'] },
+      id: work.id,
+      reason: 'Exercise minimal audited formal maintenance entry',
+    })
+    expect(renamed.aliases).toContain('VAL-02B audited alias')
+    const log = await payload.find({
+      collection: 'operation-logs', limit: 1, overrideAccess: true, sort: '-createdAt',
+      where: { operationType: { equals: 'maintain_formal' } },
+    })
+    expect(log.docs[0]).toMatchObject({ reason: 'Exercise minimal audited formal maintenance entry' })
+    const settings = await updateSystemSettings(req, {
+      reason: 'Exercise audited SystemSetting service',
+      settings: { galleryPageSize: 17 },
+    })
+    expect(settings.galleryPageSize).toBe(17)
+    const settingLog = await payload.find({
+      collection: 'operation-logs', limit: 1, overrideAccess: true, sort: '-createdAt',
+      where: { operationType: { equals: 'update_settings' } },
+    })
+    expect(settingLog.docs[0]).toMatchObject({ reason: 'Exercise audited SystemSetting service' })
+    await updateSystemSettings(req, {
+      reason: 'Restore deterministic SystemSetting fixture',
+      settings: { galleryPageSize: 16 },
+    })
   })
 })

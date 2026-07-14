@@ -1,0 +1,52 @@
+{
+  "schema_version": 1,
+  "observed_date": "2026-07-14",
+  "prerequisites": {
+    "docker_client": "available",
+    "docker_compose_client": "available",
+    "docker_engine": "unavailable",
+    "postgresql_client_service_or_listener": "unavailable",
+    "minio_or_loopback_s3": "unavailable"
+  },
+  "wagtail": {
+    "postgresql_BG_17_to_BG_22": "environment_blocked",
+    "s3_BG_23_to_BG_28": "environment_blocked",
+    "complete_nonproduction_deployment_BG_29": "environment_blocked",
+    "supplemental_only": [
+      "SQLite fresh migrations and repeat seed",
+      "local filesystem media and Wagtail renditions",
+      "DEBUG=false, collectstatic and loopback WSGI health smoke"
+    ]
+  },
+  "payload": {
+    "postgresql_BG_17_to_BG_22": "environment_blocked",
+    "s3_BG_23_to_BG_28": "environment_blocked",
+    "complete_nonproduction_deployment_BG_29": "environment_blocked",
+    "supplemental_only": [
+      "SQLite fresh migrations and repeat seed",
+      "local filesystem media and Sharp derivatives",
+      "production Next.js build",
+      "standalone loopback health, root, Admin and static HTTP 200",
+      "Sharp native files present in standalone tracing",
+      "no NFT tracing warning observed"
+    ]
+  },
+  "backup_restore": {
+    "postgresql_backup_created": false,
+    "postgresql_restore_executed": false,
+    "backup_file_retained": false,
+    "status": "environment_blocked"
+  },
+  "object_storage": {
+    "service_started": false,
+    "objects_created": false,
+    "credentials_retained": false,
+    "status": "environment_blocked"
+  },
+  "cleanup": {
+    "containers_started": 0,
+    "cloud_resources_used": false,
+    "system_services_modified": false,
+    "hpoi_requests": 0
+  }
+}

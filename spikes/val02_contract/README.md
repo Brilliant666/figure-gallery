@@ -13,6 +13,10 @@
 - `reference_contract.py`：候选来源键、幂等 upsert、URL fallback 迁移和正式数据隔离的纯 Python 参考。
 - `acceptance_result.py`：两个原型测试运行器用于生成同结构结果的 recorder。
 - `validate_results.py`：读取两个原型实际结果，校验结构并重算通过/失败/未运行数。
+- `val02b_acceptance_contract.json`：BG-01—BG-30、四种状态、八项硬门禁和九维评分权重。
+- `val02b_acceptance_result.py` / `validate_val02b_results.py`：VAL-02B recorder 与双原型 pair validator。
+- `candidate_media_contract.py`：内存生成的上传、拒绝与内容身份用例。
+- `attack_cases.json` / `attack_contract.py`：身份、归属、媒体、工作项、并发和指定 undo 的统一负向用例。
 - `network_guard.py`：在 DNS 或 HTTP 发生前拒绝 Hpoi 根域及任意子域。
 - `python_candidate_client/`：同一候选 upsert 客户端的 Wagtail/Payload adapter。
 - `tests/`：全部离线的合同、客户端、网络禁令与防伪结果测试。
@@ -36,6 +40,8 @@ python -m unittest discover -s spikes/val02_contract/tests -v
 python -m compileall -q spikes/val02_contract
 python spikes/val02_contract/python_candidate_client/client.py --adapter wagtail --dry-run
 python spikes/val02_contract/python_candidate_client/client.py --adapter payload --dry-run
+python spikes/val02_contract/python_candidate_client/client.py --adapter wagtail --candidate-id candidate-main-image-attack --dry-run-upload
+python spikes/val02_contract/python_candidate_client/client.py --adapter payload --candidate-id candidate-main-image-attack --dry-run-upload
 ```
 
 `--dry-run` 不读取 Token、不开 socket，只检查统一请求形状和媒体元数据。
@@ -91,6 +97,19 @@ python spikes/val02_contract/validate_results.py `
 只有确实要求两边 30/30 时才增加 `--require-all-pass`。环境阻塞应如实保留
 `not_run`，不能为了通过 validator 手工改状态。
 
+VAL-02B 使用独立四状态结果：
+
+```powershell
+python spikes/val02_contract/validate_val02b_results.py `
+  --wagtail spikes/val02_wagtail/val02b-acceptance-results.json `
+  --payload spikes/val02_payload/val02b-acceptance-results.json `
+  --require-no-hard-failures
+```
+
+`environment_blocked` 与 `not_run` 都必须引用 `blocker`。validator 重算四种状态和
+硬门禁，不把环境阻塞折算成通过或失败。只有要求全部 30 项通过时才增加
+`--require-all-pass`。
+
 ## 候选客户端边界
 
 两个 adapter 发送完全相同的 body：
@@ -103,11 +122,12 @@ python spikes/val02_contract/validate_results.py `
 }
 ```
 
-客户端仅允许 loopback endpoint，只公开 `upsert_candidate(s)`，没有正式实体或
-主图写方法。Wagtail 使用运行时 `VAL02_WAGTAIL_CANDIDATE_TOKEN`；Payload 使用
+客户端仅允许 loopback endpoint，只公开 `upsert_candidate(s)` 和候选图片
+`upload_candidate_image`，没有正式实体或主图写方法。Wagtail 使用运行时 `VAL02_WAGTAIL_CANDIDATE_TOKEN`；Payload 使用
 运行时 `VAL02_PAYLOAD_CANDIDATE_TOKEN`，Authorization 为 Payload 3 的
 `users API-Key <token>`。客户端会发送图片的生成描述、storage key、尺寸与哈希，
-但不发送图片二进制/base64。
+upsert 不发送图片二进制/base64；VAL-02B 上传使用独立 multipart endpoint，在
+`file` part 中发送运行时合成 PNG，并要求独立运行时 client ID。
 
 对正式原型或主图的恶意写入必须由各原型自己的 endpoint/access/hook 测试发起
 并证明被拒绝；共享客户端本身不提供这种能力。

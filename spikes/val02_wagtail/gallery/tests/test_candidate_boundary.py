@@ -7,9 +7,9 @@ import sys
 from unittest import mock
 
 from django.contrib.auth import get_user_model
-from django.test import override_settings
 
 from gallery.candidate_service import CandidateIngressError, upsert_candidate
+from gallery.client_identity import create_candidate_client
 from gallery.models import (
     CandidateImage,
     CandidateRecord,
@@ -332,9 +332,20 @@ class CandidateServiceTests(SeededTestCase):
         self.assertEqual(image.file_size, 101)
 
 
-@override_settings(CANDIDATE_API_KEY=TEST_TOKEN)
 class CandidateHttpTests(SeededTestCase):
     endpoint = "/api/val02/candidates/upsert/"
+    client_id = "candidate-http-tests"
+
+    @classmethod
+    def setUpTestData(cls):
+        super().setUpTestData()
+        reviewer = get_user_model().objects.get(username="fixture-admin")
+        create_candidate_client(
+            client_id=cls.client_id,
+            token=TEST_TOKEN,
+            reason="Provision attributable HTTP test client",
+            actor=reviewer,
+        )
 
     def _post(
         self,
@@ -354,6 +365,7 @@ class CandidateHttpTests(SeededTestCase):
             ),
             content_type="application/json",
             HTTP_AUTHORIZATION=f"Bearer {token}",
+            HTTP_X_CANDIDATE_CLIENT_ID=self.client_id,
             REMOTE_ADDR=remote_addr,
         )
 
@@ -452,17 +464,24 @@ class CandidateHttpTests(SeededTestCase):
 
         def local_transport(request, timeout):
             del timeout
+            request_headers = {
+                key.lower(): value for key, value in request.header_items()
+            }
             response = self.client.generic(
                 request.get_method(),
                 "/api/val02/candidates/upsert/",
                 data=request.data,
                 content_type="application/json",
-                HTTP_AUTHORIZATION=request.headers["Authorization"],
+                HTTP_AUTHORIZATION=request_headers["authorization"],
+                HTTP_X_CANDIDATE_CLIENT_ID=request_headers[
+                    "x-candidate-client-id"
+                ],
             )
             return response.status_code, response.content
 
         environment = {
             "VAL02_WAGTAIL_CANDIDATE_TOKEN": TEST_TOKEN,
+            "VAL02_WAGTAIL_CANDIDATE_CLIENT_ID": self.client_id,
             "VAL02_WAGTAIL_CANDIDATE_ENDPOINT": "http://127.0.0.1:8000/api/val02/candidates/upsert/",
         }
         with mock.patch.dict(os.environ, environment, clear=False):
