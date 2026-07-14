@@ -152,14 +152,31 @@ const parseCSV = (input: string): Record<string, string>[] => {
     .map((row) => Object.fromEntries(headers.map((header, index) => [header, row[index] ?? ''])))
 }
 
-describe.sequential('real Payload SQLite integration', () => {
+const usePostgresProductionGate = process.env.PAYLOAD_CI_POSTGRES === 'true'
+
+describe.sequential(usePostgresProductionGate
+  ? 'real Payload PostgreSQL and S3 integration'
+  : 'real Payload SQLite integration', () => {
   beforeAll(async () => {
     tempDir = await mkdtemp(path.join(os.tmpdir(), 'figure-gallery-payload-vitest-'))
     mediaDir = path.join(tempDir, 'media')
-    process.env.DATABASE_URI = `file:${path.join(tempDir, 'payload.db').replaceAll('\\', '/')}`
     process.env.MEDIA_DIR = mediaDir
     process.env.PAYLOAD_SECRET = randomBytes(48).toString('hex')
-    process.env.S3_ENABLED = 'false'
+    if (usePostgresProductionGate) {
+      if (process.env.DATABASE_ADAPTER !== 'postgres') {
+        throw new Error('PAYLOAD_CI_POSTGRES requires DATABASE_ADAPTER=postgres.')
+      }
+      if (!/^postgres(?:ql)?:\/\//.test(process.env.DATABASE_URI ?? '')) {
+        throw new Error('PAYLOAD_CI_POSTGRES requires a PostgreSQL DATABASE_URI.')
+      }
+      if (process.env.S3_ENABLED !== 'true') {
+        throw new Error('PAYLOAD_CI_POSTGRES integration requires the real S3 adapter.')
+      }
+    } else {
+      process.env.DATABASE_ADAPTER = 'sqlite'
+      process.env.DATABASE_URI = `file:${path.join(tempDir, 'payload.db').replaceAll('\\', '/')}`
+      process.env.S3_ENABLED = 'false'
+    }
 
     const { fixture: loadedFixture } = await loadDomainFixture<Doc>()
     fixture = loadedFixture
@@ -1291,6 +1308,7 @@ describe.sequential('real Payload SQLite integration', () => {
       }),
     )
     expect(recollected.status, await recollected.clone().text()).toBe(200)
+    await seedPayload(payload, fixture as never)
     const [promotedMedia, stablePrototype] = await Promise.all([
       payload.findByID({ collection: 'media', depth: 0, id: newMain.id, overrideAccess: true }),
       payload.findByID({
@@ -2021,9 +2039,16 @@ describe.sequential('real Payload SQLite integration', () => {
     expect(mediaCSVRow.sourceUrl).toBe(changedMediaURL)
     expect(mediaCSVRow.sha256).toBe(String(exportedMedia.sha256))
 
-    // The generated files exist only in the test TEMP media directory.
-    const originalFilename = String(image.filename)
-    await expect(readFile(path.join(mediaDir, originalFilename))).resolves.toBeInstanceOf(Buffer)
+    if (usePostgresProductionGate) {
+      // S3 object bytes are checked independently by ci-media-gates. The
+      // PostgreSQL run must not silently fall back to the local media folder.
+      await expect(readFile(path.join(mediaDir, String(image.filename)))).rejects.toThrow()
+      expect(Object.hasOwn(image, 'prefix')).toBe(true)
+    } else {
+      // The generated files exist only in the test TEMP media directory.
+      const originalFilename = String(image.filename)
+      await expect(readFile(path.join(mediaDir, originalFilename))).resolves.toBeInstanceOf(Buffer)
+    }
   })
 
   it('closes the synthetic multipart candidate-media loop with validation, hashes, renditions, dedupe and retry', async () => {
@@ -2156,6 +2181,107 @@ describe.sequential('real Payload SQLite integration', () => {
     expect((candidate.images ?? []).map(relationID)).toContain(val02bMediaID)
     const formalAfter = await payload.count({ collection: 'figure-prototypes', overrideAccess: true })
     expect(formalAfter.totalDocs).toBe(formalBefore.totalDocs)
+
+    const [candidateMediaBeforeFailures, uploadLogsBeforeFailures] = await Promise.all([
+      payload.count({
+        collection: 'media',
+        overrideAccess: true,
+        where: { candidate: { equals: val02bCandidateID } },
+      }),
+      payload.count({
+        collection: 'operation-logs',
+        overrideAccess: true,
+        where: { operationType: { equals: 'candidate_media_upload' } },
+      }),
+    ])
+    const transportBytes = await generateSyntheticPNG({
+      height: 53,
+      rgba: [31, 95, 159, 255],
+      width: 37,
+    })
+    const transportMetadata = {
+      ...metadata,
+      file_size: transportBytes.length,
+      filename: 'transport-outage.png',
+      idempotency_key: `upload-${marker}-transport-outage`,
+      perceptual_hash: await calculateAverageHash(transportBytes),
+      sha256: createHash('sha256').update(transportBytes).digest('hex'),
+    }
+    const originalCreate = payload.create
+    const previousS3Enabled = process.env.S3_ENABLED
+    ;(payload as any).create = async (options: Doc) => {
+      if (options.collection === 'media') {
+        throw Object.assign(new Error('synthetic object transport failure'), { code: 'ECONNREFUSED' })
+      }
+      return (originalCreate as any).call(payload, options)
+    }
+    process.env.S3_ENABLED = 'true'
+    let transportFailure: Response | undefined
+    try {
+      transportFailure = await candidateMediaUploadEndpoint.handler(
+        await multipartRequest(candidateUser, transportMetadata, transportBytes),
+      )
+    } finally {
+      ;(payload as any).create = originalCreate
+      if (previousS3Enabled === undefined) delete process.env.S3_ENABLED
+      else process.env.S3_ENABLED = previousS3Enabled
+    }
+    expect(transportFailure).toBeDefined()
+    if (!transportFailure) throw new Error('Transport failure probe did not return a response.')
+    expect(transportFailure.status).toBe(503)
+    await expect(transportFailure.clone().json()).resolves.toMatchObject({
+      error_code: 'candidate_media_storage_unavailable',
+      retryable: true,
+    })
+
+    const failClosedBytes = await generateSyntheticPNG({
+      height: 53,
+      rgba: [95, 159, 31, 255],
+      width: 37,
+    })
+    const failClosedMetadata = {
+      ...metadata,
+      file_size: failClosedBytes.length,
+      filename: 'fault-hook-fail-closed.png',
+      idempotency_key: `upload-${marker}-fault-hook-request`,
+      perceptual_hash: await calculateAverageHash(failClosedBytes),
+      sha256: createHash('sha256').update(failClosedBytes).digest('hex'),
+    }
+    const previousFaultStage = process.env.PAYLOAD_CI_MEDIA_UPLOAD_FAULT
+    const previousFaultTarget = process.env.PAYLOAD_CI_MEDIA_UPLOAD_FAULT_IDEMPOTENCY_KEY
+    process.env.PAYLOAD_CI_MEDIA_UPLOAD_FAULT = 'after-operation-log-before-commit'
+    process.env.PAYLOAD_CI_MEDIA_UPLOAD_FAULT_IDEMPOTENCY_KEY = `upload-${marker}-different-target`
+    let failClosed: Response | undefined
+    try {
+      failClosed = await candidateMediaUploadEndpoint.handler(
+        await multipartRequest(candidateUser, failClosedMetadata, failClosedBytes),
+      )
+    } finally {
+      if (previousFaultStage === undefined) delete process.env.PAYLOAD_CI_MEDIA_UPLOAD_FAULT
+      else process.env.PAYLOAD_CI_MEDIA_UPLOAD_FAULT = previousFaultStage
+      if (previousFaultTarget === undefined) delete process.env.PAYLOAD_CI_MEDIA_UPLOAD_FAULT_IDEMPOTENCY_KEY
+      else process.env.PAYLOAD_CI_MEDIA_UPLOAD_FAULT_IDEMPOTENCY_KEY = previousFaultTarget
+    }
+    expect(failClosed).toBeDefined()
+    if (!failClosed) throw new Error('Fail-closed fault-hook probe did not return a response.')
+    expect(failClosed.status).toBe(400)
+    await expect(failClosed.clone().json()).resolves.toMatchObject({
+      error: expect.stringContaining('fault injection is not allowed'),
+    })
+    const [candidateMediaAfterFailures, uploadLogsAfterFailures] = await Promise.all([
+      payload.count({
+        collection: 'media',
+        overrideAccess: true,
+        where: { candidate: { equals: val02bCandidateID } },
+      }),
+      payload.count({
+        collection: 'operation-logs',
+        overrideAccess: true,
+        where: { operationType: { equals: 'candidate_media_upload' } },
+      }),
+    ])
+    expect(candidateMediaAfterFailures.totalDocs).toBe(candidateMediaBeforeFailures.totalDocs)
+    expect(uploadLogsAfterFailures.totalDocs).toBe(uploadLogsBeforeFailures.totalDocs)
   })
 
   it('enforces current per-client identity, owner isolation, revocation and formal-data boundaries server-side', async () => {
@@ -2192,6 +2318,86 @@ describe.sequential('real Payload SQLite integration', () => {
       overrideAccess: false,
       req: candidateReq,
     })).rejects.toThrow()
+
+    const protectedPrototype = fixtureDoc(maps.prototypes, 'prototype-orbit-duo')
+    const protectedWork = fixtureDoc(maps.works, 'work-orbit-chronicles')
+    const [logsBeforeDirectCalls, prototypesBeforeDirectCalls, usersBeforeDirectCalls] =
+      await Promise.all([
+        payload.count({ collection: 'operation-logs', overrideAccess: true }),
+        payload.count({ collection: 'figure-prototypes', overrideAccess: true }),
+        payload.count({ collection: 'users', overrideAccess: true }),
+      ])
+    const candidateDomainCalls: Array<() => Promise<unknown>> = [
+      () =>
+        openReviewWorkItem(candidateReq, {
+          candidateID: val02bCandidateID,
+          reason: 'candidate direct Local API attack',
+        }),
+      () =>
+        reopenReviewWorkItem(candidateReq, {
+          expectedVersion: 1,
+          reason: 'candidate direct Local API attack',
+          workItemID: 1,
+        }),
+      () =>
+        validateAndAdvanceReviewWorkItem(candidateReq, {
+          candidateID: val02bCandidateID,
+          expectedVersion: 1,
+          workItemID: 1,
+        }),
+      () =>
+        createFormalTargetForReview(candidateReq, {
+          candidateID: val02bCandidateID,
+          expectedVersion: 1,
+          newPrototype: { title: 'forbidden' },
+          reason: 'candidate direct Local API attack',
+          workItemID: 1,
+        }),
+      () =>
+        updateSystemSettings(candidateReq, {
+          reason: 'candidate direct Local API attack',
+          settings: { galleryPageSize: 1 },
+        }),
+      () =>
+        maintainFormalRecord(candidateReq, {
+          collection: 'works',
+          data: { name: 'forbidden' },
+          id: protectedWork.id,
+          reason: 'candidate direct Local API attack',
+        }),
+      () =>
+        revokeCandidateClient(candidateReq, {
+          clientUserID: secondCandidateUser.id,
+          reason: 'candidate direct Local API attack',
+        }),
+      () =>
+        mergePrototypes(candidateReq, {
+          mergedPrototypeID: protectedPrototype.id,
+          reason: 'candidate direct Local API attack',
+          retainedPrototypeID: protectedPrototype.id,
+        }),
+      () =>
+        splitPrototype(candidateReq, {
+          newPrototype: { title: 'forbidden' },
+          originPrototypeID: protectedPrototype.id,
+          reason: 'candidate direct Local API attack',
+        }),
+      () =>
+        undoOperationByID(candidateReq, randomUUID(), 'candidate direct Local API attack'),
+    ]
+    for (const candidateDomainCall of candidateDomainCalls) {
+      await expect(candidateDomainCall()).rejects.toThrow('Administrator access is required.')
+    }
+    const [logsAfterDirectCalls, prototypesAfterDirectCalls, usersAfterDirectCalls] =
+      await Promise.all([
+        payload.count({ collection: 'operation-logs', overrideAccess: true }),
+        payload.count({ collection: 'figure-prototypes', overrideAccess: true }),
+        payload.count({ collection: 'users', overrideAccess: true }),
+      ])
+    expect(logsAfterDirectCalls.totalDocs).toBe(logsBeforeDirectCalls.totalDocs)
+    expect(prototypesAfterDirectCalls.totalDocs).toBe(prototypesBeforeDirectCalls.totalDocs)
+    expect(usersAfterDirectCalls.totalDocs).toBe(usersBeforeDirectCalls.totalDocs)
+
     const mainAttack = await candidateReviewEndpoint.handler(
       await jsonRequest(candidateUser, {
         action: 'select-main-image',
@@ -2588,7 +2794,7 @@ describe.sequential('real Payload SQLite integration', () => {
       reason: 'Reject unsafe overlapping undo',
     })
     expect(blockedOverlap.response.status).toBe(400)
-    expect(blockedOverlap.body.error).toContain('overlaps its prototype scope')
+    expect(blockedOverlap.body.error).toContain('overlaps its resource scope')
     expect((await invoke({ action: 'undo-operation', operationID: fallbackSplitID, reason: 'Undo overlap split' })).response.status).toBe(200)
     expect((await invoke({ action: 'undo-operation', operationID: fallbackMergeID, reason: 'Undo overlap merge' })).response.status).toBe(200)
   })

@@ -2,5 +2,9 @@
 .env.*
 !.env.example
 *.log
+*.backup
+*.dump
 artifacts/
 backups/
+payload-prod-gate-results/
+payload-prod-gate-work/

@@ -298,6 +298,15 @@ export const seedPayload = async (payload: Payload, fixture: DomainFixture) => {
 
   for (const prototype of fixture.figure_prototypes) {
     if (!prototype.main_image_id) continue
+    const current = await (payload as any).findByID({
+      collection: 'figure-prototypes',
+      depth: 0,
+      id: maps.prototypes.get(prototype.id)!.id,
+      overrideAccess: true,
+    })
+    // Seed is discovery/bootstrap data. Re-running it must never replace an
+    // image that an administrator already selected as the formal main image.
+    if (current.mainImage) continue
     await (payload as any).update({
       collection: 'figure-prototypes',
       context: { syntheticSeed: true },

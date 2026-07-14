@@ -1,3 +1,9 @@
-// Payload migration SQL is adapter-specific. Keep PostgreSQL migrations here
-// and SQLite migrations under src/migrations so neither dialect can be mixed.
-export const migrations = []
+import * as migration_20260714_120916_payload_prod_gate_initial_schema from './20260714_120916_payload_prod_gate_initial_schema';
+
+export const migrations = [
+  {
+    up: migration_20260714_120916_payload_prod_gate_initial_schema.up,
+    down: migration_20260714_120916_payload_prod_gate_initial_schema.down,
+    name: '20260714_120916_payload_prod_gate_initial_schema'
+  },
+];

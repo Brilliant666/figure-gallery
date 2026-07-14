@@ -1,7 +1,8 @@
 import { randomUUID } from 'node:crypto'
 import type { PayloadRequest } from 'payload'
 
-import { withinPayloadTransaction } from '@/domain/payloadDomainService'
+import { buildDomainScope, withinPayloadTransaction } from '@/domain/payloadDomainService'
+import { requireAdmin } from '@/security/roles'
 
 type RecordID = number
 
@@ -20,6 +21,11 @@ const actor = (req: PayloadRequest) => {
   return { actor: relationID(user), actorLabel: user?.email ?? `user:${user?.id}` }
 }
 
+const withinAdminTransaction = <T>(req: PayloadRequest, operation: () => Promise<T>): Promise<T> => {
+  requireAdmin(req)
+  return withinPayloadTransaction(req, operation)
+}
+
 export const writeVal02bOperationLog = async (
   req: PayloadRequest,
   input: {
@@ -33,26 +39,29 @@ export const writeVal02bOperationLog = async (
     scope?: Record<string, unknown>
   },
 ) =>
-  (req.payload as any).create({
-    collection: 'operation-logs',
-    data: {
-      ...actor(req),
-      ...input,
-      dependsOn: input.dependsOn ?? [],
-      operationID: randomUUID(),
-      operationVersion: 1,
-      scope: input.scope ?? {},
-      undone: false,
-    },
-    overrideAccess: true,
-    req,
-  })
+  {
+    requireAdmin(req)
+    return (req.payload as any).create({
+      collection: 'operation-logs',
+      data: {
+        ...actor(req),
+        ...input,
+        dependsOn: input.dependsOn ?? [],
+        operationID: randomUUID(),
+        operationVersion: 1,
+        scope: buildDomainScope(input.scope),
+        undone: false,
+      },
+      overrideAccess: true,
+      req,
+    })
+  }
 
 export const openReviewWorkItem = async (
   req: PayloadRequest,
   input: { allowedTargetIDs?: number[]; candidateID: number; reason: string },
 ) =>
-  withinPayloadTransaction(req, async () => {
+  withinAdminTransaction(req, async () => {
     const payload = req.payload as any
     await payload.findByID({ collection: 'candidate-records', id: input.candidateID, overrideAccess: true, req })
     for (const id of input.allowedTargetIDs ?? []) {
@@ -86,7 +95,7 @@ export const reopenReviewWorkItem = async (
   req: PayloadRequest,
   input: { expectedVersion: number; reason: string; workItemID: number },
 ) =>
-  withinPayloadTransaction(req, async () => {
+  withinAdminTransaction(req, async () => {
     const payload = req.payload as any
     const before = await payload.findByID({
       collection: 'review-work-items',
@@ -133,7 +142,7 @@ export const validateAndAdvanceReviewWorkItem = async (
     workItemID: number
   },
 ) => {
-  return withinPayloadTransaction(req, async () => {
+  return withinAdminTransaction(req, async () => {
     const payload = req.payload as any
     const before = await payload.findByID({
       collection: 'review-work-items',
@@ -215,7 +224,7 @@ export const createFormalTargetForReview = async (
     workItemID: number
   },
 ) =>
-  withinPayloadTransaction(req, async () => {
+  withinAdminTransaction(req, async () => {
     const payload = req.payload as any
     const before = await payload.findByID({
       collection: 'review-work-items',
@@ -295,7 +304,7 @@ export const updateSystemSettings = async (
     }
   },
 ) =>
-  withinPayloadTransaction(req, async () => {
+  withinAdminTransaction(req, async () => {
     const allowed = new Set(['galleryPageSize', 'publicReadEnabled', 'showAdultImages'])
     const keys = Object.keys(input.settings)
     if (!keys.length || keys.some((key) => !allowed.has(key))) {
@@ -341,8 +350,8 @@ const allowedFields: Record<string, ReadonlySet<string>> = {
   manufacturers: new Set(['aliases', 'canonicalName', 'status']),
   'figure-prototypes': new Set(['characters', 'costumeText', 'figureType', 'isAdult', 'isGroup', 'manufacturer', 'publicationStatus', 'scale', 'softDeleted', 'title', 'work']),
   'figure-versions': new Set(['kind', 'name', 'prototype']),
-  'source-records': new Set(['invalidated', 'lastSyncedAt', 'status']),
-  'candidate-records': new Set(['reason', 'status']),
+  'source-records': new Set(['deletedAt', 'invalidated', 'lastSyncedAt', 'status']),
+  'candidate-records': new Set(['deletedAt', 'reason', 'status']),
   media: new Set(['isAdult', 'presentInLatestSource']),
 }
 
@@ -351,11 +360,12 @@ export const maintainFormalRecord = async (
   input: {
     collection: keyof typeof allowedFields
     data: Record<string, unknown>
+    expectedVersion?: number
     id?: number
     reason: string
   },
 ) =>
-  withinPayloadTransaction(req, async () => {
+  withinAdminTransaction(req, async () => {
     const allowed = allowedFields[input.collection]
     if (!allowed) throw new Error('Unsupported formal collection.')
     const keys = Object.keys(input.data)
@@ -367,12 +377,34 @@ export const maintainFormalRecord = async (
     const before = input.id
       ? await payload.findByID({ collection: input.collection, depth: 0, id: input.id, overrideAccess: true, req })
       : null
+    const isVersionedPrototype = input.collection === 'figure-prototypes'
+    if (isVersionedPrototype && before) {
+      if (!Number.isInteger(input.expectedVersion) || Number(input.expectedVersion) < 1) {
+        throw new Error('expectedVersion is required for FigurePrototype maintenance.')
+      }
+      if (Number(before.lockVersion) !== input.expectedVersion) {
+        throw new Error('FigurePrototype version conflict.')
+      }
+    } else if (input.expectedVersion !== undefined) {
+      throw new Error('expectedVersion is only supported for existing FigurePrototype maintenance.')
+    }
+    const writeData = isVersionedPrototype
+      ? { ...input.data, lockVersion: before ? Number(before.lockVersion) + 1 : 1 }
+      : input.data
     const result = input.id
-      ? await payload.update({ collection: input.collection, data: input.data, id: input.id, overrideAccess: true, req })
-      : await payload.create({ collection: input.collection, data: input.data, overrideAccess: true, req })
+      ? await payload.update({ collection: input.collection, data: writeData, id: input.id, overrideAccess: true, req })
+      : await payload.create({ collection: input.collection, data: writeData, overrideAccess: true, req })
+    const beforeValues = before
+      ? Object.fromEntries(keys.map((key) => [key, before[key]]))
+      : undefined
+    const afterValues = Object.fromEntries(keys.map((key) => [key, result[key]]))
+    if (isVersionedPrototype) {
+      if (beforeValues) beforeValues.lockVersion = before.lockVersion
+      afterValues.lockVersion = result.lockVersion
+    }
     await writeVal02bOperationLog(req, {
-      afterState: { id: result.id, values: Object.fromEntries(keys.map((key) => [key, result[key]])) },
-      beforeState: before ? { id: before.id, values: Object.fromEntries(keys.map((key) => [key, before[key]])) } : { id: null },
+      afterState: { id: result.id, values: afterValues },
+      beforeState: before ? { id: before.id, values: beforeValues } : { id: null },
       operationType: 'maintain_formal',
       reason: input.reason,
       relatedRecords: { collection: input.collection, id: result.id },
@@ -385,7 +417,7 @@ export const revokeCandidateClient = async (
   req: PayloadRequest,
   input: { clientUserID: number; reason: string },
 ) =>
-  withinPayloadTransaction(req, async () => {
+  withinAdminTransaction(req, async () => {
     if (!input.reason.trim()) throw new Error('Client revocation reason is required.')
     const payload = req.payload as any
     const before = await payload.findByID({ collection: 'users', id: input.clientUserID, overrideAccess: true, req, showHiddenFields: true })

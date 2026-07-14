@@ -136,6 +136,10 @@ export const adminDomainEndpoint: Endpoint = {
         result = await maintainFormalRecord(req, {
           collection: body.collection,
           data: body.data,
+          expectedVersion:
+            body.collection === 'figure-prototypes' && body.id !== undefined
+              ? requiredVersion(body.expectedVersion)
+              : undefined,
           id: body.id === undefined ? undefined : requiredID(body.id, 'id'),
           reason,
         })

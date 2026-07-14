@@ -7,8 +7,26 @@ deployment and does not initialize or run the Payload application.
 The Compose services use only the pinned images requested by the gate:
 
 - `postgres:16.9-bookworm`
-- `quay.io/minio/minio:RELEASE.2025-04-22T22-12-26Z`
-- `quay.io/minio/mc:RELEASE.2025-04-16T18-13-26Z`
+- `minio/minio:RELEASE.2025-04-22T22-12-26Z`
+- `minio/mc:RELEASE.2025-04-16T18-13-26Z`
+
+## GitHub Actions production gate
+
+`scripts/run-ci-production-gates.sh` is restricted to the disposable Ubuntu
+runner workflow in `.github/workflows/payload-production-gates.yml`. It creates
+all credentials under `RUNNER_TEMP`, exercises PostgreSQL, MinIO, backup and
+restore, an object-prefix backup/purge/restore drill, storage-key prefix-copy
+verification, S3 media lifecycle, restored permission attacks, and an
+independent empty-database/empty-bucket standalone start/restart, then removes
+containers, volumes, generated media, backups, the clean checkout, and runtime
+secrets. It must not be used to retry or reconfigure the blocked Windows Docker
+Desktop environment.
+
+`scripts/assemble-ci-evidence.py` accepts only small sanitized JSON summaries.
+It rejects runtime environment files, database dumps, images, credentials, and
+unsafe evidence. A failed run may upload a sanitized diagnostic artifact, but
+the workflow's final enforcement step remains failed; only complete,
+machine-validated PG-01 through PG-14 evidence can produce a passing result.
 
 No credential is stored in tracked files. The PowerShell helper creates an
 ignored `.env` with fresh random passwords and does not print those passwords.

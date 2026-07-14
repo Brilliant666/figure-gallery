@@ -100,6 +100,7 @@ describe('Payload-native configuration', () => {
     expect(config).toContain("if (process.env.S3_ENABLED !== 'true') return []")
     expect(config).toContain("required('S3_ACCESS_KEY_ID')")
     expect(config).toContain("prefix: required('S3_PREFIX')")
+    expect(config).toContain('signedDownloads: true')
     expect(config).toContain('useCompositePrefixes: true')
     expect(config).toContain('guardedS3Endpoint(process.env.S3_ENDPOINT)')
     expect(uploadEndpoint).toContain("process.env.S3_ENABLED === 'true' ? { prefix: objectPrefix } : {}")

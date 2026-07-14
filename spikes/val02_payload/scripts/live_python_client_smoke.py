@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import copy
 import json
+import os
 import re
 import sys
 from pathlib import Path
@@ -31,17 +32,20 @@ def main() -> int:
     # namespace so a seed record cannot be mistaken for another client's
     # candidate. Repeated calls inside this probe still use the same keys and
     # therefore exercise endpoint idempotency.
+    namespace = os.environ.get("VAL02_PAYLOAD_LIVE_SMOKE_NAMESPACE", "val02b-live")
+    if not re.fullmatch(r"[a-z0-9-]{3,48}", namespace):
+        raise RuntimeError("VAL02_PAYLOAD_LIVE_SMOKE_NAMESPACE must be a safe synthetic label")
     for candidate in candidates:
         original_id = candidate["id"]
         safe_id = re.sub(r"[^a-z0-9-]+", "-", original_id.lower()).strip("-")
-        candidate["id"] = f"val02b-live-{safe_id}"
-        candidate["source"]["source_item_id"] = f"val02b-live-{safe_id}"
-        candidate["source"]["source_url"] = f"https://val02b-live.invalid/source/{safe_id}"
+        candidate["id"] = f"{namespace}-{safe_id}"
+        candidate["source"]["source_item_id"] = f"{namespace}-{safe_id}"
+        candidate["source"]["source_url"] = f"https://{namespace}.invalid/source/{safe_id}"
         for index, image in enumerate(candidate.get("images", []), start=1):
-            image_id = f"val02b-live-{safe_id}-{index}"
+            image_id = f"{namespace}-{safe_id}-{index}"
             image["id"] = image_id
-            image["source_url"] = f"https://val02b-live.invalid/media/{image_id}.png"
-            image["storage_key"] = f"candidate/val02b-live/{image_id}.png"
+            image["source_url"] = f"https://{namespace}.invalid/media/{image_id}.png"
+            image["storage_key"] = f"candidate/{namespace}/{image_id}.png"
 
     wanted = {row["id"] for row in candidates}
 
