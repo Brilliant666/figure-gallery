@@ -556,11 +556,11 @@ if shared.get("failed") != 0 or shared.get("skipped") != 0 or shared.get("total"
     raise SystemExit("Shared contract counts were not 78/0/0")
 if len(shared.get("network_guard_test_ids", [])) != 5 or shared.get("underlying_transport_calls") != 0:
     raise SystemExit("Python Hpoi network guard evidence is incomplete")
-if sqlite_summary["passed"] != 44 or sqlite_summary["failed"] != 0 or sqlite_summary["skipped"] != 8:
+if sqlite_summary["passed"] != 45 or sqlite_summary["failed"] != 0 or sqlite_summary["skipped"] != 8:
     raise SystemExit(f"SQLite regression counts changed: {sqlite_summary}")
 if not sqlite_summary["hpoi_transport_guard_passed"]:
     raise SystemExit("TypeScript Hpoi transport-spy assertion did not run and pass")
-if postgres_summary["passed"] != 29 or postgres_summary["failed"] != 0 or postgres_summary["skipped"] != 0:
+if postgres_summary["passed"] != 30 or postgres_summary["failed"] != 0 or postgres_summary["skipped"] != 0:
     raise SystemExit(f"PostgreSQL integration counts changed: {postgres_summary}")
 if transaction_summary["passed"] != 8 or transaction_summary["failed"] != 0 or transaction_summary["skipped"] != 0:
     raise SystemExit(f"PostgreSQL transaction counts changed: {transaction_summary}")
@@ -671,7 +671,7 @@ integration_summary = vitest_summary(integration)
 transaction_summary = vitest_summary(transaction)
 if fixture.get("ok") is not True or shared.get("passed") != 78 or shared.get("failed") != 0 or shared.get("skipped") != 0:
     raise SystemExit("Restored shared contract did not pass 78/78")
-if integration_summary["passed"] != 29 or integration_summary["failed"] != 0 or integration_summary["skipped"] != 0:
+if integration_summary["passed"] != 30 or integration_summary["failed"] != 0 or integration_summary["skipped"] != 0:
     raise SystemExit(f"Restored PostgreSQL integration counts changed: {integration_summary}")
 if transaction_summary["passed"] != 8 or transaction_summary["failed"] != 0 or transaction_summary["skipped"] != 0:
     raise SystemExit(f"Restored transaction counts changed: {transaction_summary}")
