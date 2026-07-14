@@ -500,7 +500,10 @@ const createCandidate = async (
     }),
   )
   const body = await responseJSON(response)
-  assert(response.status === 201, `Candidate ${label} setup returned HTTP ${response.status}.`)
+  assert(
+    response.status === 201,
+    `Candidate ${label} setup returned HTTP ${response.status}: ${String(body.error ?? 'unknown error').slice(0, 200)}`,
+  )
   return {
     candidateID: Number(body.candidate_id),
     externalKey,
@@ -1335,11 +1338,9 @@ const setup = async (payload: Payload): Promise<void> => {
     overrideAccess: true,
   }) as Doc
 
-  const [pngCandidate, jpegCandidate, outageCandidate] = await Promise.all([
-    createCandidate(payload, clientUser, marker, 'png'),
-    createCandidate(payload, clientUser, marker, 'jpeg'),
-    createCandidate(payload, clientUser, marker, 'outage'),
-  ])
+  const pngCandidate = await createCandidate(payload, clientUser, marker, 'png')
+  const jpegCandidate = await createCandidate(payload, clientUser, marker, 'jpeg')
+  const outageCandidate = await createCandidate(payload, clientUser, marker, 'outage')
   const pngGenerator: Generator = {
     height: 900,
     kind: 'png',
