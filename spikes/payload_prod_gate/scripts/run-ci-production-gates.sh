@@ -864,6 +864,11 @@ run_restored_joint_smoke() {
   local login_status review_status search_status ambiguous_status adult_status
   local gallery_character_id adult_character_id media_id gallery_filename adult_filename search_effective
 
+  # The S3 plugin contributes a client component only when S3 is enabled, so
+  # the checked-in default import map is intentionally insufficient for this
+  # runtime variant. Generate the map from the exact restored configuration
+  # before asserting that the real Admin workbench renders.
+  run_limited restored-generate-importmap 180 npm run generate:importmap
   run_limited restored-joint-fixture 300 npx --no-install tsx \
     scripts/ci-restored-joint-gates.ts --out="$domain" --login="$login"
   start_restored_service
@@ -1184,6 +1189,8 @@ run_standalone() {
   run_limited clean-provision-client 180 npm run provision:client >"$WORK_DIR/provision-client.json" 2>&1
   run_limited clean-security 300 npm run ci:security -- --out="$WORK_DIR/standalone-security.json"
   run_limited clean-media-setup 300 npm run ci:media -- setup
+  run_limited clean-generate-importmap 180 npm run generate:importmap \
+    >"$WORK_DIR/clean-importmap.log" 2>&1
   build_start="$(date +%s%3N)"
   run_limited clean-production-build 720 npm run build >"$WORK_DIR/clean-build.log" 2>&1
   build_end="$(date +%s%3N)"
