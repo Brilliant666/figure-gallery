@@ -65,8 +65,10 @@ Host access is limited to:
 - MinIO S3 API: `http://127.0.0.1:${MINIO_API_PORT}` (default `59000`)
 - MinIO console: `http://127.0.0.1:${MINIO_CONSOLE_PORT}` (default `59001`)
 
-The Compose network is marked internal. PostgreSQL and MinIO data live only in
-disposable named volumes. Derive the application's `DATABASE_URI` and `S3_*`
+The Compose network is an explicit bridge so the one-shot MinIO client can
+reach the service; every published host port remains bound to loopback and a
+non-loopback probe is part of the CI gate. PostgreSQL and MinIO data live only
+in disposable named volumes. Derive the application's `DATABASE_URI` and `S3_*`
 runtime variables from this runtime `.env`; do not copy secrets into source
 files, logs, or test evidence.
 

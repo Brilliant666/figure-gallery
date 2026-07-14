@@ -12,14 +12,18 @@ if (process.env.DATABASE_ADAPTER !== 'postgres') {
 }
 
 type QueryResult = { rows: Record<string, unknown>[] }
+type PostgresPool = {
+  query: (sql: string, values?: unknown[]) => Promise<QueryResult>
+}
 
+process.env.PAYLOAD_MIGRATING = 'true'
+process.env.DISABLE_PAYLOAD_HMR = 'true'
 const { default: config } = await import('@payload-config')
-const payload = await getPayload({ config })
+const payload = await getPayload({ config, disableOnInit: true })
+let pool: PostgresPool | undefined
 
 try {
-  const pool = (payload.db as unknown as {
-    pool: { query: (sql: string, values?: unknown[]) => Promise<QueryResult> }
-  }).pool
+  pool = (payload.db as unknown as { pool?: PostgresPool }).pool
   if (!pool?.query) throw new Error('The active adapter did not expose a PostgreSQL pool.')
 
   const tables = await pool.query(
@@ -160,6 +164,10 @@ try {
   const reviewLock = columns.rows.find(
     (row) => row.table_name === 'review_work_items' && row.column_name === 'lock_version',
   )
+  const migrationBatches = migrations.rows.map((row) => Number(row.batch))
+  const invalidMigrationBatchRows = migrationBatches
+    .map((batch, index) => ({ batch, index }))
+    .filter(({ batch }) => !Number.isSafeInteger(batch) || batch <= 0)
   const failures = [
     ...(missingTables.length ? [`missing tables: ${missingTables.join(', ')}`] : []),
     ...(missingColumns.length ? [`missing columns: ${missingColumns.join(', ')}`] : []),
@@ -170,6 +178,9 @@ try {
     ...(reviewLock?.is_nullable !== 'NO' ? ['review_work_items.lock_version is nullable'] : []),
     ...(foreignKeys.rows.length !== 5 ? [`expected 5 selected foreign keys, found ${foreignKeys.rows.length}`] : []),
     ...(migrations.rows.length < 1 ? ['no PostgreSQL migration record found'] : []),
+    ...(invalidMigrationBatchRows.length
+      ? [`migration batches must be positive integers (invalid row indexes: ${invalidMigrationBatchRows.map(({ index }) => index).join(', ')})`]
+      : []),
   ]
   if (failures.length) throw new Error(`PostgreSQL schema audit failed: ${failures.join('; ')}`)
 
@@ -187,6 +198,7 @@ try {
     checked_tables: requiredTables,
     checked_unique_indexes: [...uniqueIndexes].sort(),
     foreign_key_checks: foreignKeys.rows.length,
+    migration_batches: migrationBatches,
     migration_count: migrations.rows.length,
     migration_names: migrations.rows.map((row) => String(row.name)),
     required_column_checks: requiredColumns.length,
@@ -201,3 +213,8 @@ try {
 } finally {
   await payload.destroy()
 }
+
+// Match Payload's one-shot CLI lifecycle. The pinned PostgreSQL adapter owns
+// a listener client that is not releasable through its public API, so waiting
+// on pg Pool.end() here would never complete.
+process.exit(0)

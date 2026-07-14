@@ -33,6 +33,8 @@ REQUIRED_FILES = (
     "schema-first.json",
     "schema-repeat.json",
     "schema-restored.json",
+    "migration-fresh.json",
+    "migration-repeat.json",
     "migration-seed.json",
     "regressions.json",
     "transaction-concurrency.json",
@@ -196,7 +198,7 @@ ATTACK_INVARIANTS = {
     "operation_log_unchanged",
 }
 
-HARD_GATES = {"PG-05", "PG-08", "PG-11", "PG-12", "PG-13", "PG-14"}
+HARD_GATES = {"PG-03", "PG-04", "PG-05", "PG-08", "PG-11", "PG-12", "PG-14"}
 
 
 class EvidenceError(ValueError):
@@ -413,6 +415,10 @@ def validate_schema_document(document: Mapping[str, Any], label: str) -> None:
     migration_names = sequence(document.get("migration_names"), f"{label}.migration_names")
     require(len(migration_names) == document["migration_count"], f"{label} migration names/count differ")
     require(all(isinstance(name, str) and name for name in migration_names), f"{label} has an invalid migration name")
+    migration_batches = sequence(document.get("migration_batches"), f"{label}.migration_batches")
+    require(len(migration_batches) == document["migration_count"], f"{label} migration batches/count differ")
+    for index, batch in enumerate(migration_batches):
+        integer(batch, f"{label}.migration_batches[{index}]", minimum=1)
     require(
         set(sequence(document.get("checked_tables"), f"{label}.checked_tables"))
         == EXPECTED_SCHEMA_TABLES,
@@ -435,6 +441,49 @@ def validate_schema_document(document: Mapping[str, Any], label: str) -> None:
     )
 
 
+def validate_migration_gate(
+    document: Mapping[str, Any],
+    label: str,
+    *,
+    mode: str,
+    expected_names: list[Any],
+) -> None:
+    require_schema(document, label)
+    require(document.get("status") == "pass", f"{label} did not pass")
+    require(document.get("mode") == mode, f"{label} mode must be {mode}")
+    require(document.get("migration_engine") == "payload.db.migrate", f"{label} did not use Payload's migration engine")
+    configured = sequence(document.get("configured_migrations"), f"{label}.configured_migrations")
+    require(configured == expected_names, f"{label} configured migration names differ from schema audit")
+    before = mapping(document.get("before"), f"{label}.before")
+    after = mapping(document.get("after"), f"{label}.after")
+
+    def migration_rows(state: Mapping[str, Any], state_label: str) -> list[dict[str, Any]]:
+        rows = [mapping(row, f"{state_label}.migrations[]") for row in sequence(state.get("migrations"), f"{state_label}.migrations")]
+        names: list[str] = []
+        for index, row in enumerate(rows):
+            require_keys(row, {"name", "batch"}, f"{state_label}.migrations[{index}]")
+            names.append(nonempty_string(row["name"], f"{state_label}.migrations[{index}].name"))
+            integer(row["batch"], f"{state_label}.migrations[{index}].batch", minimum=1)
+        require(len(names) == len(set(names)), f"{state_label} contains duplicate migration names")
+        require(set(names) <= set(expected_names), f"{state_label} contains an unknown migration")
+        return rows
+
+    before_rows = migration_rows(before, f"{label}.before")
+    after_rows = migration_rows(after, f"{label}.after")
+    added = sequence(document.get("added_migrations"), f"{label}.added_migrations")
+    if mode == "fresh":
+        require(before.get("migration_table_exists") is False, f"{label} did not begin without a migration table")
+        require(before_rows == [], f"{label} fresh state already had migration rows")
+        require(after.get("migration_table_exists") is True, f"{label} did not create the migration table")
+        require(sorted(str(row["name"]) for row in after_rows) == expected_names, f"{label} did not apply the exact configured migrations")
+        require(added == expected_names, f"{label} fresh migration delta is not exact")
+    else:
+        require(before.get("migration_table_exists") is True and after.get("migration_table_exists") is True, f"{label} repeat migration table was absent")
+        require(before == after, f"{label} repeat migration changed migration records")
+        require(sorted(str(row["name"]) for row in before_rows) == expected_names, f"{label} repeat migration names are incomplete")
+        require(added == [], f"{label} repeat migration added records")
+
+
 def validate_pg01(documents: Mapping[str, dict[str, Any]]) -> None:
     schemas = [require_document(documents, name) for name in ("schema-first.json", "schema-repeat.json")]
     for name, document in zip(("schema-first.json", "schema-repeat.json"), schemas, strict=True):
@@ -442,6 +491,7 @@ def validate_pg01(documents: Mapping[str, dict[str, Any]]) -> None:
     signature_fields = (
         "migration_count",
         "migration_names",
+        "migration_batches",
         "required_table_checks",
         "required_column_checks",
         "unique_index_checks",
@@ -455,8 +505,22 @@ def validate_pg01(documents: Mapping[str, dict[str, Any]]) -> None:
         all(schemas[0].get(field) == schemas[1].get(field) for field in signature_fields),
         "repeat migration changed the audited schema signature",
     )
+    expected_names = sorted(sequence(schemas[0].get("migration_names"), "schema-first.json.migration_names"))
+    validate_migration_gate(
+        require_document(documents, "migration-fresh.json"),
+        "migration-fresh.json",
+        mode="fresh",
+        expected_names=expected_names,
+    )
+    validate_migration_gate(
+        require_document(documents, "migration-repeat.json"),
+        "migration-repeat.json",
+        mode="repeat",
+        expected_names=expected_names,
+    )
     seed = require_document(documents, "migration-seed.json")
     require(seed.get("fresh_migration") == "pass", "fresh migration failed")
+    require(seed.get("migration_status") == "pass", "migration status command failed")
     require(seed.get("repeat_migration") == "pass", "repeat migration failed")
 
 
@@ -1178,6 +1242,7 @@ def validate_restored_schema(documents: Mapping[str, dict[str, Any]]) -> None:
     signature_fields = (
         "migration_count",
         "migration_names",
+        "migration_batches",
         "required_table_checks",
         "required_column_checks",
         "unique_index_checks",
@@ -1195,7 +1260,7 @@ def validate_restored_schema(documents: Mapping[str, dict[str, Any]]) -> None:
 
 GateValidator = Callable[[Mapping[str, dict[str, Any]]], None]
 GATE_DEFINITIONS: dict[str, tuple[tuple[str, ...], GateValidator]] = {
-    "PG-01": (("schema-first.json", "schema-repeat.json", "migration-seed.json"), validate_pg01),
+    "PG-01": (("schema-first.json", "schema-repeat.json", "migration-fresh.json", "migration-repeat.json", "migration-seed.json"), validate_pg01),
     "PG-02": (("migration-seed.json",), validate_pg02),
     "PG-03": (("regressions.json", "transaction-concurrency.json"), validate_pg03),
     "PG-04": (("backup-restore.json",), validate_pg04),

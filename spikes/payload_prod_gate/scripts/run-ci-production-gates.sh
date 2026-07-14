@@ -17,6 +17,8 @@ PID_FILE="$WORK_DIR/standalone.pid"
 RESTORED_PID_FILE="$WORK_DIR/restored-service.pid"
 BACKUP_FILE="$WORK_DIR/payload.backup"
 CURRENT_STAGE="initialization"
+CURRENT_COMMAND="initialization"
+GATE_DEADLINE_EPOCH="$(( $(date +%s) + 2460 ))"
 
 mkdir -p "$RESULTS_DIR" "$WORK_DIR"
 umask 077
@@ -38,15 +40,17 @@ PY
 }
 
 on_error() {
-  local rc=$?
+  local rc="${1:-$?}"
+  trap - ERR TERM INT
   set +e
   json_status "$RESULTS_DIR/run-status.json" fail "$CURRENT_STAGE"
-  python - "$RESULTS_DIR/failure-summary.json" "$CURRENT_STAGE" "$rc" "$WORK_DIR" <<'PY'
+  python - "$RESULTS_DIR/failure-summary.json" "$CURRENT_STAGE" "$CURRENT_COMMAND" "$rc" "$WORK_DIR" <<'PY'
 import json, os, pathlib, re, sys
-target, stage, rc, work = sys.argv[1:]
+target, stage, command, rc, work = sys.argv[1:]
 work_path = pathlib.Path(work)
 secret_names = (
-    "POSTGRES_PASSWORD", "MINIO_ROOT_PASSWORD", "PAYLOAD_SECRET", "S3_ACCESS_KEY_ID",
+    "POSTGRES_USER", "POSTGRES_PASSWORD", "MINIO_ROOT_USER", "MINIO_ROOT_PASSWORD",
+    "PAYLOAD_SECRET", "S3_ACCESS_KEY_ID",
     "S3_SECRET_ACCESS_KEY", "VAL02_PAYLOAD_CANDIDATE_TOKEN",
     "VAL02_PAYLOAD_CANDIDATE_TOKEN_B", "VAL02_PAYLOAD_REVOKED_TOKEN", "DATABASE_URI",
 )
@@ -63,16 +67,75 @@ for path in sorted(work_path.glob("*.log"), key=lambda item: item.stat().st_mtim
     if text:
         print(f"--- sanitized tail: {path.name} ---", file=sys.stderr)
         print(text, file=sys.stderr)
-payload = {"schema_version": 1, "status": "fail", "stage": stage, "exit_code": int(rc), "logs": diagnostics}
+numeric_rc = int(rc)
+payload = {
+    "schema_version": 1,
+    "status": "fail",
+    "stage": stage,
+    "command": command,
+    "exit_code": numeric_rc,
+    "timed_out": numeric_rc in (124, 137),
+    "logs": diagnostics,
+}
 pathlib.Path(target).write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 PY
-  printf 'Production gate failed during stage: %s\n' "$CURRENT_STAGE" >&2
+  printf 'Production gate failed during stage %s (command %s, exit %s).\n' \
+    "$CURRENT_STAGE" "$CURRENT_COMMAND" "$rc" >&2
   exit "$rc"
+}
+
+on_signal() {
+  CURRENT_COMMAND="overall-runtime-deadline"
+  on_error 124
 }
 
 if [[ "$MODE" == "run" ]]; then
   trap on_error ERR
+  trap on_signal TERM INT
 fi
+
+run_limited() {
+  local label="$1" seconds="$2" rc started ended remaining effective
+  shift 2
+  CURRENT_COMMAND="$label"
+  started="$(date +%s)"
+  remaining="$((GATE_DEADLINE_EPOCH-started))"
+  if [[ "$remaining" -le 0 ]]; then
+    printf 'gate-command skipped label=%s reason=overall-deadline\n' "$label" >&2
+    return 124
+  fi
+  effective="$seconds"
+  if [[ "$effective" -gt "$remaining" ]]; then effective="$remaining"; fi
+  printf 'gate-command start label=%s at=%s\n' "$label" "$(date -u +%FT%TZ)" >&2
+  if timeout --signal=TERM --kill-after=15s "${effective}s" "$@"; then
+    rc=0
+  else
+    rc=$?
+  fi
+  ended="$(date +%s)"
+  printf 'gate-command end label=%s exit=%s elapsed_seconds=%s\n' \
+    "$label" "$rc" "$((ended-started))" >&2
+  return "$rc"
+}
+
+compose_limited() {
+  local label="$1" seconds="$2"
+  shift 2
+  run_limited "$label" "$seconds" docker compose --env-file "$RUNTIME_ENV" \
+    -f "$COMPOSE_FILE" -p "$COMPOSE_PROJECT_NAME" "$@"
+}
+
+verify_pass_json() {
+  local target="$1" label="$2"
+  [[ -s "$target" ]]
+  python - "$target" "$label" <<'PY'
+import json, pathlib, sys
+path, label = pathlib.Path(sys.argv[1]), sys.argv[2]
+document = json.loads(path.read_text(encoding="utf-8"))
+if document.get("schema_version") != 1 or document.get("status") != "pass":
+    raise SystemExit(f"{label} did not emit a schema-version-1 pass result")
+PY
+}
 
 source_runtime() {
   [[ -f "$RUNTIME_ENV" ]] || return 1
@@ -89,14 +152,17 @@ source_runtime() {
 }
 
 compose() {
-  docker compose --env-file "$RUNTIME_ENV" -f "$COMPOSE_FILE" -p "$COMPOSE_PROJECT_NAME" "$@"
+  local label="compose-${1:-command}"
+  run_limited "$label" 300 docker compose --env-file "$RUNTIME_ENV" \
+    -f "$COMPOSE_FILE" -p "$COMPOSE_PROJECT_NAME" "$@"
 }
 
 wait_container_health() {
-  local service="$1" expected="${2:-healthy}" attempts="${3:-60}" id status
+  local service="$1" expected="${2:-healthy}" seconds="${3:-60}" id status deadline
   id="$(compose ps -q "$service")"
   [[ -n "$id" ]]
-  for ((i=1; i<=attempts; i++)); do
+  deadline="$(( $(date +%s) + seconds ))"
+  while [[ "$(date +%s)" -lt "$deadline" ]]; do
     status="$(docker inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}{{.State.Status}}{{end}}' "$id")"
     [[ "$status" == "$expected" ]] && return 0
     sleep 1
@@ -120,7 +186,8 @@ capture_service_diagnostics() {
 import os, sys
 
 secret_names = (
-    "POSTGRES_PASSWORD", "MINIO_ROOT_PASSWORD", "PAYLOAD_SECRET",
+    "POSTGRES_USER", "POSTGRES_PASSWORD", "MINIO_ROOT_USER", "MINIO_ROOT_PASSWORD",
+    "PAYLOAD_SECRET",
     "S3_ACCESS_KEY_ID", "S3_SECRET_ACCESS_KEY",
     "VAL02_PAYLOAD_CANDIDATE_TOKEN", "VAL02_PAYLOAD_CANDIDATE_TOKEN_B",
     "VAL02_PAYLOAD_REVOKED_TOKEN", "DATABASE_URI",
@@ -136,8 +203,9 @@ sys.stdout.write(text)
 }
 
 wait_http() {
-  local url="$1" attempts="${2:-60}" diagnostic_service="${3:-}"
-  for ((i=1; i<=attempts; i++)); do
+  local url="$1" seconds="${2:-60}" diagnostic_service="${3:-}" deadline
+  deadline="$(( $(date +%s) + seconds ))"
+  while [[ "$(date +%s)" -lt "$deadline" ]]; do
     if curl --noproxy '*' --fail --silent --max-time 2 "$url" >/dev/null; then
       return 0
     fi
@@ -271,14 +339,14 @@ PY
 
 start_infrastructure() {
   CURRENT_STAGE="infrastructure"
-  docker pull postgres:16.9-bookworm >/dev/null
-  docker pull minio/minio:RELEASE.2025-04-22T22-12-26Z >/dev/null
-  docker pull minio/mc:RELEASE.2025-04-16T18-13-26Z >/dev/null
-  compose config --quiet
-  compose up --detach postgres minio
+  run_limited docker-pull-postgres 240 docker pull postgres:16.9-bookworm >/dev/null
+  run_limited docker-pull-minio 240 docker pull minio/minio:RELEASE.2025-04-22T22-12-26Z >/dev/null
+  run_limited docker-pull-minio-client 240 docker pull minio/mc:RELEASE.2025-04-16T18-13-26Z >/dev/null
+  compose_limited compose-config 60 config --quiet
+  compose_limited compose-up 120 up --detach postgres minio
   wait_container_health postgres healthy 60
   wait_http http://127.0.0.1:59000/minio/health/live 60 minio
-  compose run --rm minio-init >/dev/null
+  compose_limited minio-init 120 run --rm minio-init >/dev/null
 
   local postgres_id minio_id runner_ip
   postgres_id="$(compose ps -q postgres)"
@@ -321,22 +389,31 @@ PY
 run_migrations_and_seed() {
   CURRENT_STAGE="postgres-migration-and-seed"
   cd "$PAYLOAD_DIR"
-  npx --no-install payload migrate >"$WORK_DIR/migrate-first.log" 2>&1
-  npx --no-install payload migrate:status >"$WORK_DIR/migrate-status.log" 2>&1
-  npm run ci:schema-audit -- --out="$RESULTS_DIR/schema-first.json"
-  npx --no-install payload migrate >"$WORK_DIR/migrate-repeat.log" 2>&1
-  npm run ci:schema-audit -- --out="$RESULTS_DIR/schema-repeat.json"
-  npm run seed >"$WORK_DIR/seed-first.log" 2>&1
-  npm run ci:db-snapshot -- --out="$WORK_DIR/seed-first.json"
-  npm run seed >"$WORK_DIR/seed-repeat.log" 2>&1
-  npm run ci:db-snapshot -- --out="$WORK_DIR/seed-repeat.json"
+  rm -f "$RESULTS_DIR/migration-fresh.json" "$RESULTS_DIR/migration-repeat.json"
+  run_limited migration-fresh 300 npm run ci:migration-gate -- \
+    --mode=fresh --out="$RESULTS_DIR/migration-fresh.json" \
+    >"$WORK_DIR/migrate-first.log" 2>&1 </dev/null
+  verify_pass_json "$RESULTS_DIR/migration-fresh.json" migration-fresh
+  run_limited migration-status 120 npx --no-install payload migrate:status \
+    >"$WORK_DIR/migrate-status.log" 2>&1 </dev/null
+  run_limited schema-audit-first 180 npm run ci:schema-audit -- --out="$RESULTS_DIR/schema-first.json"
+  run_limited migration-repeat 180 npm run ci:migration-gate -- \
+    --mode=repeat --out="$RESULTS_DIR/migration-repeat.json" \
+    >"$WORK_DIR/migrate-repeat.log" 2>&1 </dev/null
+  verify_pass_json "$RESULTS_DIR/migration-repeat.json" migration-repeat
+  run_limited schema-audit-repeat 180 npm run ci:schema-audit -- --out="$RESULTS_DIR/schema-repeat.json"
+  run_limited seed-first 180 npm run seed >"$WORK_DIR/seed-first.log" 2>&1
+  run_limited seed-snapshot-first 180 npm run ci:db-snapshot -- --out="$WORK_DIR/seed-first.json"
+  run_limited seed-repeat 180 npm run seed >"$WORK_DIR/seed-repeat.log" 2>&1
+  run_limited seed-snapshot-repeat 180 npm run ci:db-snapshot -- --out="$WORK_DIR/seed-repeat.json"
   python - "$WORK_DIR/seed-first.json" "$WORK_DIR/seed-repeat.json" "$RESULTS_DIR/migration-seed.json" <<'PY'
 import json, pathlib, sys
 first, second = (json.loads(pathlib.Path(p).read_text(encoding="utf-8")) for p in sys.argv[1:3])
 if first != second:
     raise SystemExit("Repeated seed changed the sanitized database snapshot")
 out = {
-  "schema_version": 1, "fresh_migration": "pass", "repeat_migration": "pass",
+  "schema_version": 1, "fresh_migration": "pass", "migration_status": "pass",
+  "repeat_migration": "pass",
   "repeat_seed": "pass", "collection_counts": second["collection_counts"],
   "collection_counts_first": first["collection_counts"], "collection_counts_second": second["collection_counts"],
   "first_digest": first["data_digest_sha256"], "second_digest": second["data_digest_sha256"],
@@ -351,7 +428,8 @@ PY
 
 run_shared_contract_suite() {
   local output="$1"
-  python - "$REPO_ROOT/spikes/val02_contract/tests" "$output" <<'PY'
+  run_limited "shared-contract-$(basename "$output" .json)" 300 \
+    python - "$REPO_ROOT/spikes/val02_contract/tests" "$output" <<'PY'
 import hashlib, json, pathlib, sys, unittest
 tests_dir, output = pathlib.Path(sys.argv[1]), pathlib.Path(sys.argv[2])
 suite = unittest.defaultTestLoader.discover(str(tests_dir))
@@ -383,20 +461,23 @@ PY
 run_regressions() {
   CURRENT_STAGE="contracts-and-regressions"
   cd "$REPO_ROOT"
-  python spikes/val02_contract/fixture_contract.py >"$WORK_DIR/fixture.json"
+  run_limited fixture-contract 60 python spikes/val02_contract/fixture_contract.py >"$WORK_DIR/fixture.json"
   run_shared_contract_suite "$WORK_DIR/shared-contract.json"
-  python -m compileall -q spikes/val02_contract
+  run_limited python-compileall 60 python -m compileall -q spikes/val02_contract
   cd "$PAYLOAD_DIR"
-  npm run typecheck
-  npm run lint
+  run_limited payload-typecheck 300 npm run typecheck
+  run_limited payload-eslint 300 npm run lint
   local sqlite_uri="file:$WORK_DIR/sqlite-regression.db"
-  PAYLOAD_CI_POSTGRES=false DATABASE_ADAPTER=sqlite DATABASE_URI="$sqlite_uri" S3_ENABLED=false \
-    npx --no-install vitest run --reporter=json --outputFile="$WORK_DIR/vitest-sqlite.json"
-  PAYLOAD_CI_POSTGRES=true npx --no-install vitest run tests/integration.test.ts \
+  run_limited vitest-sqlite 480 env PAYLOAD_CI_POSTGRES=false DATABASE_ADAPTER=sqlite \
+    DATABASE_URI="$sqlite_uri" S3_ENABLED=false npx --no-install vitest run \
+    --reporter=json --outputFile="$WORK_DIR/vitest-sqlite.json"
+  run_limited vitest-postgres-integration 480 env PAYLOAD_CI_POSTGRES=true \
+    npx --no-install vitest run tests/integration.test.ts \
     --reporter=json --outputFile="$WORK_DIR/vitest-postgres-integration.json"
-  PAYLOAD_CI_POSTGRES=true npx --no-install vitest run tests/postgres-production-gate.test.ts \
+  run_limited vitest-postgres-transactions 360 env PAYLOAD_CI_POSTGRES=true \
+    npx --no-install vitest run tests/postgres-production-gate.test.ts \
     --reporter=json --outputFile="$WORK_DIR/vitest-postgres-transaction.json"
-  npm run ci:security -- --out="$RESULTS_DIR/security-initial.json"
+  run_limited security-initial 300 npm run ci:security -- --out="$RESULTS_DIR/security-initial.json"
   python - "$WORK_DIR/fixture.json" "$WORK_DIR/shared-contract.json" "$WORK_DIR/vitest-sqlite.json" \
     "$WORK_DIR/vitest-postgres-integration.json" "$WORK_DIR/vitest-postgres-transaction.json" \
     "$RESULTS_DIR/regressions.json" "$RESULTS_DIR/transaction-concurrency.json" <<'PY'
@@ -513,28 +594,30 @@ PY
 run_media_gates() {
   CURRENT_STAGE="s3-media-lifecycle"
   cd "$PAYLOAD_DIR"
-  npm run ci:media -- setup
-  npm run ci:media -- audit
-  compose stop --timeout 1 minio >/dev/null
-  npm run ci:media -- outage
-  compose start minio >/dev/null
+  run_limited media-setup 300 npm run ci:media -- setup
+  run_limited media-audit-before-outage 180 npm run ci:media -- audit
+  compose_limited minio-stop 60 stop --timeout 1 minio >/dev/null
+  run_limited media-outage 180 npm run ci:media -- outage
+  compose_limited minio-start 60 start minio >/dev/null
   wait_http http://127.0.0.1:59000/minio/health/live 60
-  npm run ci:media -- recover
-  npm run ci:media -- lifecycle
-  npm run ci:media -- audit
+  run_limited media-recover 300 npm run ci:media -- recover
+  run_limited media-lifecycle 300 npm run ci:media -- lifecycle
+  run_limited media-audit-final 180 npm run ci:media -- audit
 }
 
 run_restore_regressions() {
   CURRENT_STAGE="restored-contracts-and-security"
   cd "$REPO_ROOT"
-  python spikes/val02_contract/fixture_contract.py >"$WORK_DIR/fixture-restored.json"
+  run_limited fixture-contract-restored 60 python spikes/val02_contract/fixture_contract.py >"$WORK_DIR/fixture-restored.json"
   run_shared_contract_suite "$WORK_DIR/shared-contract-restored.json"
   cd "$PAYLOAD_DIR"
-  PAYLOAD_CI_POSTGRES=true npx --no-install vitest run tests/integration.test.ts \
+  run_limited vitest-postgres-integration-restored 480 env PAYLOAD_CI_POSTGRES=true \
+    npx --no-install vitest run tests/integration.test.ts \
     --reporter=json --outputFile="$WORK_DIR/vitest-postgres-integration-restored.json"
-  PAYLOAD_CI_POSTGRES=true npx --no-install vitest run tests/postgres-production-gate.test.ts \
+  run_limited vitest-postgres-transactions-restored 360 env PAYLOAD_CI_POSTGRES=true \
+    npx --no-install vitest run tests/postgres-production-gate.test.ts \
     --reporter=json --outputFile="$WORK_DIR/vitest-postgres-transaction-restored.json"
-  npm run ci:security -- --out="$WORK_DIR/security-restored.json"
+  run_limited security-restored 300 npm run ci:security -- --out="$WORK_DIR/security-restored.json"
   python - "$WORK_DIR/fixture-restored.json" "$WORK_DIR/shared-contract-restored.json" \
     "$WORK_DIR/vitest-postgres-integration-restored.json" "$WORK_DIR/vitest-postgres-transaction-restored.json" \
     "$WORK_DIR/security-restored.json" "$RESULTS_DIR/restore-regressions.json" <<'PY'
@@ -616,25 +699,29 @@ backup_and_restore() {
   local started ended backup_sha backup_size table_count record_count snapshot_id
   snapshot_id="${GITHUB_RUN_ID:-local}-${GITHUB_RUN_ATTEMPT:-1}-${GITHUB_SHA:-unknown}"
   export PAYLOAD_CI_SNAPSHOT_ID="$snapshot_id"
-  npm run ci:db-snapshot -- --out="$WORK_DIR/pre-restore.json"
-  npm run ci:media -- backup-manifest
+  run_limited db-snapshot-before-backup 180 npm run ci:db-snapshot -- --out="$WORK_DIR/pre-restore.json"
+  run_limited media-backup-manifest 300 npm run ci:media -- backup-manifest
   table_count="$(compose exec -T postgres psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Atc "SELECT count(*) FROM information_schema.tables WHERE table_schema='public' AND table_type='BASE TABLE'")"
   record_count="$(python -c 'import json,sys; print(sum(json.load(open(sys.argv[1], encoding="utf-8"))["collection_counts"].values()))' "$WORK_DIR/pre-restore.json")"
   started="$(date +%s%3N)"
   compose exec -T postgres sh -ec 'PGPASSWORD="$POSTGRES_PASSWORD" pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Fc' >"$BACKUP_FILE"
   backup_sha="$(sha256sum "$BACKUP_FILE" | awk '{print $1}')"
   backup_size="$(stat -c '%s' "$BACKUP_FILE")"
-  npm run ci:media -- purge
+  run_limited media-purge 300 npm run ci:media -- purge
   compose exec -T postgres sh -ec 'PGPASSWORD="$POSTGRES_PASSWORD" dropdb --force -U "$POSTGRES_USER" "$POSTGRES_DB"'
   compose exec -T postgres sh -ec 'PGPASSWORD="$POSTGRES_PASSWORD" createdb -U "$POSTGRES_USER" "$POSTGRES_DB"'
   compose exec -T postgres sh -ec 'PGPASSWORD="$POSTGRES_PASSWORD" pg_restore --exit-on-error --no-owner -U "$POSTGRES_USER" -d "$POSTGRES_DB"' <"$BACKUP_FILE"
   ended="$(date +%s%3N)"
-  npx --no-install payload migrate >"$WORK_DIR/migrate-after-restore.log" 2>&1
-  npm run ci:db-snapshot -- --out="$WORK_DIR/post-restore.json"
-  npm run ci:schema-audit -- --out="$RESULTS_DIR/schema-restored.json"
-  npm run ci:media -- restore
-  npm run ci:media -- audit
-  npm run ci:media -- migrate-prefix
+  rm -f "$WORK_DIR/migration-after-restore.json"
+  run_limited migration-after-restore 300 npm run ci:migration-gate -- \
+    --mode=repeat --out="$WORK_DIR/migration-after-restore.json" \
+    >"$WORK_DIR/migrate-after-restore.log" 2>&1 </dev/null
+  verify_pass_json "$WORK_DIR/migration-after-restore.json" migration-after-restore
+  run_limited db-snapshot-after-restore 180 npm run ci:db-snapshot -- --out="$WORK_DIR/post-restore.json"
+  run_limited schema-audit-restored 180 npm run ci:schema-audit -- --out="$RESULTS_DIR/schema-restored.json"
+  run_limited media-restore 300 npm run ci:media -- restore
+  run_limited media-audit-restored 180 npm run ci:media -- audit
+  run_limited media-migrate-prefix 300 npm run ci:media -- migrate-prefix
   run_restore_regressions
   run_restored_joint_smoke
   rm -f "$BACKUP_FILE"
@@ -751,7 +838,8 @@ run_restored_joint_smoke() {
   local login_status review_status search_status ambiguous_status adult_status
   local gallery_character_id adult_character_id media_id gallery_filename adult_filename search_effective
 
-  npx --no-install tsx scripts/ci-restored-joint-gates.ts --out="$domain" --login="$login"
+  run_limited restored-joint-fixture 300 npx --no-install tsx \
+    scripts/ci-restored-joint-gates.ts --out="$domain" --login="$login"
   start_restored_service
   [[ "$(http_code http://127.0.0.1:3101/health)" == "200" ]]
   [[ "$(http_code http://127.0.0.1:3101/)" == "200" ]]
@@ -883,7 +971,8 @@ PY
     [[ "$(http_code -L "$url")" == "200" ]]
   done <"$WORK_DIR/media-urls-$phase.txt"
 
-  npm run ci:db-snapshot -- --out="$WORK_DIR/attacks-before-$phase.json"
+  run_limited "standalone-attacks-snapshot-before-$phase" 180 \
+    npm run ci:db-snapshot -- --out="$WORK_DIR/attacks-before-$phase.json"
   local no_token wrong_token revoked_token formal_attack version_attack main_attack generic_attack admin_attack domain_attack
   local graphql_introspection graphql_response graphql_status version_id prototype_id candidate_id
   version_id="$(compose exec -T postgres psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Atc 'SELECT id FROM figure_versions ORDER BY id LIMIT 1')"
@@ -937,7 +1026,8 @@ if deleted is not None or not errors or not any(marker in error_text for marker 
     raise SystemExit("Candidate GraphQL delete was not rejected by an authorization decision")
 PY
 
-  npm run ci:db-snapshot -- --out="$WORK_DIR/attacks-after-$phase.json"
+  run_limited "standalone-attacks-snapshot-after-$phase" 180 \
+    npm run ci:db-snapshot -- --out="$WORK_DIR/attacks-after-$phase.json"
   python - "$WORK_DIR/attacks-before-$phase.json" "$WORK_DIR/attacks-after-$phase.json" <<'PY'
 import json, pathlib, sys
 before, after = (json.loads(pathlib.Path(path).read_text(encoding="utf-8")) for path in sys.argv[1:])
@@ -1051,16 +1141,25 @@ run_standalone() {
   git -C "$REPO_ROOT" archive "${GITHUB_SHA:?GITHUB_SHA is required}" | tar -x -C "$clean_root"
   clean_payload="$clean_root/spikes/val02_payload"
   cd "$clean_payload"
-  npm ci --no-audit --no-fund >"$WORK_DIR/clean-npm-ci.log" 2>&1
-  npx --no-install payload migrate >"$WORK_DIR/clean-migrate.log" 2>&1
-  npx --no-install payload migrate:status >"$WORK_DIR/clean-migrate-status.log" 2>&1
-  npm run ci:schema-audit -- --out="$WORK_DIR/clean-schema.json"
-  npm run seed >"$WORK_DIR/clean-seed.log" 2>&1
-  npm run provision:client >"$WORK_DIR/provision-client.json" 2>&1
-  npm run ci:security -- --out="$WORK_DIR/standalone-security.json"
-  npm run ci:media -- setup
+  run_limited clean-npm-ci 600 npm ci --no-audit --no-fund >"$WORK_DIR/clean-npm-ci.log" 2>&1
+  rm -f "$WORK_DIR/clean-migration-fresh.json" "$WORK_DIR/clean-migration-repeat.json"
+  run_limited clean-migration-fresh 300 npm run ci:migration-gate -- \
+    --mode=fresh --out="$WORK_DIR/clean-migration-fresh.json" \
+    >"$WORK_DIR/clean-migrate.log" 2>&1 </dev/null
+  verify_pass_json "$WORK_DIR/clean-migration-fresh.json" clean-migration-fresh
+  run_limited clean-migration-status 120 npx --no-install payload migrate:status \
+    >"$WORK_DIR/clean-migrate-status.log" 2>&1 </dev/null
+  run_limited clean-migration-repeat 180 npm run ci:migration-gate -- \
+    --mode=repeat --out="$WORK_DIR/clean-migration-repeat.json" \
+    >"$WORK_DIR/clean-migrate-repeat.log" 2>&1 </dev/null
+  verify_pass_json "$WORK_DIR/clean-migration-repeat.json" clean-migration-repeat
+  run_limited clean-schema-audit 180 npm run ci:schema-audit -- --out="$WORK_DIR/clean-schema.json"
+  run_limited clean-seed 180 npm run seed >"$WORK_DIR/clean-seed.log" 2>&1
+  run_limited clean-provision-client 180 npm run provision:client >"$WORK_DIR/provision-client.json" 2>&1
+  run_limited clean-security 300 npm run ci:security -- --out="$WORK_DIR/standalone-security.json"
+  run_limited clean-media-setup 300 npm run ci:media -- setup
   build_start="$(date +%s%3N)"
-  npm run build >"$WORK_DIR/clean-build.log" 2>&1
+  run_limited clean-production-build 720 npm run build >"$WORK_DIR/clean-build.log" 2>&1
   build_end="$(date +%s%3N)"
   if grep -Eqi 'failed to copy traced|node-file-trace.*(warn|error)|missing.*sharp|nft.*warn' "$WORK_DIR/clean-build.log"; then
     echo 'Standalone NFT/Sharp tracing warning detected.' >&2
@@ -1076,15 +1175,15 @@ run_standalone() {
 
   start_standalone "$clean_payload" "$WORK_DIR/standalone-first.log" "$server"
   standalone_smoke "$clean_payload" first "$clean_state"
-  npm run ci:db-snapshot -- --out="$WORK_DIR/standalone-before-restart.json"
-  npm run ci:media -- audit
+  run_limited standalone-db-snapshot-before-restart 180 npm run ci:db-snapshot -- --out="$WORK_DIR/standalone-before-restart.json"
+  run_limited standalone-media-audit-before-restart 180 npm run ci:media -- audit
   cp "$clean_results/media-audit.json" "$WORK_DIR/standalone-media-before-restart.json"
   before_object_count="$(minio_object_count "$clean_bucket" "$clean_prefix")"
   [[ "$before_object_count" -gt 0 ]]
   stop_standalone
   start_standalone "$clean_payload" "$WORK_DIR/standalone-restart.log" "$server"
-  npm run ci:db-snapshot -- --out="$WORK_DIR/standalone-after-restart.json"
-  npm run ci:media -- audit
+  run_limited standalone-db-snapshot-after-restart 180 npm run ci:db-snapshot -- --out="$WORK_DIR/standalone-after-restart.json"
+  run_limited standalone-media-audit-after-restart 180 npm run ci:media -- audit
   cp "$clean_results/media-audit.json" "$WORK_DIR/standalone-media-after-restart.json"
   after_object_count="$(minio_object_count "$clean_bucket" "$clean_prefix")"
   [[ "$after_object_count" == "$before_object_count" ]]
@@ -1121,7 +1220,8 @@ out = {"schema_version": 1, "status": "pass", "clean_start": first, "restart": r
        "data_persisted": True, "media_persisted": True}
 pathlib.Path(sys.argv[7]).write_text(json.dumps(out, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 PY
-  compose exec -T postgres sh -ec 'PGPASSWORD="$POSTGRES_PASSWORD" dropdb --force -U "$POSTGRES_USER" --maintenance-db=postgres "$1"' sh "$clean_db"
+  compose_limited drop-clean-standalone-database 90 exec -T postgres sh -ec \
+    'PGPASSWORD="$POSTGRES_PASSWORD" dropdb --force -U "$POSTGRES_USER" --maintenance-db=postgres "$1"' sh "$clean_db"
   delete_minio_bucket "$clean_bucket"
   source_runtime
 }
@@ -1129,7 +1229,7 @@ PY
 scan_results_for_secrets() {
   CURRENT_STAGE="evidence-safety-scan"
   local leaked=0 matches file
-  for secret_name in POSTGRES_PASSWORD MINIO_ROOT_PASSWORD PAYLOAD_SECRET S3_ACCESS_KEY_ID S3_SECRET_ACCESS_KEY VAL02_PAYLOAD_CANDIDATE_TOKEN VAL02_PAYLOAD_CANDIDATE_TOKEN_B VAL02_PAYLOAD_REVOKED_TOKEN DATABASE_URI; do
+  for secret_name in POSTGRES_USER POSTGRES_PASSWORD MINIO_ROOT_USER MINIO_ROOT_PASSWORD PAYLOAD_SECRET S3_ACCESS_KEY_ID S3_SECRET_ACCESS_KEY VAL02_PAYLOAD_CANDIDATE_TOKEN VAL02_PAYLOAD_CANDIDATE_TOKEN_B VAL02_PAYLOAD_REVOKED_TOKEN DATABASE_URI; do
     local secret="${!secret_name:-}"
     matches=""
     if [[ -n "$secret" ]]; then
@@ -1189,7 +1289,7 @@ cleanup_all() {
   stop_restored_service || failed=1
   if source_runtime; then
     scan_results_for_secrets || failed=1
-    compose down --volumes --remove-orphans >/dev/null 2>&1 || failed=1
+    compose_limited cleanup-compose-down 180 down --volumes --remove-orphans >/dev/null 2>&1 || failed=1
     containers_remaining="$(docker ps -aq --filter "label=com.docker.compose.project=$COMPOSE_PROJECT_NAME" | wc -l | tr -d ' ')"
     volumes_remaining="$(docker volume ls -q --filter "label=com.docker.compose.project=$COMPOSE_PROJECT_NAME" | wc -l | tr -d ' ')"
     [[ "$containers_remaining" == "0" ]] || failed=1

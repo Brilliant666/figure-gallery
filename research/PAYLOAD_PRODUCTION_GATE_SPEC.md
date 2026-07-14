@@ -26,8 +26,8 @@
 | 用途 | 固定镜像 | 本轮允许的证据含义 |
 | --- | --- | --- |
 | PostgreSQL | `postgres:16.9-bookworm` | 只有成功启动并通过健康检查后才能写为已运行 |
-| MinIO | `quay.io/minio/minio:RELEASE.2025-04-22T22-12-26Z` | 只有成功启动并完成读写后才能写为已运行 |
-| MinIO Client | `quay.io/minio/mc:RELEASE.2025-04-16T18-13-26Z` | 只有初始化命令真实成功后才能写为已运行 |
+| MinIO | `minio/minio:RELEASE.2025-04-22T22-12-26Z` | 只有成功启动并完成读写后才能写为已运行 |
+| MinIO Client | `minio/mc:RELEASE.2025-04-16T18-13-26Z` | 只有初始化命令真实成功后才能写为已运行 |
 
 镜像配置存在不代表镜像已拉取、容器已创建或服务已验证。
 

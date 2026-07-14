@@ -46,6 +46,7 @@ jobs:
 
       - name: Fail-fast static validation
         run: |
+          command -v timeout >/dev/null
           bash -n spikes/payload_prod_gate/scripts/run-ci-production-gates.sh
           if command -v shellcheck >/dev/null 2>&1; then
             shellcheck spikes/payload_prod_gate/scripts/run-ci-production-gates.sh
@@ -58,14 +59,18 @@ jobs:
 
       - name: Install locked Payload dependencies
         working-directory: spikes/val02_payload
-        run: npm ci --no-audit --no-fund
+        run: timeout --signal=TERM --kill-after=30s 10m npm ci --no-audit --no-fund
 
       - name: Run PostgreSQL, S3, restore, standalone, and security gates
-        run: bash spikes/payload_prod_gate/scripts/run-ci-production-gates.sh run
+        run: >-
+          timeout --signal=TERM --kill-after=30s 42m
+          bash spikes/payload_prod_gate/scripts/run-ci-production-gates.sh run
 
       - name: Stop and erase disposable runtime state
         if: ${{ always() }}
-        run: bash spikes/payload_prod_gate/scripts/run-ci-production-gates.sh cleanup
+        run: >-
+          timeout --signal=TERM --kill-after=15s 4m
+          bash spikes/payload_prod_gate/scripts/run-ci-production-gates.sh cleanup
 
       - name: Validate and assemble sanitized evidence
         id: sanitize

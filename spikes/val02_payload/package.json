@@ -20,6 +20,7 @@
     "acceptance": "python scripts/run_acceptance.py",
     "acceptance:val02b": "python scripts/run_val02b_acceptance.py",
     "ci:db-snapshot": "tsx scripts/ci-db-snapshot.ts",
+    "ci:migration-gate": "tsx scripts/ci-migration-gate.ts",
     "ci:media": "tsx scripts/ci-media-gates.ts",
     "ci:security": "tsx scripts/ci-security-gates.ts",
     "ci:schema-audit": "tsx scripts/ci-schema-audit.ts",

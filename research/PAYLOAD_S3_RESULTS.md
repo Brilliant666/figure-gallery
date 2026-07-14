@@ -10,8 +10,8 @@
 
 | 项目 | 固定值 | 实际状态 |
 | --- | --- | --- |
-| MinIO server | `quay.io/minio/minio:RELEASE.2025-04-22T22-12-26Z` | 仅计划；未证明拉取或运行 |
-| MinIO client | `quay.io/minio/mc:RELEASE.2025-04-16T18-13-26Z` | 仅计划；初始化未运行 |
+| MinIO server | `minio/minio:RELEASE.2025-04-22T22-12-26Z` | 仅计划；未证明拉取或运行 |
+| MinIO client | `minio/mc:RELEASE.2025-04-16T18-13-26Z` | 仅计划；初始化未运行 |
 | Payload S3 plugin | `@payloadcms/storage-s3` `3.86.0` | 官方依赖已锁定；未连接对象存储 |
 | endpoint | 运行时环境变量，loopback，MinIO 显式 `forcePathStyle=true` | 未生成运行时配置 |
 | bucket/prefix | 每次测试独立、运行时生成 | 未创建 |
