@@ -1,0 +1,140 @@
+{
+  "case_count": 10,
+  "cases": [
+    {
+      "actual_outcome": "rejected",
+      "evidence": "HTTP 403",
+      "expected_outcome": "rejected",
+      "invariants": {
+        "formal_state_unchanged": true,
+        "main_image_unchanged": true,
+        "operation_log_unchanged": true
+      },
+      "name": "no_token_candidate_upsert",
+      "status": "pass",
+      "surface": "candidate endpoint"
+    },
+    {
+      "actual_outcome": "rejected",
+      "evidence": "HTTP 403",
+      "expected_outcome": "rejected",
+      "invariants": {
+        "formal_state_unchanged": true,
+        "main_image_unchanged": true,
+        "operation_log_unchanged": true
+      },
+      "name": "wrong_token_candidate_upsert",
+      "status": "pass",
+      "surface": "candidate endpoint"
+    },
+    {
+      "actual_outcome": "rejected",
+      "evidence": "HTTP 403",
+      "expected_outcome": "rejected",
+      "invariants": {
+        "formal_state_unchanged": true,
+        "main_image_unchanged": true,
+        "operation_log_unchanged": true
+      },
+      "name": "revoked_token_candidate_upsert",
+      "status": "pass",
+      "surface": "candidate endpoint"
+    },
+    {
+      "actual_outcome": "rejected",
+      "evidence": "HTTP 403",
+      "expected_outcome": "rejected",
+      "invariants": {
+        "formal_state_unchanged": true,
+        "main_image_unchanged": true,
+        "operation_log_unchanged": true
+      },
+      "name": "candidate_write_figure_prototype_rest",
+      "status": "pass",
+      "surface": "REST"
+    },
+    {
+      "actual_outcome": "rejected",
+      "evidence": "HTTP 403",
+      "expected_outcome": "rejected",
+      "invariants": {
+        "formal_state_unchanged": true,
+        "main_image_unchanged": true,
+        "operation_log_unchanged": true
+      },
+      "name": "candidate_write_figure_version_rest",
+      "status": "pass",
+      "surface": "REST"
+    },
+    {
+      "actual_outcome": "rejected",
+      "evidence": "HTTP 403",
+      "expected_outcome": "rejected",
+      "invariants": {
+        "formal_state_unchanged": true,
+        "main_image_unchanged": true,
+        "operation_log_unchanged": true
+      },
+      "name": "candidate_replace_main_image_rest",
+      "status": "pass",
+      "surface": "REST"
+    },
+    {
+      "actual_outcome": "rejected",
+      "evidence": "HTTP 403",
+      "expected_outcome": "rejected",
+      "invariants": {
+        "formal_state_unchanged": true,
+        "main_image_unchanged": true,
+        "operation_log_unchanged": true
+      },
+      "name": "candidate_generic_crud_rest",
+      "status": "pass",
+      "surface": "REST"
+    },
+    {
+      "actual_outcome": "rejected",
+      "evidence": "direct deleteFigureVersion HTTP 200 access-denied; production introspection disabled",
+      "expected_outcome": "rejected",
+      "invariants": {
+        "formal_state_unchanged": true,
+        "main_image_unchanged": true,
+        "operation_log_unchanged": true
+      },
+      "name": "candidate_graphql_formal_write",
+      "status": "pass",
+      "surface": "GraphQL"
+    },
+    {
+      "actual_outcome": "rejected",
+      "evidence": "HTTP 403",
+      "expected_outcome": "rejected",
+      "invariants": {
+        "formal_state_unchanged": true,
+        "main_image_unchanged": true,
+        "operation_log_unchanged": true
+      },
+      "name": "unauthenticated_admin_formal_create",
+      "status": "pass",
+      "surface": "Admin REST"
+    },
+    {
+      "actual_outcome": "rejected",
+      "evidence": "HTTP 403",
+      "expected_outcome": "rejected",
+      "invariants": {
+        "formal_state_unchanged": true,
+        "main_image_unchanged": true,
+        "operation_log_unchanged": true
+      },
+      "name": "candidate_custom_domain_endpoint",
+      "status": "pass",
+      "surface": "custom domain endpoint"
+    }
+  ],
+  "failed": 0,
+  "passed": 10,
+  "phase": "clean_start",
+  "schema_version": 1,
+  "status": "pass"
+}

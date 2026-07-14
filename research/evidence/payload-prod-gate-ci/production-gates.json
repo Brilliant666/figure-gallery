@@ -1,0 +1,142 @@
+{
+  "artifact_retention_days": 5,
+  "cleanup": "pass",
+  "gates": [
+    {
+      "evidence": [
+        "schema-first.json",
+        "schema-repeat.json",
+        "migration-fresh.json",
+        "migration-repeat.json",
+        "migration-seed.json"
+      ],
+      "id": "PG-01",
+      "status": "pass"
+    },
+    {
+      "evidence": [
+        "migration-seed.json"
+      ],
+      "id": "PG-02",
+      "status": "pass"
+    },
+    {
+      "evidence": [
+        "regressions.json",
+        "transaction-concurrency.json"
+      ],
+      "id": "PG-03",
+      "status": "pass"
+    },
+    {
+      "evidence": [
+        "backup-restore.json",
+        "restored-joint-smoke.json"
+      ],
+      "id": "PG-04",
+      "status": "pass"
+    },
+    {
+      "evidence": [
+        "backup-restore.json",
+        "restore-regressions.json",
+        "restored-joint-smoke.json"
+      ],
+      "id": "PG-05",
+      "status": "pass"
+    },
+    {
+      "evidence": [
+        "media-setup.json",
+        "media-audit.json"
+      ],
+      "id": "PG-06",
+      "status": "pass"
+    },
+    {
+      "evidence": [
+        "media-audit.json",
+        "media-lifecycle.json"
+      ],
+      "id": "PG-07",
+      "status": "pass"
+    },
+    {
+      "evidence": [
+        "media-lifecycle.json"
+      ],
+      "id": "PG-08",
+      "status": "pass"
+    },
+    {
+      "evidence": [
+        "media-outage.json",
+        "media-recover.json"
+      ],
+      "id": "PG-09",
+      "status": "pass"
+    },
+    {
+      "evidence": [
+        "media-audit.json",
+        "media-migrate-prefix.json"
+      ],
+      "id": "PG-10",
+      "status": "pass"
+    },
+    {
+      "evidence": [
+        "backup-restore.json",
+        "media-backup-manifest.json",
+        "media-purge.json",
+        "media-restore.json",
+        "media-migrate-prefix.json",
+        "restore-regressions.json",
+        "restored-joint-smoke.json"
+      ],
+      "id": "PG-11",
+      "status": "pass"
+    },
+    {
+      "evidence": [
+        "standalone.json",
+        "standalone-attacks-clean-start.json"
+      ],
+      "id": "PG-12",
+      "status": "pass"
+    },
+    {
+      "evidence": [
+        "standalone.json",
+        "standalone-attacks-restart.json"
+      ],
+      "id": "PG-13",
+      "status": "pass"
+    },
+    {
+      "evidence": [
+        "restore-regressions.json",
+        "standalone-attacks-clean-start.json",
+        "standalone-attacks-restart.json"
+      ],
+      "id": "PG-14",
+      "status": "pass"
+    }
+  ],
+  "generated_at": "2026-07-14T17:46:24.784764+00:00",
+  "hpoi_requests": 0,
+  "overall_status": "pass",
+  "run_attempt": "1",
+  "run_id": "29354756205",
+  "schema_version": 1,
+  "source_commit": "d204767803b9c629ab262bc5ad5ccfc89751162e",
+  "summary": {
+    "environment_blocked": 0,
+    "fail": 0,
+    "hard_failures": 0,
+    "not_run": 0,
+    "pass": 14
+  },
+  "validation_errors": [],
+  "workflow": "Payload production gates"
+}

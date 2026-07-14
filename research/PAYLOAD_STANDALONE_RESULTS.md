@@ -1,105 +1,119 @@
 # Payload standalone 生产门禁结果
 
-## 1. 结论
+## 结论
 
-完整 standalone 门禁要求从干净临时环境，以 PostgreSQL + MinIO/S3、`NODE_ENV=production` 和运行时秘密完成 install、migration、seed、build、启动、攻击回归、停止与重启。2026-07-14 本机 Docker daemon 无法在禁止修改系统配置的前提下稳定恢复，因此该完整路径没有启动。
+PG-12—PG-14 在 GitHub-hosted `ubuntu-24.04` runner 上全部 `pass`。固定依赖的 Payload CMS + Next.js standalone 从同一提交的干净临时树、空 PostgreSQL 数据库和空 MinIO bucket 完成安装、migration、seed、production build、启动、攻击回归、停止和重启；数据、对象及候选协议身份保持一致。
 
-PG-12、PG-13、PG-14 均为 `environment_blocked`，硬失败数为 0。既有 SQLite + 本地媒体 standalone 历史证据不替代本轮生产 adapter 门禁。
+## 固定版本和 Linux 环境
 
-机器摘要：[`standalone-results.json`](evidence/payload-prod-gate/standalone-results.json)。
+- Payload `3.86.0`、`@payloadcms/db-postgres` `3.86.0`、`@payloadcms/storage-s3` `3.86.0`；
+- Next.js `16.2.10`、Sharp `0.34.5`、`pg` `8.20.0`；
+- Node `22.23.1`、npm `10.9.8`；
+- Hosted image `ubuntu24/20260705.232.1`，Ubuntu 24.04；
+- 文件系统大小写敏感、POSIX `/` 路径、LF 行尾、shell 脚本可执行，临时目录 `/home/runner/work/_temp`、时区 UTC；
+- 所有服务仅绑定 loopback；没有使用 `next dev`。
 
-## 2. 固定运行版本
+## PG-12：clean start
 
-| 组件 | 版本/约束 | 本轮状态 |
-| --- | --- | --- |
-| Node.js | `22.23.1` | 目标版本；未执行完整 clean install |
-| npm | `10.9.8` | 目标版本；未执行完整 clean install |
-| Payload CMS / Next adapter | `3.86.0` | 已锁定；未在目标基础设施启动 |
-| Next.js | `16.2.10` | 已锁定；未执行本轮完整 build/start |
-| React | `19.2.7` | 已锁定 |
-| PostgreSQL adapter | `@payloadcms/db-postgres` `3.86.0` | 未运行 |
-| S3 plugin | `@payloadcms/storage-s3` `3.86.0` | 未运行 |
+状态：`pass`（硬门禁）。
 
-## 3. 干净环境步骤
+- 使用 `git archive` 从提交 `d204767803b9c629ab262bc5ad5ccfc89751162e` 建立干净临时树；
+- 初始 public table 0、bucket 对象 0；
+- `npm ci` 按 lockfile 完成；migration、seed、production build 均 pass；
+- `.next/standalone` 组装成功并以正式 server 启动；
+- Build 用时 24,770 ms；
+- health、root、Admin、static、original、thumbnail、preview 均 HTTP 200；
+- PostgreSQL 与 S3 均为真实启用状态，服务仅 loopback；
+- Clean-start 10/10 standalone 攻击全部被拒绝，正式状态、主图和攻击前后的 OperationLog 不变；
+- Production GraphQL introspection 关闭；直接 `deleteFigureVersion` 请求虽为 HTTP 200，但业务结果为 access denied。
 
-| 步骤 | 状态 | 说明 |
-| --- | --- | --- |
-| 创建干净临时 checkout/目录 | `environment_blocked` | 未开始完整部署流程 |
-| `npm ci --no-audit --no-fund` | `environment_blocked` | 本轮 clean-start 未执行 |
-| 空 PostgreSQL migration | `environment_blocked` | PostgreSQL 不可用 |
-| 合成 seed | `environment_blocked` | PostgreSQL 不可用 |
-| production build | `environment_blocked` | 不以脱离目标基础设施的 build 代替完整门禁 |
-| standalone 必需文件装配 | `environment_blocked` | 未执行 |
-| `.next/standalone/server.js` 启动 | `environment_blocked` | 未执行 |
-| 只监听 loopback | `environment_blocked` | 无本轮服务进程可检查 |
+## 候选 live protocol
 
-没有创建临时管理员、候选客户端 Token 或 `.env`；也没有把凭据写入仓库。
+Clean start：
 
-## 4. HTTP、静态资源与媒体 smoke
+- Candidate IDs 9、10；SourceRecord IDs 14、15；multipart media ID 16；
+- 候选 upsert 和 multipart upload 均 pass；
+- `expected_existing=false`，对象数由 28 增至 30；
+- replay mode 为 `initial_write`。
 
-以下 smoke 均未运行：
+Restart：
 
-- health HTTP 200；
-- 首页 HTTP 200；
-- Payload Admin HTTP 200；
-- `_next/static` 读取；
-- 原图、thumbnail、preview 读取；
-- 候选 upsert 与 multipart 上传；
-- 未授权请求拒绝；
-- 正式数据写攻击拒绝；
-- generic CRUD 绕过拒绝；
-- 正式主图攻击拒绝；
-- 网络 guard 回归。
+- Candidate、SourceRecord 和 multipart media ID 与 clean start 完全相同；
+- `expected_existing=true`，upsert/upload 均 pass，对象数保持 30→30；
+- replay mode 为 `idempotent_identity_replay`；
+- 正式主图、关系、SystemSetting 和 users 均不变；
+- 合法的两个候选两次 upsert 共增加 4 条 `candidate_upsert` 审计；媒体重复上传不产生重复对象。
 
-由于目标服务未启动，没有 HTTP 状态码、响应时间、控制台错误或网络失败数据可报告。
+因此，“攻击导致的 OperationLog 不变”与“合法候选 replay 产生预期 4 条审计”是两个不同断言，不能把整个 restart 描述为没有审计变化。
 
-## 5. Restart 与数据保持
+## PG-13：停止与重启
 
-下列步骤未运行：停止 standalone、重新启动、重新执行 smoke、比较稳定 ID、数据库关系、正式主图、storage key、原图和派生图。PG-13 为 `environment_blocked`，无法判断 PostgreSQL + S3 下的重启持久性。
+状态：`pass`。
 
-## 6. NFT/Sharp trace
+- 停止后使用同一 clean standalone 重新启动；
+- health、root、Admin、static、original、thumbnail、preview 再次全部 200；
+- 数据库 digest 前后均为 `eb9ee47796266c024a9c958696df44b29ed4fc9474438e8a7720ac5628ae9e11`；
+- 媒体 digest 前后均为 `934e0fcc391a836402b079122608c8b833732e9588dba2feeb1102124c3e3f1a`；
+- 对象数 30→30，`restart_difference_count=0`；
+- `data_persisted=true`、`media_persisted=true`；
+- Restart 10/10 standalone 攻击仍全部拒绝。
 
-没有在干净临时目录生成本轮 production build，因此没有新的 NFT tracing 结果，也没有验证 standalone 包是否包含 Sharp 原生运行文件、Next 静态资源和 Payload Admin 所需文件。
+## NFT / Sharp trace
 
-- `nft_warning`：`null`（未运行）
-- Sharp runtime completeness：`environment_blocked`
-- 干净目录启动：`environment_blocked`
+- `standalone_assembled=true`；
+- `nft_warning=false`；
+- Standalone 输出中发现 114 个 Sharp runtime 文件；
+- 原图、thumbnail、preview 在 clean start 和 restart 均真实返回 200；
+- 未依赖 `next dev`。
 
-历史本地 standalone 成功只证明先前 SQLite/本地媒体路径；它不证明目标 PostgreSQL + S3 包装完整，也不能把本轮 PG-12 写为通过。
+这证明固定依赖与本次 runner 的 standalone trace 足以实际启动和处理图片，不代表未来 Next.js/Sharp 或 runner 升级无需重跑。
 
-## 7. 权限攻击回归
+## PG-14：不可绕过领域服务
 
-以下用例必须在 PostgreSQL + S3 的真实 standalone 进程执行，本轮全部未运行：
+状态：`pass`（硬门禁）。
+
+机器证据记录四轮攻击执行：
+
+- 初始 PostgreSQL/S3 矩阵 12/12；
+- 数据库与对象恢复后矩阵 12/12；
+- Standalone clean start 10/10；
+- Standalone restart 10/10。
+
+合计 44 次执行全部通过；这是执行次数，不是 44 种互不重复的攻击。覆盖：
 
 - 无 Token、错误 Token、已撤销 Token；
-- 客户端 A 修改客户端 B；
-- 候选身份写 FigurePrototype/FigureVersion；
-- 候选身份修改正式主图；
-- 绕过专用 endpoint 使用 generic REST/GraphQL CRUD；
-- Admin 或 Local API 绕过领域 service 与 OperationLog；
-- ReviewWorkItem 越界目标、乐观锁冲突和 specified undo 依赖攻击。
+- Client A 修改 Client B；
+- Candidate 写 FigurePrototype/FigureVersion 或替换正式主图；
+- Generic REST CRUD、Local API、Admin generic save；
+- 越界 ReviewWorkItem target、修改已完成工作项；
+- Standalone REST、GraphQL、未认证 Admin 创建和 custom domain endpoint。
 
-PG-14 是硬门禁，目前为 `environment_blocked`。没有观察到绕过成功，但也没有生产适配器下的拒绝证据。
+每项均要求拒绝，并证明正式状态、正式主图和 OperationLog 没有因失败尝试产生错误变化。GraphQL HTTP 200 只表示 GraphQL 传输成功；实际 mutation 被 access control 拒绝。
 
-## 8. 运行与维护复杂度
+证据：[`security-initial.json`](evidence/payload-prod-gate-ci/security-initial.json)、[`restore-regressions.json`](evidence/payload-prod-gate-ci/restore-regressions.json)、[`standalone-attacks-clean-start.json`](evidence/payload-prod-gate-ci/standalone-attacks-clean-start.json)、[`standalone-attacks-restart.json`](evidence/payload-prod-gate-ci/standalone-attacks-restart.json)。
 
-本轮没有完整运行，因此以下测量值均为 `null`：
+## Hpoi guard 与回归
 
-- clean `npm ci`、migration、seed、build 耗时；
-- standalone 冷启动、重启耗时；
-- health、首页、Admin 热响应；
-- 图片上传、首次 thumbnail、缓存 thumbnail 耗时；
-- 备份与恢复耗时；
-- 最小启动命令数、生产进程数和故障恢复步骤实测值。
+- Hpoi 请求总数 0；Python transport calls 0；TypeScript transport calls 0；
+- 共享合同初始与恢复后均为 78/78，underlying transport calls 0；
+- SQLite 回归 45 pass / 8 PostgreSQL-only skipped；PostgreSQL integration 30/30；concurrency/rollback 8/8；
+- `regressions.json` 中两个 PostgreSQL suite 的 `hpoi_transport_guard_passed=false` 表示 suite 本身没有内嵌 guard，不能写成那两个 suite 自带 guard；Hpoi=0 的依据是独立 network guard、共享合同和工作流总计。
 
-可以确认的计划拓扑是 Payload standalone + PostgreSQL + MinIO（及一次性初始化容器），但由于没有运行，不能把计划进程数或步骤数描述为实测运维复杂度。
+## 清理
 
-## 9. PG 状态与环境清理
+状态：`pass`。
 
-| ID | 状态 | 说明 |
-| --- | --- | --- |
-| PG-12 | `environment_blocked` | 干净环境 PostgreSQL + S3 standalone 未启动 |
-| PG-13 | `environment_blocked` | 未执行停止/重启和持久性 smoke |
-| PG-14 | `environment_blocked` | 未在生产 adapters 下执行权限攻击回归 |
+- 剩余容器 0、volume 0、监听端口 0；
+- Runtime `.env`、数据库备份、临时对象、工作目录和恢复用 Next 临时树均删除；
+- Checkout 中没有残留 media；
+- Artifact 只含 JSON，数据库备份、图片对象和 runtime secrets 均为 0。
 
-本轮没有启动 Payload、PostgreSQL、MinIO 或一次性初始化容器；没有容器、网络、volume、数据库、对象、备份、构建产物、临时 `.env` 或运行时秘密需要保留。Docker Desktop 已停止，配置默认端口 `55432`、`59000`、`59001` 均无监听。
+证据：[`standalone.json`](evidence/payload-prod-gate-ci/standalone.json)、[`cleanup.json`](evidence/payload-prod-gate-ci/cleanup.json)、[`manifest.json`](evidence/payload-prod-gate-ci/manifest.json)。
+
+## 准确性边界
+
+- `git archive` 证明同一提交的干净临时树，不等于重新从网络 clone；
+- `build_ms=24770` 是 production build 时间，不是 cold-start；没有单独记录 cold-start 或热响应基准；
+- HTTP 200 smoke 证明指定端点可用，不是生产负载、长时间稳定性、公开域名、TLS 或 CDN 测试；
+- 验证的是 GitHub runner 上的 loopback PostgreSQL + MinIO，不是云部署；
+- 没有部署服务器、没有真实生产凭据、没有正式应用目录，也没有将 spike 迁移成正式项目。

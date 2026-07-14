@@ -1,0 +1,149 @@
+{
+  "adapter": "postgres",
+  "case_count": 12,
+  "cases": [
+    {
+      "case_id": "SEC-01-NO-TOKEN",
+      "http_status": 403,
+      "marker_matched": true,
+      "observed_rejection": "http",
+      "operation_log_unchanged": true,
+      "rejection_marker": "candidate_client_required",
+      "state_unchanged": true,
+      "status": "pass",
+      "surface": "candidate endpoint handler"
+    },
+    {
+      "case_id": "SEC-02-WRONG-TOKEN",
+      "http_status": 403,
+      "marker_matched": true,
+      "observed_rejection": "http",
+      "operation_log_unchanged": true,
+      "rejection_marker": "invalid_or_revoked_credential",
+      "state_unchanged": true,
+      "status": "pass",
+      "surface": "candidate endpoint handler"
+    },
+    {
+      "case_id": "SEC-03-REVOKED-TOKEN",
+      "http_status": 403,
+      "marker_matched": true,
+      "observed_rejection": "http",
+      "operation_log_unchanged": true,
+      "rejection_marker": "revoked_credential",
+      "state_unchanged": true,
+      "status": "pass",
+      "surface": "candidate endpoint handler"
+    },
+    {
+      "case_id": "SEC-04-CROSS-CLIENT-OWNER",
+      "http_status": 400,
+      "marker_matched": true,
+      "observed_rejection": "http",
+      "operation_log_unchanged": true,
+      "rejection_marker": "cross_client_owner_conflict",
+      "state_unchanged": true,
+      "status": "pass",
+      "surface": "candidate endpoint handler"
+    },
+    {
+      "case_id": "SEC-05-CANDIDATE-WRITES-FIGURE-PROTOTYPE",
+      "marker_matched": true,
+      "observed_rejection": "exception",
+      "operation_log_unchanged": true,
+      "rejection_marker": "collection_write_access_denied",
+      "state_unchanged": true,
+      "status": "pass",
+      "surface": "Payload Local API"
+    },
+    {
+      "case_id": "SEC-06-CANDIDATE-WRITES-FIGURE-VERSION",
+      "marker_matched": true,
+      "observed_rejection": "exception",
+      "operation_log_unchanged": true,
+      "rejection_marker": "collection_write_access_denied",
+      "state_unchanged": true,
+      "status": "pass",
+      "surface": "Payload Local API"
+    },
+    {
+      "case_id": "SEC-07-CANDIDATE-WRITES-MAIN-IMAGE",
+      "http_status": 403,
+      "marker_matched": true,
+      "observed_rejection": "http",
+      "operation_log_unchanged": true,
+      "rejection_marker": "administrator_required",
+      "state_unchanged": true,
+      "status": "pass",
+      "surface": "candidate review endpoint handler"
+    },
+    {
+      "case_id": "SEC-08-GENERIC-CANDIDATE-CRUD",
+      "marker_matched": true,
+      "observed_rejection": "exception",
+      "operation_log_unchanged": true,
+      "rejection_marker": "generic_candidate_crud_denied",
+      "state_unchanged": true,
+      "status": "pass",
+      "surface": "generic collection access pipeline"
+    },
+    {
+      "case_id": "SEC-09-LOCAL-API-OVERRIDE-SERVICE",
+      "marker_matched": true,
+      "observed_rejection": "exception",
+      "operation_log_unchanged": true,
+      "rejection_marker": "domain_service_administrator_required",
+      "state_unchanged": true,
+      "status": "pass",
+      "surface": "privileged domain service"
+    },
+    {
+      "case_id": "SEC-10-ADMIN-GENERIC-SAVE",
+      "marker_matched": true,
+      "observed_rejection": "exception",
+      "operation_log_unchanged": true,
+      "rejection_marker": "generic_admin_save_denied",
+      "state_unchanged": true,
+      "status": "pass",
+      "surface": "generic Admin Local API save"
+    },
+    {
+      "case_id": "SEC-11-OUT-OF-SCOPE-REVIEW-TARGET",
+      "marker_matched": true,
+      "observed_rejection": "exception",
+      "operation_log_unchanged": true,
+      "rejection_marker": "review_target_out_of_scope",
+      "state_unchanged": true,
+      "status": "pass",
+      "surface": "review domain service"
+    },
+    {
+      "case_id": "SEC-12-COMPLETED-WORK-ITEM-MODIFICATION",
+      "marker_matched": true,
+      "observed_rejection": "exception",
+      "operation_log_unchanged": true,
+      "rejection_marker": "completed_review_item_immutable",
+      "state_unchanged": true,
+      "status": "pass",
+      "surface": "review domain service"
+    }
+  ],
+  "expected_case_count": 12,
+  "failed_case_id": null,
+  "formal_collection_counts": {
+    "candidate-records": 16,
+    "characters": 6,
+    "figure-prototypes": 52,
+    "figure-versions": 9,
+    "manufacturers": 5,
+    "media": 31,
+    "review-work-items": 11,
+    "source-records": 21,
+    "works": 4
+  },
+  "gate": "PG-14",
+  "overall_status": "pass",
+  "revoked_identity_prepared": true,
+  "s3_endpoint_scope": "loopback",
+  "schema_version": 1
+}

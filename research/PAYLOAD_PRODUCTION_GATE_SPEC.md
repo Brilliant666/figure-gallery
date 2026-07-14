@@ -107,9 +107,11 @@
 - 发生硬失败时，ADR 必须保持或回到 `Undecided`，并在独立任务中修复或重新评估；本轮不得重新开发 Wagtail。
 - 无论 ADR 状态如何，本轮都不授权直接初始化正式项目或把 spike 迁移为正式代码。
 
-## 7. 本次执行判定
+## 7. PR #6 本机执行的历史判定
 
-本机 Docker daemon 在镜像操作前后失去稳定响应，且在不修改 Docker/WSL/Hyper-V/系统设置的约束内无法恢复。依据本规范的停止条件，PG-01—PG-14 全部记为 `environment_blocked`；硬失败数为 0。具体环境与分项证据见：
+PR #6 阶段，本机 Docker daemon 在镜像操作前后失去稳定响应，且在不修改 Docker/WSL/Hyper-V/系统设置的约束内无法恢复。该次本机执行依据本规范把 PG-01—PG-14 全部记为 `environment_blocked`；硬失败数为 0。其历史环境证据保留在：
 
 - [`environment-summary.json`](evidence/payload-prod-gate/environment-summary.json)
 - [`production-gates.json`](evidence/payload-prod-gate/production-gates.json)
+
+后续 CI 任务没有修改或继续重试本机 Docker，而是在 GitHub-hosted Ubuntu runner 完成同一组生产门禁。当前判定为 14/14 pass，见 [PAYLOAD_CI_PRODUCTION_GATE.md](PAYLOAD_CI_PRODUCTION_GATE.md) 和 [`payload-prod-gate-ci/production-gates.json`](evidence/payload-prod-gate-ci/production-gates.json)。本节保留用于解释为什么需要 CI 补证，不代表当前状态仍受环境阻塞。

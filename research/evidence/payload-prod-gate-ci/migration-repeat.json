@@ -1,0 +1,28 @@
+{
+  "added_migrations": [],
+  "after": {
+    "migration_table_exists": true,
+    "migrations": [
+      {
+        "batch": 1,
+        "name": "20260714_120916_payload_prod_gate_initial_schema"
+      }
+    ]
+  },
+  "before": {
+    "migration_table_exists": true,
+    "migrations": [
+      {
+        "batch": 1,
+        "name": "20260714_120916_payload_prod_gate_initial_schema"
+      }
+    ]
+  },
+  "configured_migrations": [
+    "20260714_120916_payload_prod_gate_initial_schema"
+  ],
+  "migration_engine": "payload.db.migrate",
+  "mode": "repeat",
+  "schema_version": 1,
+  "status": "pass"
+}

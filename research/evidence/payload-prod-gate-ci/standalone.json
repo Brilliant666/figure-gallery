@@ -1,0 +1,110 @@
+{
+  "build_ms": 24770,
+  "clean_checkout": true,
+  "clean_checkout_source_commit": "d204767803b9c629ab262bc5ad5ccfc89751162e",
+  "clean_start": {
+    "admin": 200,
+    "attack_case_count": 10,
+    "candidate_protocol": {
+      "candidate_record_ids": [
+        9,
+        10
+      ],
+      "expected_existing": false,
+      "multipart_media_id": 16,
+      "multipart_media_stable": true,
+      "object_count_after": 30,
+      "object_count_before": 28,
+      "source_record_ids": [
+        14,
+        15
+      ],
+      "upload": "pass",
+      "upsert": "pass"
+    },
+    "graphql_rejected": true,
+    "health": 200,
+    "operation_log_unchanged": true,
+    "original": 200,
+    "phase": "clean_start",
+    "preview": 200,
+    "production_introspection_disabled": true,
+    "protocol_replay": {
+      "mode": "initial_write"
+    },
+    "root": 200,
+    "schema_version": 1,
+    "state_unchanged": true,
+    "static": 200,
+    "thumbnail": 200
+  },
+  "data_persisted": true,
+  "database_digest_after_restart": "eb9ee47796266c024a9c958696df44b29ed4fc9474438e8a7720ac5628ae9e11",
+  "database_digest_before_restart": "eb9ee47796266c024a9c958696df44b29ed4fc9474438e8a7720ac5628ae9e11",
+  "fresh_bucket": true,
+  "fresh_database": true,
+  "git_archive": true,
+  "initial_bucket_object_count": 0,
+  "initial_public_table_count": 0,
+  "lockfile_install": true,
+  "loopback_only": true,
+  "media_digest_after_restart": "934e0fcc391a836402b079122608c8b833732e9588dba2feeb1102124c3e3f1a",
+  "media_digest_before_restart": "934e0fcc391a836402b079122608c8b833732e9588dba2feeb1102124c3e3f1a",
+  "media_persisted": true,
+  "migration": "pass",
+  "next_dev_used": false,
+  "nft_warning": false,
+  "npm_ci": true,
+  "object_count_after_restart": 30,
+  "object_count_before_restart": 30,
+  "postgres": true,
+  "production_build": "pass",
+  "restart": {
+    "admin": 200,
+    "attack_case_count": 10,
+    "candidate_protocol": {
+      "candidate_record_ids": [
+        9,
+        10
+      ],
+      "expected_existing": true,
+      "multipart_media_id": 16,
+      "multipart_media_stable": true,
+      "object_count_after": 30,
+      "object_count_before": 30,
+      "source_record_ids": [
+        14,
+        15
+      ],
+      "upload": "pass",
+      "upsert": "pass"
+    },
+    "graphql_rejected": true,
+    "health": 200,
+    "operation_log_unchanged": true,
+    "original": 200,
+    "phase": "restart",
+    "preview": 200,
+    "production_introspection_disabled": true,
+    "protocol_replay": {
+      "formal_main_image_unchanged": true,
+      "mode": "idempotent_identity_replay",
+      "operation_log_delta": 4,
+      "relations_unchanged": true,
+      "settings_unchanged": true,
+      "users_unchanged": true
+    },
+    "root": 200,
+    "schema_version": 1,
+    "state_unchanged": true,
+    "static": 200,
+    "thumbnail": 200
+  },
+  "restart_difference_count": 0,
+  "s3": true,
+  "schema_version": 1,
+  "seed": "pass",
+  "sharp_runtime_file_count": 114,
+  "standalone_assembled": true,
+  "status": "pass"
+}

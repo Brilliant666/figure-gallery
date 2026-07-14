@@ -1,0 +1,69 @@
+{
+  "checks": {
+    "adult": {
+      "character_id": 2,
+      "hidden_by_default": true,
+      "main_filename": "candidate-image-003-a.png",
+      "prototype_id": 4
+    },
+    "candidate_review": {
+      "audit_record_count": 1,
+      "lock_version_advanced": true,
+      "work_item_id": 13
+    },
+    "formal_main": {
+      "media_id": 33,
+      "original_key": "ci/d204767803b9c629ab262bc5ad5ccfc89751162e/1/candidate/ci-media-client-02d87498-bc7a-403b-9724-4530cc8bf23d/8e/8e8df13a21cc0ce254c087af694a141b281d47c97346a4bf64c797026e1ffa41.png",
+      "original_sha256": "8e8df13a21cc0ce254c087af694a141b281d47c97346a4bf64c797026e1ffa41",
+      "preview_key": "ci/d204767803b9c629ab262bc5ad5ccfc89751162e/1/candidate/ci-media-client-02d87498-bc7a-403b-9724-4530cc8bf23d/8e/8e8df13a21cc0ce254c087af694a141b281d47c97346a4bf64c797026e1ffa41-1280x720.png",
+      "preview_sha256": "9c421c4e0fc7c0195a663c540137a049e9e74f4fe709d45705f09169828d41c4",
+      "storage_key": "candidate/ci-media-client-02d87498-bc7a-403b-9724-4530cc8bf23d/8e/8e8df13a21cc0ce254c087af694a141b281d47c97346a4bf64c797026e1ffa41.png",
+      "thumbnail_key": "ci/d204767803b9c629ab262bc5ad5ccfc89751162e/1/candidate/ci-media-client-02d87498-bc7a-403b-9724-4530cc8bf23d/8e/8e8df13a21cc0ce254c087af694a141b281d47c97346a4bf64c797026e1ffa41-320x180.png",
+      "thumbnail_sha256": "32780472c61beb4548ff967c5ab3e693186adac4371b3005703d2b18beec7bac"
+    },
+    "gallery": {
+      "ambiguous_match_count": 2,
+      "character_id": 4,
+      "main_filename": "media-prototype-05-main.png",
+      "prototype_id": 5,
+      "unique_match_count": 1
+    },
+    "object_checks": {
+      "derivative_missing_detected": true,
+      "derivative_rebuilt": true,
+      "final_audit": {
+        "actual_count": 67,
+        "expected_count": 67,
+        "missing": [],
+        "orphaned": []
+      },
+      "missing_original_rebuild_refused": true,
+      "orphan_detected": true
+    },
+    "snapshot_id": "29354756205-1-d204767803b9c629ab262bc5ad5ccfc89751162e",
+    "source": {
+      "invalidated": true,
+      "source_id": 5,
+      "status": "missing"
+    }
+  },
+  "component": "restored-postgres-s3-payload",
+  "database_adapter": "postgres",
+  "object_store": "s3",
+  "schema_version": 1,
+  "service": {
+    "admin_login": 200,
+    "adult_gallery": 200,
+    "candidate_review_ui": 200,
+    "disambiguation_search": 200,
+    "health": 200,
+    "home": 200,
+    "loopback_only": true,
+    "original": 200,
+    "preview": 200,
+    "thumbnail": 200,
+    "unique_search": 200
+  },
+  "snapshot_id": "29354756205-1-d204767803b9c629ab262bc5ad5ccfc89751162e",
+  "status": "pass"
+}

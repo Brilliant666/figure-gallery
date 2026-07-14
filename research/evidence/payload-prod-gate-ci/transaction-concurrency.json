@@ -1,0 +1,125 @@
+{
+  "case_count": 15,
+  "cases": [
+    {
+      "actual_outcome": "idempotent_single_record",
+      "evidence": "vitest:real Payload PostgreSQL and S3 integration performs idempotent candidate/source/media metadata upsert and rejects formal fields",
+      "expected_outcome": "idempotent_single_record",
+      "name": "duplicate_stable_source_upsert",
+      "status": "pass"
+    },
+    {
+      "actual_outcome": "migrated_without_duplicate",
+      "evidence": "vitest:real Payload PostgreSQL and S3 integration migrates a URL fallback source identity to a stable source ID without duplication",
+      "expected_outcome": "migrated_without_duplicate",
+      "name": "url_fallback_to_stable_id",
+      "status": "pass"
+    },
+    {
+      "actual_outcome": "isolated_records",
+      "evidence": "vitest:Payload PostgreSQL production transaction gate isolates two candidate clients that submit the same canonical URL under distinct stable source IDs",
+      "expected_outcome": "isolated_records",
+      "name": "multi_client_same_url",
+      "status": "pass"
+    },
+    {
+      "actual_outcome": "rejected_without_partial_commit",
+      "evidence": "vitest:Payload PostgreSQL production transaction gate captures SQLSTATE 23505 and rolls the entire transaction back on a real unique index conflict",
+      "expected_outcome": "rejected_without_partial_commit",
+      "name": "unique_constraint_conflict",
+      "status": "pass"
+    },
+    {
+      "actual_outcome": "deduplicated",
+      "evidence": "vitest:real Payload PostgreSQL and S3 integration closes the synthetic multipart candidate-media loop with validation, hashes, renditions, dedupe and retry",
+      "expected_outcome": "deduplicated",
+      "name": "duplicate_file_upload",
+      "status": "pass"
+    },
+    {
+      "actual_outcome": "exactly_one_commit",
+      "evidence": "vitest:Payload PostgreSQL production transaction gate allows exactly one simultaneous administrator to complete one review work item and keeps one audit log",
+      "expected_outcome": "exactly_one_commit",
+      "name": "optimistic_review_conflict",
+      "status": "pass"
+    },
+    {
+      "actual_outcome": "committed_atomically",
+      "evidence": "vitest:real Payload PostgreSQL and S3 integration keeps candidate, media, source and version relations closed through merge, split and two undo operations",
+      "expected_outcome": "committed_atomically",
+      "name": "merge",
+      "status": "pass"
+    },
+    {
+      "actual_outcome": "committed_atomically",
+      "evidence": "vitest:real Payload PostgreSQL and S3 integration keeps candidate, media, source and version relations closed through merge, split and two undo operations",
+      "expected_outcome": "committed_atomically",
+      "name": "split",
+      "status": "pass"
+    },
+    {
+      "actual_outcome": "requested_operation_undone",
+      "evidence": "vitest:real Payload PostgreSQL and S3 integration uses stable scoped operation IDs for independent specified undo, dependency rejection and version conflicts",
+      "expected_outcome": "requested_operation_undone",
+      "name": "undo_by_operation_id",
+      "status": "pass"
+    },
+    {
+      "actual_outcome": "independently_undone",
+      "evidence": "vitest:real Payload PostgreSQL and S3 integration uses stable scoped operation IDs for independent specified undo, dependency rejection and version conflicts",
+      "expected_outcome": "independently_undone",
+      "name": "independent_scope_undo",
+      "status": "pass"
+    },
+    {
+      "actual_outcome": "rejected_without_partial_commit",
+      "evidence": "vitest:real Payload PostgreSQL and S3 integration uses stable scoped operation IDs for independent specified undo, dependency rejection and version conflicts",
+      "expected_outcome": "rejected_without_partial_commit",
+      "name": "dependency_blocks_prior_undo",
+      "status": "pass"
+    },
+    {
+      "actual_outcome": "advanced_and_stale_rejected",
+      "evidence": "vitest:Payload PostgreSQL production transaction gate keeps prototype lock versions monotonic after specified undo and rejects a pre-operation stale version",
+      "expected_outcome": "advanced_and_stale_rejected",
+      "name": "undo_lock_version_monotonic",
+      "status": "pass"
+    },
+    {
+      "actual_outcome": "rejected_without_partial_commit",
+      "evidence": "vitest:Payload PostgreSQL production transaction gate blocks a prerequisite undo after later audited formal maintenance overlaps its resource scope",
+      "expected_outcome": "rejected_without_partial_commit",
+      "name": "overlapping_formal_maintenance_blocks_undo",
+      "status": "pass"
+    },
+    {
+      "actual_outcome": "exactly_one_commit",
+      "evidence": "vitest:Payload PostgreSQL production transaction gate allows exactly one simultaneous administrator to maintain one formal prototype and keeps one audit log",
+      "expected_outcome": "exactly_one_commit",
+      "name": "formal_maintenance_optimistic_conflict",
+      "status": "pass"
+    },
+    {
+      "actual_outcome": "rolled_back",
+      "evidence": "vitest:Payload PostgreSQL production transaction gate rolls every relationship, version and audit write back after an injected failure",
+      "expected_outcome": "rolled_back",
+      "name": "injected_failure_rollback",
+      "status": "pass"
+    }
+  ],
+  "failed": 0,
+  "invariants": {
+    "exactly_one_optimistic_writer": true,
+    "formal_maintenance_conflict_explicit": true,
+    "lock_versions_monotonic": true,
+    "no_broken_relationships": true,
+    "no_duplicate_sources": true,
+    "no_orphaned_media": true,
+    "no_partial_commit": true,
+    "operation_log_consistent": true,
+    "overlapping_scope_dependency_enforced": true
+  },
+  "passed": 15,
+  "schema_version": 1,
+  "status": "pass"
+}

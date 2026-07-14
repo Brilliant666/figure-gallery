@@ -1,0 +1,14 @@
+{
+  "component": "payload-postgres-minio-media",
+  "details": {
+    "business_prefix_empty": true,
+    "deleted_in_this_attempt": 67,
+    "deleted_object_count": 67,
+    "manifest_sha256": "f881a935c2daa2c7139073e227787cd1b87eb0c3d4393dd3a50d59ec330de813",
+    "recovery_phase": "purged",
+    "snapshot_id": "29354756205-1-d204767803b9c629ab262bc5ad5ccfc89751162e"
+  },
+  "mode": "purge",
+  "schema_version": 1,
+  "status": "pass"
+}

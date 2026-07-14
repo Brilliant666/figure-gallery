@@ -1,0 +1,20 @@
+{
+  "component": "payload-postgres-minio-media",
+  "details": {
+    "backup_objects_deleted": 67,
+    "backup_prefix_empty": true,
+    "database_object_audit": {
+      "actual_count": 67,
+      "expected_count": 67,
+      "missing": [],
+      "orphaned": []
+    },
+    "manifest_sha256": "f881a935c2daa2c7139073e227787cd1b87eb0c3d4393dd3a50d59ec330de813",
+    "restored_object_count": 67,
+    "restored_sha256_verified": true,
+    "snapshot_id": "29354756205-1-d204767803b9c629ab262bc5ad5ccfc89751162e"
+  },
+  "mode": "restore",
+  "schema_version": 1,
+  "status": "pass"
+}
