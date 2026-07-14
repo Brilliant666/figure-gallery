@@ -94,9 +94,9 @@ jobs:
       - name: Record artifact provenance
         if: ${{ always() && steps.artifact.outcome == 'success' }}
         env:
-          ARTIFACT_DIGEST: ${{ steps.artifact.outputs.artifact-digest }}
-          ARTIFACT_ID: ${{ steps.artifact.outputs.artifact-id }}
-          ARTIFACT_URL: ${{ steps.artifact.outputs.artifact-url }}
+          ARTIFACT_DIGEST: ${{ steps.artifact.outputs['artifact-digest'] }}
+          ARTIFACT_ID: ${{ steps.artifact.outputs['artifact-id'] }}
+          ARTIFACT_URL: ${{ steps.artifact.outputs['artifact-url'] }}
         run: |
           {
             printf 'Artifact ID: `%s`\n\n' "$ARTIFACT_ID"
