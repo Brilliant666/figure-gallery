@@ -719,9 +719,11 @@ def validate_restore_regressions(document: Mapping[str, Any]) -> str:
         require(expected_sha in snapshot_id, "restored regression snapshot is not bound to GITHUB_SHA")
     attacks = mapping(document.get("attacks"), "restore-regressions.json.attacks")
     validate_attack_matrix(attacks, RESTORE_ATTACK_CASES, "restore-regressions.json.attacks")
-    features = mapping(document.get("features"), "restore-regressions.json.features")
-    require(set(features) == RESTORE_ATTACK_CASES, "post-restore feature/case set is not exact")
-    true_fields(features, RESTORE_ATTACK_CASES, "restore-regressions.json.features")
+    features = sequence(document.get("verified_features"), "restore-regressions.json.verified_features")
+    require(
+        set(features) == RESTORE_ATTACK_CASES and len(features) == len(RESTORE_ATTACK_CASES),
+        "post-restore feature/case set is not exact",
+    )
     return snapshot_id
 
 

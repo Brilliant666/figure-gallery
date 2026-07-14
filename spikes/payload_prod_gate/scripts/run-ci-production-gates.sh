@@ -708,7 +708,7 @@ out = {
   },
   "attacks": {"schema_version": 1, "status": "pass", "case_count": len(attack_cases),
               "passed": len(attack_cases), "failed": 0, "cases": attack_cases},
-  "features": {name: True for name in case_names.values()},
+  "verified_features": sorted(case_names.values()),
 }
 pathlib.Path(sys.argv[5]).write_text(json.dumps(out, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 PY
@@ -1189,6 +1189,10 @@ run_standalone() {
   run_limited clean-provision-client 180 npm run provision:client >"$WORK_DIR/provision-client.json" 2>&1
   run_limited clean-security 300 npm run ci:security -- --out="$WORK_DIR/standalone-security.json"
   run_limited clean-media-setup 300 npm run ci:media -- setup
+  # The public media endpoint intentionally hides candidate-only uploads.
+  # Promote the synthetic PNG through the audited lifecycle before the
+  # standalone process proves public original/rendition persistence.
+  run_limited clean-media-lifecycle 300 npm run ci:media -- lifecycle
   run_limited clean-generate-importmap 180 npm run generate:importmap \
     >"$WORK_DIR/clean-importmap.log" 2>&1
   build_start="$(date +%s%3N)"
