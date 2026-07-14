@@ -12,12 +12,12 @@ import { candidateUpsertEndpoint } from '@/endpoints/candidateUpsert'
 
 type Doc = Record<string, any>
 type CaseResult = {
-  authorization_marker: string
   case_id: string
   http_status?: number
   marker_matched: boolean
   observed_rejection: 'exception' | 'http' | 'none'
   operation_log_unchanged: boolean
+  rejection_marker: string
   state_unchanged: boolean
   status: 'fail' | 'pass'
   surface: string
@@ -184,7 +184,7 @@ const candidateBody = (label: string) => ({
     source: {
       is_stale: false,
       source_item_id: `ci-security-${label}`,
-      source_status: 'available',
+      source_status: 'active',
       source_type: 'synthetic-ci',
       source_url: `https://synthetic.invalid/security/${label}`,
     },
@@ -348,12 +348,12 @@ try {
       && before.operationLogCount === after.operationLogCount
     const passed = rejected && stateUnchanged && operationLogUnchanged
     results.push({
-      authorization_marker: expectation.marker,
       case_id: caseID,
       ...(httpStatus === undefined ? {} : { http_status: httpStatus }),
       marker_matched: markerMatched,
       observed_rejection: observedRejection,
       operation_log_unchanged: operationLogUnchanged,
+      rejection_marker: expectation.marker,
       state_unchanged: stateUnchanged,
       status: passed ? 'pass' : 'fail',
       surface,
