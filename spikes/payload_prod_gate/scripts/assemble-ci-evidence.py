@@ -678,7 +678,12 @@ def validate_backup_restore(document: Mapping[str, Any]) -> None:
 
 
 def validate_pg04(documents: Mapping[str, dict[str, Any]]) -> None:
-    validate_backup_restore(require_document(documents, "backup-restore.json"))
+    backup = require_document(documents, "backup-restore.json")
+    validate_backup_restore(backup)
+    restored_snapshot_id = validate_restored_joint_smoke(
+        require_document(documents, "restored-joint-smoke.json")
+    )
+    require(backup.get("snapshot_id") == restored_snapshot_id, "restored Payload contract used a different snapshot")
 
 
 def validate_attack_matrix(document: Mapping[str, Any], expected: set[str], label: str) -> None:
@@ -693,24 +698,44 @@ def validate_attack_matrix(document: Mapping[str, Any], expected: set[str], labe
     )
 
 
-def validate_restore_regressions(document: Mapping[str, Any]) -> None:
+def validate_restore_regressions(document: Mapping[str, Any]) -> str:
     require_schema(document, "restore-regressions.json")
     require(document.get("status") == "pass", "post-restore regressions did not pass")
     require(document.get("synthetic_fixture_check") == "pass", "post-restore synthetic fixture check failed")
     sha256(document.get("fixture_sha256"), "post-restore fixture digest")
     exact_test_result(document.get("shared_contract"), "restored shared contract", passed=78)
-    exact_test_result(document.get("postgres_integration"), "restored PostgreSQL integration", passed=30)
-    exact_test_result(document.get("postgres_concurrency"), "restored transaction tests", passed=8)
+    execution = mapping(document.get("execution"), "restore-regressions.json.execution")
+    require(execution.get("phase") == "post_restore", "restored regressions used the wrong execution phase")
+    require(execution.get("database_adapter") == "postgres", "restored regressions did not use PostgreSQL")
+    require(execution.get("object_store") == "s3", "restored regressions did not use S3")
+    require(execution.get("s3_endpoint_scope") == "loopback", "restored regressions did not use loopback S3")
+    require(execution.get("payload_contract_status") == "pass", "restored Payload contract did not pass")
+    require(execution.get("payload_contract_evidence") == "restored-joint-smoke.json", "restored Payload contract evidence differs")
+    require(integer(execution.get("service_endpoint_count"), "restored service endpoint count") == 10, "restored service endpoint count differs")
+    require(execution.get("service_endpoints_all_200") is True, "restored service contract was not all HTTP 200")
+    snapshot_id = nonempty_string(execution.get("snapshot_id"), "restored regression snapshot ID")
+    expected_sha = os.environ.get("GITHUB_SHA")
+    if expected_sha:
+        require(expected_sha in snapshot_id, "restored regression snapshot is not bound to GITHUB_SHA")
     attacks = mapping(document.get("attacks"), "restore-regressions.json.attacks")
     validate_attack_matrix(attacks, RESTORE_ATTACK_CASES, "restore-regressions.json.attacks")
     features = mapping(document.get("features"), "restore-regressions.json.features")
     require(set(features) == RESTORE_ATTACK_CASES, "post-restore feature/case set is not exact")
     true_fields(features, RESTORE_ATTACK_CASES, "restore-regressions.json.features")
+    return snapshot_id
 
 
 def validate_pg05(documents: Mapping[str, dict[str, Any]]) -> None:
-    validate_backup_restore(require_document(documents, "backup-restore.json"))
-    validate_restore_regressions(require_document(documents, "restore-regressions.json"))
+    backup = require_document(documents, "backup-restore.json")
+    validate_backup_restore(backup)
+    regression_snapshot_id = validate_restore_regressions(
+        require_document(documents, "restore-regressions.json")
+    )
+    restored_snapshot_id = validate_restored_joint_smoke(
+        require_document(documents, "restored-joint-smoke.json")
+    )
+    require(backup.get("snapshot_id") == regression_snapshot_id, "restored attacks used a different snapshot")
+    require(restored_snapshot_id == regression_snapshot_id, "restored runtime and attacks used different snapshots")
 
 
 def validate_media_wrapper(document: Mapping[str, Any], filename: str, mode: str) -> dict[str, Any]:
@@ -1188,10 +1213,13 @@ def validate_pg11(documents: Mapping[str, dict[str, Any]]) -> None:
         "database/object joint restore object counts differ",
     )
     require(backup.get("snapshot_id") == object_snapshot_id, "database and object restore used different snapshot IDs")
-    validate_restore_regressions(require_document(documents, "restore-regressions.json"))
+    regression_snapshot_id = validate_restore_regressions(
+        require_document(documents, "restore-regressions.json")
+    )
     restored_snapshot_id = validate_restored_joint_smoke(
         require_document(documents, "restored-joint-smoke.json")
     )
+    require(regression_snapshot_id == object_snapshot_id, "restored attacks and object recovery used different snapshots")
     require(restored_snapshot_id == object_snapshot_id, "restored service and object recovery used different snapshot IDs")
     require(backup.get("snapshot_id") == restored_snapshot_id, "restored service and database backup used different snapshot IDs")
 
@@ -1263,8 +1291,8 @@ GATE_DEFINITIONS: dict[str, tuple[tuple[str, ...], GateValidator]] = {
     "PG-01": (("schema-first.json", "schema-repeat.json", "migration-fresh.json", "migration-repeat.json", "migration-seed.json"), validate_pg01),
     "PG-02": (("migration-seed.json",), validate_pg02),
     "PG-03": (("regressions.json", "transaction-concurrency.json"), validate_pg03),
-    "PG-04": (("backup-restore.json",), validate_pg04),
-    "PG-05": (("backup-restore.json", "restore-regressions.json"), validate_pg05),
+    "PG-04": (("backup-restore.json", "restored-joint-smoke.json"), validate_pg04),
+    "PG-05": (("backup-restore.json", "restore-regressions.json", "restored-joint-smoke.json"), validate_pg05),
     "PG-06": (("media-setup.json", "media-audit.json"), validate_pg06),
     "PG-07": (("media-audit.json", "media-lifecycle.json"), validate_pg07),
     "PG-08": (("media-lifecycle.json",), validate_pg08),

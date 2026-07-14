@@ -306,6 +306,7 @@ const main = async (): Promise<void> => {
       showHiddenFields: true,
     }) as Doc
     const adminRequest = await createLocalReq({ user: admin as never }, payload)
+    const reviewReason = `Restored joint gate audit ${snapshotID} ${randomUUID()}`
     const review = await openReviewWorkItem(adminRequest, {
       allowedTargetIDs: [state.target.prototypeID],
       candidateID: state.jpeg.candidateID,
@@ -317,7 +318,7 @@ const main = async (): Promise<void> => {
         candidateID: state.jpeg.candidateID,
         expectedVersion: Number(review.lockVersion),
         field: 'restored_joint_probe',
-        reason: 'Restored joint gate verifies audited candidate review',
+        reason: reviewReason,
         value: 'rejected synthetic value',
         workItemID: Number(review.id),
       }),
@@ -335,7 +336,7 @@ const main = async (): Promise<void> => {
       depth: 0,
       limit: 2,
       overrideAccess: true,
-      where: { reason: { equals: 'Restored joint gate verifies audited candidate review' } },
+      where: { reason: { equals: reviewReason } },
     })
     assert(reviewLogs.totalDocs === 1, 'Restored candidate review did not write exactly one audit record.')
 
