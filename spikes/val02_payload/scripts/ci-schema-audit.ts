@@ -50,7 +50,7 @@ try {
       order by table_name, column_name`,
   )
   const enums = await pool.query(
-    `select t.typname, array_agg(e.enumlabel order by e.enumsortorder) as labels
+    `select t.typname, array_agg(e.enumlabel::text order by e.enumsortorder) as labels
        from pg_type t
        join pg_enum e on e.enumtypid = t.oid
        join pg_namespace n on n.oid = t.typnamespace
