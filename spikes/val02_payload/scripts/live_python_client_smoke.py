@@ -35,6 +35,10 @@ def main() -> int:
     namespace = os.environ.get("VAL02_PAYLOAD_LIVE_SMOKE_NAMESPACE", "val02b-live")
     if not re.fullmatch(r"[a-z0-9-]{3,48}", namespace):
         raise RuntimeError("VAL02_PAYLOAD_LIVE_SMOKE_NAMESPACE must be a safe synthetic label")
+    expected_existing_raw = os.environ.get("VAL02_PAYLOAD_LIVE_SMOKE_EXPECT_EXISTING", "false")
+    if expected_existing_raw not in {"false", "true"}:
+        raise RuntimeError("VAL02_PAYLOAD_LIVE_SMOKE_EXPECT_EXISTING must be true or false")
+    expected_existing = expected_existing_raw == "true"
     for candidate in candidates:
         original_id = candidate["id"]
         safe_id = re.sub(r"[^a-z0-9-]+", "-", original_id.lower()).strip("-")
@@ -60,9 +64,11 @@ def main() -> int:
     repeated = client.upsert_candidates(candidates)
     first_created = [bool(row.get("created")) for row in first]
     repeat_created = [bool(row.get("created")) for row in repeated]
-    if first_created != [True, True] or repeat_created != [False, False]:
+    expected_first_created = [False, False] if expected_existing else [True, True]
+    if first_created != expected_first_created or repeat_created != [False, False]:
         raise RuntimeError(
-            f"expected first create then idempotent repeat, got {first_created=} {repeat_created=}"
+            "candidate replay did not match the expected persistence state: "
+            f"{expected_first_created=} {first_created=} {repeat_created=}"
         )
     identity_fields = ("candidate_id", "source_id", "media_ids")
     if [tuple(row.get(key) if key != "media_ids" else tuple(row.get(key, [])) for key in identity_fields) for row in first] != [
@@ -84,8 +90,15 @@ def main() -> int:
         image=upload_image,
         filename="same-content-renamed.png",
     )
-    if first_upload.get("created") is not True or repeated_upload.get("created") is not False:
-        raise RuntimeError(f"multipart upload was not create-then-idempotent: {first_upload=} {repeated_upload=}")
+    expected_first_upload_created = not expected_existing
+    if (
+        first_upload.get("created") is not expected_first_upload_created
+        or repeated_upload.get("created") is not False
+    ):
+        raise RuntimeError(
+            "multipart replay did not match the expected persistence state: "
+            f"{expected_first_upload_created=} {first_upload=} {repeated_upload=}"
+        )
     if first_upload.get("media_id") != repeated_upload.get("media_id"):
         raise RuntimeError("renaming identical upload changed the media identity")
 
@@ -106,10 +119,14 @@ def main() -> int:
                 "adapter": client.adapter_name,
                 "attack_http_403": attack_rejected,
                 "candidate_ids": sorted(wanted),
+                "candidate_record_ids": [row.get("candidate_id") for row in first],
+                "expected_existing": expected_existing,
                 "first_created": first_created,
                 "multipart_created": [first_upload.get("created"), repeated_upload.get("created")],
+                "multipart_media_id": first_upload.get("media_id"),
                 "multipart_media_stable": first_upload.get("media_id") == repeated_upload.get("media_id"),
                 "repeat_created": repeat_created,
+                "source_record_ids": [row.get("source_id") for row in first],
                 "status": "passed",
             },
             ensure_ascii=False,

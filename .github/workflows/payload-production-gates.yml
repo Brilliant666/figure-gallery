@@ -55,6 +55,7 @@ jobs:
           fi
           python -m py_compile spikes/payload_prod_gate/scripts/assemble-ci-evidence.py
           python -m py_compile spikes/payload_prod_gate/scripts/validate-repository-files.py
+          python -m py_compile spikes/val02_payload/scripts/live_python_client_smoke.py
           python spikes/payload_prod_gate/scripts/validate-repository-files.py
 
       - name: Install locked Payload dependencies

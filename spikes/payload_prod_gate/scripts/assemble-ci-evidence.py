@@ -1013,6 +1013,16 @@ def validate_prefix_migration(document: Mapping[str, Any]) -> None:
     require(details.get("storage_key_reads_verified") is True, "copied objects were not read through storage-key mappings")
     require(details.get("public_url_inputs_used") is False, "prefix copy depended on a public URL")
     require(details.get("migrated_prefix_cleaned") is True, "temporary migrated prefix was not cleaned")
+    source_prefix = safe_storage_key(details.get("source_prefix"), "prefix copy source prefix")
+    migration_prefix = safe_storage_key(details.get("migration_prefix"), "prefix copy migration prefix")
+    require(
+        not (
+            source_prefix == migration_prefix
+            or source_prefix.startswith(f"{migration_prefix}/")
+            or migration_prefix.startswith(f"{source_prefix}/")
+        ),
+        "prefix copy source and migration prefixes overlap",
+    )
     mappings = sequence(details.get("mappings"), "prefix copy mappings")
     count = integer(details.get("mapping_count"), "prefix copy mapping count", minimum=1)
     require(len(mappings) == count, "prefix copy mapping/count mismatch")
@@ -1030,8 +1040,14 @@ def validate_prefix_migration(document: Mapping[str, Any]) -> None:
         migrated = safe_storage_key(item["migrated_key"], f"prefix mapping {index} migrated_key")
         storage = safe_storage_key(item["storage_key"], f"prefix mapping {index} storage_key")
         require(source != migrated, f"prefix mapping {index} did not copy to a new key")
-        require(source.endswith(storage), f"prefix mapping {index} source key does not preserve storageKey")
-        require(migrated.endswith(storage), f"prefix mapping {index} migrated key does not preserve storageKey")
+        require(
+            source.startswith(f"{source_prefix}/"),
+            f"prefix mapping {index} source key is outside the business prefix",
+        )
+        require(
+            migrated == f"{migration_prefix}/{storage}",
+            f"prefix mapping {index} target is not the migration prefix plus storageKey",
+        )
         require(source not in source_keys and migrated not in migrated_keys, "prefix copy mappings contain duplicate keys")
         source_keys.add(source)
         migrated_keys.add(migrated)
@@ -1098,17 +1114,53 @@ def validate_standalone(document: Mapping[str, Any]) -> None:
         == sha256(document.get("media_digest_after_restart"), "standalone media digest after restart"),
         "standalone restart media digest differs",
     )
+    protocols: dict[str, Mapping[str, Any]] = {}
     for phase in ("clean_start", "restart"):
         smoke = mapping(document.get(phase), f"standalone {phase}")
         require(smoke.get("phase") == phase, f"standalone {phase} phase marker differs")
         for endpoint in ("health", "root", "admin", "static", "original", "thumbnail", "preview"):
             require(integer(smoke.get(endpoint), f"standalone {phase} {endpoint}") == 200, f"standalone {phase} {endpoint} was not HTTP 200")
         protocol = mapping(smoke.get("candidate_protocol"), f"standalone {phase} candidate protocol")
-        require(protocol == {"upsert": "pass", "upload": "pass"}, f"standalone {phase} candidate protocol is incomplete")
+        require(protocol.get("upsert") == "pass" and protocol.get("upload") == "pass", f"standalone {phase} candidate protocol is incomplete")
+        expected_existing = protocol.get("expected_existing")
+        require(
+            isinstance(expected_existing, bool) and expected_existing == (phase == "restart"),
+            f"standalone {phase} candidate persistence expectation differs",
+        )
+        require(protocol.get("multipart_media_stable") is True, f"standalone {phase} multipart media identity changed")
+        candidate_ids = sequence(protocol.get("candidate_record_ids"), f"standalone {phase} candidate IDs")
+        source_ids = sequence(protocol.get("source_record_ids"), f"standalone {phase} source IDs")
+        require(len(candidate_ids) == 2 and all(isinstance(value, int) for value in candidate_ids), f"standalone {phase} candidate IDs are invalid")
+        require(len(source_ids) == 2 and all(isinstance(value, int) for value in source_ids), f"standalone {phase} source IDs are invalid")
+        integer(protocol.get("multipart_media_id"), f"standalone {phase} multipart media ID", minimum=1)
+        object_count_before = integer(protocol.get("object_count_before"), f"standalone {phase} protocol object count before", minimum=1)
+        object_count_after = integer(protocol.get("object_count_after"), f"standalone {phase} protocol object count after", minimum=1)
+        require(object_count_after >= object_count_before, f"standalone {phase} candidate protocol unexpectedly removed objects")
+        if phase == "restart":
+            require(object_count_after == object_count_before, "standalone restart candidate protocol replay changed object count")
+        protocols[phase] = protocol
         require(integer(smoke.get("attack_case_count"), f"standalone {phase} attack count") == 10, f"standalone {phase} attack count differs")
         require(smoke.get("state_unchanged") is True, f"standalone {phase} attacks changed state")
         require(smoke.get("operation_log_unchanged") is True, f"standalone {phase} attacks changed OperationLog")
         require(smoke.get("graphql_rejected") is True, f"standalone {phase} GraphQL attack was not rejected")
+        require(smoke.get("production_introspection_disabled") is True, f"standalone {phase} production introspection was enabled")
+        replay = mapping(smoke.get("protocol_replay"), f"standalone {phase} protocol replay")
+        if phase == "clean_start":
+            require(replay == {"mode": "initial_write"}, "standalone clean start protocol mode differs")
+        else:
+            require(replay.get("mode") == "idempotent_identity_replay", "standalone restart protocol mode differs")
+            require(integer(replay.get("operation_log_delta"), "standalone restart protocol audit delta") == 4, "standalone restart protocol audit delta differs")
+            true_fields(
+                replay,
+                {"formal_main_image_unchanged", "relations_unchanged", "settings_unchanged", "users_unchanged"},
+                "standalone restart protocol replay",
+            )
+    require(
+        protocols["clean_start"]["candidate_record_ids"] == protocols["restart"]["candidate_record_ids"]
+        and protocols["clean_start"]["source_record_ids"] == protocols["restart"]["source_record_ids"]
+        and protocols["clean_start"]["multipart_media_id"] == protocols["restart"]["multipart_media_id"],
+        "standalone restart changed candidate protocol identities",
+    )
 
 
 def validate_restored_joint_smoke(document: Mapping[str, Any]) -> str:

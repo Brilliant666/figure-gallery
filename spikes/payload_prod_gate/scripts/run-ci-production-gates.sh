@@ -1006,6 +1006,7 @@ PY
     npm run ci:db-snapshot -- --out="$WORK_DIR/attacks-before-$phase.json"
   local no_token wrong_token revoked_token formal_attack version_attack main_attack generic_attack admin_attack domain_attack
   local graphql_introspection graphql_response graphql_status version_id prototype_id candidate_id
+  local live_namespace live_expect_existing protocol_objects_before protocol_objects_after
   version_id="$(compose exec -T postgres psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Atc 'SELECT id FROM figure_versions ORDER BY id LIMIT 1')"
   prototype_id="$(compose exec -T postgres psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Atc 'SELECT id FROM figure_prototypes ORDER BY id LIMIT 1')"
   candidate_id="$(compose exec -T postgres psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Atc 'SELECT id FROM candidate_records ORDER BY id LIMIT 1')"
@@ -1030,17 +1031,20 @@ PY
   expect_status "$admin_attack" 403 ADMIN-01
 
   graphql_introspection="$WORK_DIR/graphql-introspection-$phase.json"
+  CURRENT_COMMAND="standalone-graphql-introspection-disabled-$phase"
   curl --noproxy '*' --connect-timeout 2 --max-time 5 --fail --silent --show-error -H 'content-type: application/json' \
     --data '{"query":"query { __type(name: \"Mutation\") { fields { name } } }"}' \
     http://127.0.0.1:3100/api/graphql >"$graphql_introspection"
   python - "$graphql_introspection" <<'PY'
 import json, pathlib, sys
 doc = json.loads(pathlib.Path(sys.argv[1]).read_text(encoding="utf-8"))
-names = {field.get("name") for field in ((doc.get("data") or {}).get("__type") or {}).get("fields", [])}
-if "deleteFigureVersion" not in names:
-    raise SystemExit("Expected deleteFigureVersion GraphQL mutation was not present")
+errors = doc.get("errors") or []
+error_text = json.dumps(errors, ensure_ascii=False).lower()
+if (doc.get("data") or {}).get("__type") is not None or not errors or "introspection" not in error_text:
+    raise SystemExit("Production GraphQL introspection was not explicitly disabled")
 PY
   graphql_response="$WORK_DIR/graphql-attack-$phase.json"
+  CURRENT_COMMAND="standalone-graphql-direct-access-attack-$phase"
   graphql_status="$(curl --noproxy '*' --connect-timeout 2 --max-time 5 --silent --show-error -o "$graphql_response" -w '%{http_code}' \
     -H 'content-type: application/json' -H "authorization: users API-Key $VAL02_PAYLOAD_CANDIDATE_TOKEN" \
     --data "{\"query\":\"mutation { deleteFigureVersion(id: $version_id) { id } }\"}" \
@@ -1066,10 +1070,61 @@ if before != after:
     raise SystemExit("Rejected standalone attacks changed formal data or OperationLog")
 PY
 
+  live_namespace="val02b-live-${GITHUB_RUN_ID:-local}"
+  live_expect_existing=false
+  if [[ "$phase" == "restart" ]]; then live_expect_existing=true; fi
+  protocol_objects_before="$(minio_object_count "$S3_BUCKET" "$S3_PREFIX")"
+  CURRENT_COMMAND="standalone-candidate-protocol-$phase"
   VAL02_PAYLOAD_CANDIDATE_ENDPOINT=http://127.0.0.1:3100/api/candidate-records/upsert \
     VAL02_PAYLOAD_CANDIDATE_UPLOAD_ENDPOINT=http://127.0.0.1:3100/api/val02b/candidate-media/upload \
-    VAL02_PAYLOAD_LIVE_SMOKE_NAMESPACE="val02b-live-$phase" \
+    VAL02_PAYLOAD_LIVE_SMOKE_NAMESPACE="$live_namespace" \
+    VAL02_PAYLOAD_LIVE_SMOKE_EXPECT_EXISTING="$live_expect_existing" \
     python "$clean_payload/scripts/live_python_client_smoke.py" >"$WORK_DIR/live-smoke-$phase.json"
+  protocol_objects_after="$(minio_object_count "$S3_BUCKET" "$S3_PREFIX")"
+  if [[ "$phase" == "restart" ]]; then
+    [[ "$protocol_objects_after" == "$protocol_objects_before" ]]
+    run_limited standalone-db-snapshot-after-protocol-replay 180 \
+      npm run ci:db-snapshot -- --out="$WORK_DIR/attacks-after-protocol-replay.json"
+    python - "$WORK_DIR/attacks-after-$phase.json" "$WORK_DIR/attacks-after-protocol-replay.json" \
+      "$WORK_DIR/protocol-replay-$phase.json" <<'PY'
+import json, pathlib, sys
+before, after = (json.loads(pathlib.Path(path).read_text(encoding="utf-8")) for path in sys.argv[1:3])
+before_counts, after_counts = before["collection_counts"], after["collection_counts"]
+for name, count in before_counts.items():
+    if name != "operation-logs" and after_counts.get(name) != count:
+        raise SystemExit(f"Restart candidate replay changed {name} record count")
+if set(before_counts) != set(after_counts):
+    raise SystemExit("Restart candidate replay changed the collection catalog")
+operation_log_delta = after["operation_log_count"] - before["operation_log_count"]
+if operation_log_delta != 4 or after_counts["operation-logs"] - before_counts["operation-logs"] != 4:
+    raise SystemExit("Restart candidate replay did not append exactly four candidate sync audit records")
+checks = {
+    "formal_main_image_unchanged": before["formal_main_image_count"] == after["formal_main_image_count"],
+    "relations_unchanged": before["relation_digest_sha256"] == after["relation_digest_sha256"],
+    "settings_unchanged": before["settings_digest_sha256"] == after["settings_digest_sha256"],
+    "users_unchanged": before["user_summary"] == after["user_summary"],
+}
+if not all(checks.values()):
+    raise SystemExit(f"Restart candidate replay changed protected state: {checks}")
+if before["data_digest_sha256"] == after["data_digest_sha256"]:
+    raise SystemExit("Restart candidate replay did not record its expected audit activity")
+summary = {
+    "mode": "idempotent_identity_replay",
+    "operation_log_delta": operation_log_delta,
+    **checks,
+}
+pathlib.Path(sys.argv[3]).write_text(json.dumps(summary, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+PY
+    run_limited standalone-media-audit-after-protocol-replay 180 npm run ci:media -- audit
+  else
+    python - "$WORK_DIR/protocol-replay-$phase.json" <<'PY'
+import json, pathlib, sys
+pathlib.Path(sys.argv[1]).write_text(
+    json.dumps({"mode": "initial_write"}, indent=2, sort_keys=True) + "\n",
+    encoding="utf-8",
+)
+PY
+  fi
   local attack_output
   if [[ "$phase" == "first" ]]; then
     attack_output="$RESULTS_DIR/standalone-attacks-clean-start.json"
@@ -1077,12 +1132,16 @@ PY
     attack_output="$RESULTS_DIR/standalone-attacks-restart.json"
   fi
   python - "$WORK_DIR/standalone-$phase.json" "$attack_output" "$WORK_DIR/attacks-before-$phase.json" "$WORK_DIR/attacks-after-$phase.json" \
+    "$WORK_DIR/live-smoke-$phase.json" "$WORK_DIR/protocol-replay-$phase.json" \
+    "$protocol_objects_before" "$protocol_objects_after" \
     "$graphql_status" "$no_token" "$wrong_token" "$revoked_token" "$formal_attack" "$version_attack" \
     "$main_attack" "$generic_attack" "$domain_attack" "$admin_attack" <<'PY'
 import json, pathlib, sys
-target, attack_target, before_path, after_path, graphql_status, *codes = sys.argv[1:]
+target, attack_target, before_path, after_path, live_path, replay_path, objects_before, objects_after, graphql_status, *codes = sys.argv[1:]
 before = json.loads(pathlib.Path(before_path).read_text(encoding="utf-8"))
 after = json.loads(pathlib.Path(after_path).read_text(encoding="utf-8"))
+live = json.loads(pathlib.Path(live_path).read_text(encoding="utf-8"))
+replay = json.loads(pathlib.Path(replay_path).read_text(encoding="utf-8"))
 rest_names = [
     "no_token_candidate_upsert", "wrong_token_candidate_upsert", "revoked_token_candidate_upsert",
     "candidate_write_figure_prototype_rest", "candidate_write_figure_version_rest",
@@ -1101,7 +1160,8 @@ cases_by_name = {
 graphql_name = "candidate_graphql_formal_write"
 cases_by_name[graphql_name] = {
     "name": graphql_name, "status": "pass", "surface": "GraphQL", "expected_outcome": "rejected",
-    "actual_outcome": "rejected", "evidence": f"HTTP {int(graphql_status)} with authorization error",
+    "actual_outcome": "rejected",
+    "evidence": f"direct deleteFigureVersion HTTP {int(graphql_status)} access-denied; production introspection disabled",
     "invariants": invariants,
 }
 expected_order = [
@@ -1112,11 +1172,24 @@ expected_order = [
 ]
 cases = [cases_by_name[name] for name in expected_order]
 phase_name = "clean_start" if pathlib.Path(target).stem.endswith("first") else "restart"
+candidate_protocol = {
+    "upsert": "pass",
+    "upload": "pass",
+    "expected_existing": live["expected_existing"],
+    "candidate_record_ids": live["candidate_record_ids"],
+    "source_record_ids": live["source_record_ids"],
+    "multipart_media_id": live["multipart_media_id"],
+    "multipart_media_stable": live["multipart_media_stable"],
+    "object_count_before": int(objects_before),
+    "object_count_after": int(objects_after),
+}
 data = {"schema_version": 1, "phase": phase_name, "health": 200, "root": 200, "admin": 200,
         "static": 200, "original": 200, "thumbnail": 200, "preview": 200,
         "attack_case_count": len(cases), "state_unchanged": before == after,
         "operation_log_unchanged": before["operation_log_count"] == after["operation_log_count"],
-        "graphql_rejected": True, "candidate_protocol": {"upsert": "pass", "upload": "pass"}}
+        "graphql_rejected": True, "production_introspection_disabled": True,
+        "protocol_replay": replay,
+        "candidate_protocol": candidate_protocol}
 pathlib.Path(target).write_text(json.dumps(data, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 attack_data = {"schema_version": 1, "status": "pass", "phase": phase_name,
                "case_count": len(cases), "passed": len(cases), "failed": 0, "cases": cases}
