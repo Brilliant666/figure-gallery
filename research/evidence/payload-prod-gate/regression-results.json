@@ -1,0 +1,100 @@
+{
+  "schema_version": 1,
+  "test_date": "2026-07-14",
+  "scope": "offline and local supplemental regression only; not production-gate evidence",
+  "runtime": {
+    "node": "22.23.1",
+    "npm": "10.9.8",
+    "python": "3.10.9"
+  },
+  "dependencies": {
+    "payload": "3.86.0",
+    "next": "16.2.10",
+    "react": "19.2.7",
+    "postgres_adapter": "@payloadcms/db-postgres@3.86.0",
+    "s3_plugin": "@payloadcms/storage-s3@3.86.0",
+    "npm_lock_resolved_registry": "https://registry.npmjs.org/"
+  },
+  "checks": {
+    "npm_ci_official_registry": "pass",
+    "shared_fixture_contract": "pass",
+    "shared_unittest": {
+      "status": "pass",
+      "passed": 78,
+      "failed": 0
+    },
+    "payload_vitest_sqlite": {
+      "status": "pass",
+      "passed": 44,
+      "failed": 0
+    },
+    "typescript_typecheck": "pass",
+    "eslint_zero_warnings": "pass",
+    "local_sqlite_production_build_with_runtime_only_configuration": "pass",
+    "bare_build_without_runtime_configuration": {
+      "status": "expected_rejection",
+      "observed": "DATABASE_URI was required; the successful supplemental build used an ephemeral SQLite URI and runtime-only PAYLOAD_SECRET."
+    },
+    "postgres_empty_migration_ordinary_start": {
+      "status": "expected_rejection",
+      "observed": "Configuration import failed closed while PostgreSQL migrations were empty."
+    },
+    "postgres_generation_only_config_probe": {
+      "status": "pass",
+      "limitation": "Configuration-only probe; no PostgreSQL connection or migration was run."
+    },
+    "compose_static_config": {
+      "status": "pass",
+      "limitation": "Static parse only; Docker daemon and services were not used."
+    },
+    "runtime_env_generator_powershell_ast": "pass",
+    "shared_hpoi_network_guard": {
+      "status": "pass",
+      "passed": 5,
+      "underlying_network_calls": 0
+    },
+    "payload_hpoi_network_guard": {
+      "status": "pass",
+      "passed": 1,
+      "skipped_non_target_tests": 7,
+      "underlying_fetch_calls": 0
+    }
+  },
+  "generated_acceptance": {
+    "val02_payload": {
+      "status_counts": {
+        "pass": 29,
+        "not_run": 1
+      },
+      "source_digest": "2bec00076c8c748d1b48c22e2cc0caf11a4ba19b8857fe870202588783a7481c",
+      "source_digest_recomputed_match": true
+    },
+    "val02b_payload": {
+      "status_counts": {
+        "pass": 17,
+        "environment_blocked": 13
+      },
+      "source_digest": "6a52338786b26f4c7ce628b7c7a0c8338e5475ae31a9d96880bdc23ea9d3d990",
+      "source_digest_recomputed_match": true,
+      "hard_failures": 0
+    },
+    "pair_validators": {
+      "status": "not_passed",
+      "blocker": "Historical Wagtail result source digests on merged main are stale. Wagtail was not modified or rerun because this task forbids further Wagtail validation.",
+      "payload_result_stale": false,
+      "wagtail_result_stale": true
+    }
+  },
+  "repository_hygiene": {
+    "git_diff_check": "pass",
+    "json_files_parsed": 10,
+    "changed_or_new_markdown_files_with_valid_local_links": 8,
+    "high_confidence_credential_scan": "pass",
+    "runtime_env_files_found": 0,
+    "changed_or_new_files_scanned_for_binary_large_and_forbidden_artifacts": 31,
+    "largest_changed_or_new_file_bytes": 452091,
+    "wagtail_paths_changed": 0
+  },
+  "production_gate_substitution": false,
+  "hpoi_requests": 0
+}

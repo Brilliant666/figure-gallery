@@ -1,3 +1,4 @@
+import { postgresAdapter } from '@payloadcms/db-postgres'
 import { sqliteAdapter } from '@payloadcms/db-sqlite'
 import { s3Storage } from '@payloadcms/storage-s3'
 import path from 'node:path'
@@ -18,8 +19,10 @@ import { Users } from '@/collections/Users'
 import { Works } from '@/collections/Works'
 import { rootCandidateMediaUploadEndpoint } from '@/endpoints/candidateMediaUpload'
 import { SystemSettings } from '@/globals/SystemSettings'
-import { migrations } from '@/migrations'
+import { migrations as sqliteMigrations } from '@/migrations'
+import { migrations as postgresMigrations } from '@/migrations-postgres'
 import { guardedS3Endpoint } from '@/security/networkGuard'
+import { assertPostgresMigrationsReady } from '@/databaseRuntime'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -37,7 +40,11 @@ const optionalS3Plugin = (): Plugin[] => {
     s3Storage({
       alwaysInsertFields: true,
       bucket: required('S3_BUCKET'),
-      collections: { media: true },
+      collections: {
+        media: {
+          prefix: required('S3_PREFIX'),
+        },
+      },
       config: {
         credentials: {
           accessKeyId: required('S3_ACCESS_KEY_ID'),
@@ -48,8 +55,42 @@ const optionalS3Plugin = (): Plugin[] => {
         region: required('S3_REGION'),
       },
       disableLocalStorage: true,
+      useCompositePrefixes: true,
     }),
   ]
+}
+
+const databaseAdapter = () => {
+  const adapter = process.env.DATABASE_ADAPTER?.trim() || 'sqlite'
+  const connectionString = required('DATABASE_URI')
+
+  if (adapter === 'sqlite') {
+    return sqliteAdapter({
+      client: { url: connectionString },
+      migrationDir: path.resolve(dirname, 'migrations'),
+      prodMigrations: sqliteMigrations,
+      transactionOptions: { behavior: 'immediate' },
+    })
+  }
+
+  if (adapter === 'postgres') {
+    assertPostgresMigrationsReady({
+      allowEmptyForGeneration:
+        process.env.PAYLOAD_ALLOW_EMPTY_POSTGRES_MIGRATIONS_FOR_GENERATION === 'true',
+      argv: process.argv,
+      migrationCount: postgresMigrations.length,
+    })
+    return postgresAdapter({
+      disableCreateDatabase: true,
+      idType: 'serial',
+      migrationDir: path.resolve(dirname, 'migrations-postgres'),
+      pool: { connectionString },
+      prodMigrations: postgresMigrations,
+      push: false,
+    })
+  }
+
+  throw new Error(`Unsupported DATABASE_ADAPTER: ${adapter}`)
 }
 
 export default buildConfig({
@@ -87,11 +128,7 @@ export default buildConfig({
     ReviewWorkItems,
     OperationLogs,
   ],
-  db: sqliteAdapter({
-    client: { url: process.env.DATABASE_URI ?? 'file:./val02-payload.db' },
-    prodMigrations: migrations,
-    transactionOptions: { behavior: 'immediate' },
-  }),
+  db: databaseAdapter(),
   globals: [SystemSettings],
   plugins: optionalS3Plugin(),
   secret: required('PAYLOAD_SECRET'),

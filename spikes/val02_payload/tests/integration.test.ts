@@ -1967,8 +1967,9 @@ describe.sequential('real Payload SQLite integration', () => {
     expect(serialized).not.toContain('data:image')
     expect(serialized).not.toContain('iVBOR')
     const csv = buildCSVExports(json)
-    expect(Object.keys(csv).length).toBeGreaterThanOrEqual(9)
+    expect(Object.keys(csv).length).toBeGreaterThanOrEqual(10)
     expect(csv['media.csv'].split('\n')[0]).toContain('storageKey')
+    expect(csv['review-work-items.csv']).toBeTypeOf('string')
 
     const relationshipCandidate = await payload.findByID({
       collection: 'candidate-records',

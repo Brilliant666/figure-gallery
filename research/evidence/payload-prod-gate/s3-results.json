@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "test_date": "2026-07-14",
+  "component": "payload_s3",
+  "versions": {
+    "planned_minio_image": "quay.io/minio/minio:RELEASE.2025-04-22T22-12-26Z",
+    "planned_minio_client_image": "quay.io/minio/mc:RELEASE.2025-04-16T18-13-26Z",
+    "payload_s3_plugin": "@payloadcms/storage-s3@3.86.0"
+  },
+  "infrastructure": {
+    "minio_started": false,
+    "bucket_created": false,
+    "objects_created": 0,
+    "credentials_generated": false,
+    "image_pull_state": "not_verified",
+    "image_run_state": "not_run"
+  },
+  "checks": {
+    "original_upload": "environment_blocked",
+    "original_read": "environment_blocked",
+    "sha256_and_ahash": "environment_blocked",
+    "thumbnail": "environment_blocked",
+    "preview": "environment_blocked",
+    "content_dedup": "environment_blocked",
+    "source_deletion_protection": "environment_blocked",
+    "candidate_deletion_protection": "environment_blocked",
+    "service_outage": "environment_blocked",
+    "retry": "environment_blocked",
+    "prefix_migration": "environment_blocked",
+    "manifest_audit": "environment_blocked",
+    "combined_restore": "environment_blocked"
+  },
+  "gate_statuses": {
+    "PG-06": "environment_blocked",
+    "PG-07": "environment_blocked",
+    "PG-08": "environment_blocked",
+    "PG-09": "environment_blocked",
+    "PG-10": "environment_blocked",
+    "PG-11": "environment_blocked"
+  },
+  "artifacts": {
+    "object_files": 0,
+    "synthetic_images_persisted": 0,
+    "manifest_files": 0
+  },
+  "substitution_warning": "Existing local-media results were not used as S3 evidence."
+}

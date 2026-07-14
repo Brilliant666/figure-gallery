@@ -9,6 +9,7 @@ const exportCollections = [
   'source-records',
   'candidate-records',
   'media',
+  'review-work-items',
   'operation-logs',
 ] as const
 

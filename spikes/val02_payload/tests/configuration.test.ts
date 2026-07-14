@@ -5,6 +5,7 @@ import { describe, expect, it } from 'vitest'
 import { CandidateRecords } from '@/collections/CandidateRecords'
 import { FigurePrototypes } from '@/collections/FigurePrototypes'
 import { Media } from '@/collections/Media'
+import { assertPostgresMigrationsReady } from '@/databaseRuntime'
 
 describe('Payload-native configuration', () => {
   it('uses drafts/trash, relationships and upload image sizes', () => {
@@ -82,19 +83,58 @@ describe('Payload-native configuration', () => {
     expect(view).toContain('/api/operation-logs/domain-action')
   })
 
-  it('configures real SQLite transactions and optional official S3 storage', async () => {
-    const config = await readFile(path.resolve('src/payload.config.ts'), 'utf8')
+  it('configures runtime-selected databases and optional official S3 storage fail-closed', async () => {
+    const [config, uploadEndpoint] = await Promise.all([
+      readFile(path.resolve('src/payload.config.ts'), 'utf8'),
+      readFile(path.resolve('src/endpoints/candidateMediaUpload.ts'), 'utf8'),
+    ])
     const packageDocument = JSON.parse(await readFile(path.resolve('package.json'), 'utf8')) as {
+      dependencies: Record<string, string>
       scripts: Record<string, string>
     }
     expect(config).toContain("transactionOptions: { behavior: 'immediate' }")
+    expect(config).toContain('postgresAdapter({')
+    expect(config).toContain('prodMigrations: postgresMigrations')
+    expect(packageDocument.dependencies['@payloadcms/db-postgres']).toBe('3.86.0')
     expect(config).toContain('s3Storage({')
     expect(config).toContain("if (process.env.S3_ENABLED !== 'true') return []")
     expect(config).toContain("required('S3_ACCESS_KEY_ID')")
+    expect(config).toContain("prefix: required('S3_PREFIX')")
+    expect(config).toContain('useCompositePrefixes: true')
     expect(config).toContain('guardedS3Endpoint(process.env.S3_ENDPOINT)')
+    expect(uploadEndpoint).toContain("process.env.S3_ENABLED === 'true' ? { prefix: objectPrefix } : {}")
     expect(config).toContain("avatar: 'default'")
     expect(config).toContain('telemetry: false')
     expect(packageDocument.scripts.dev).toContain('-H 127.0.0.1')
     expect(packageDocument.scripts.start).toBe('node .next/standalone/server.js')
+
+    expect(() =>
+      assertPostgresMigrationsReady({
+        allowEmptyForGeneration: false,
+        argv: ['payload', 'migrate:create'],
+        migrationCount: 0,
+      }),
+    ).toThrow(/PostgreSQL migrations are empty/)
+    expect(() =>
+      assertPostgresMigrationsReady({
+        allowEmptyForGeneration: true,
+        argv: ['payload', 'migrate'],
+        migrationCount: 0,
+      }),
+    ).toThrow(/PostgreSQL migrations are empty/)
+    expect(() =>
+      assertPostgresMigrationsReady({
+        allowEmptyForGeneration: true,
+        argv: ['payload', 'migrate:create'],
+        migrationCount: 0,
+      }),
+    ).not.toThrow()
+    expect(() =>
+      assertPostgresMigrationsReady({
+        allowEmptyForGeneration: false,
+        argv: ['payload', 'migrate'],
+        migrationCount: 1,
+      }),
+    ).not.toThrow()
   })
 })

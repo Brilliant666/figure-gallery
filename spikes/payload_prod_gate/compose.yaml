@@ -1,0 +1,67 @@
+services:
+  postgres:
+    image: postgres:16.9-bookworm
+    restart: "no"
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:?POSTGRES_DB must be set in the runtime .env}
+      POSTGRES_USER: ${POSTGRES_USER:?POSTGRES_USER must be set in the runtime .env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set in the runtime .env}
+    ports:
+      - "127.0.0.1:${POSTGRES_PORT:-55432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  minio:
+    image: quay.io/minio/minio:RELEASE.2025-04-22T22-12-26Z
+    restart: "no"
+    command: ["server", "/data", "--console-address", ":9001"]
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:?MINIO_ROOT_USER must be set in the runtime .env}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?MINIO_ROOT_PASSWORD must be set in the runtime .env}
+    ports:
+      - "127.0.0.1:${MINIO_API_PORT:-59000}:9000"
+      - "127.0.0.1:${MINIO_CONSOLE_PORT:-59001}:9001"
+    volumes:
+      - minio_data:/data
+
+  minio-init:
+    image: quay.io/minio/mc:RELEASE.2025-04-16T18-13-26Z
+    restart: "no"
+    depends_on:
+      minio:
+        condition: service_started
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:?MINIO_ROOT_USER must be set in the runtime .env}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?MINIO_ROOT_PASSWORD must be set in the runtime .env}
+      MINIO_BUCKET: ${MINIO_BUCKET:?MINIO_BUCKET must be set in the runtime .env}
+    entrypoint: ["/bin/sh", "-ec"]
+    command:
+      - |
+        attempt=0
+        until mc alias set gate http://minio:9000 "$${MINIO_ROOT_USER}" "$${MINIO_ROOT_PASSWORD}" >/dev/null 2>&1; do
+          attempt=$$((attempt + 1))
+          if [ "$$attempt" -ge 60 ]; then
+            echo "MinIO was not ready before the bounded retry limit." >&2
+            exit 1
+          fi
+          sleep 1
+        done
+        mc mb --ignore-existing "gate/$${MINIO_BUCKET}"
+        mc anonymous set none "gate/$${MINIO_BUCKET}"
+
+volumes:
+  postgres_data:
+    labels:
+      figure-gallery.disposable: "true"
+  minio_data:
+    labels:
+      figure-gallery.disposable: "true"
+
+networks:
+  default:
+    internal: true
