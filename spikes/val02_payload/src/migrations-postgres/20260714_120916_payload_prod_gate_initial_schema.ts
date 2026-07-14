@@ -6,8 +6,10 @@ export async function up({ db }: MigrateUpArgs): Promise<void> {
   CREATE TYPE "public"."enum_works_status" AS ENUM('draft', 'published');
   CREATE TYPE "public"."enum__works_v_version_status" AS ENUM('draft', 'published');
   CREATE TYPE "public"."enum_characters_status" AS ENUM('draft', 'published');
+  CREATE TYPE "public"."enum_characters_domain_status" AS ENUM('active', 'hidden', 'matching-pending');
   CREATE TYPE "public"."enum__characters_v_version_status" AS ENUM('draft', 'published');
   CREATE TYPE "public"."enum_manufacturers_status" AS ENUM('draft', 'published');
+  CREATE TYPE "public"."enum_manufacturers_domain_status" AS ENUM('draft', 'active', 'hidden');
   CREATE TYPE "public"."enum__manufacturers_v_version_status" AS ENUM('draft', 'published');
   CREATE TYPE "public"."enum_figure_prototypes_figure_type" AS ENUM('scale', 'prize');
   CREATE TYPE "public"."enum_figure_prototypes_publication_status" AS ENUM('draft', 'published', 'hidden', 'merged');
@@ -104,7 +106,7 @@ export async function up({ db }: MigrateUpArgs): Promise<void> {
 	"name_ja" varchar,
 	"name_en" varchar,
 	"work_id" integer,
-	"status" "enum_characters_status" DEFAULT 'active',
+	"status" "enum_characters_domain_status" DEFAULT 'active',
 	"soft_deleted" boolean DEFAULT false,
 	"updated_at" timestamp(3) with time zone DEFAULT now() NOT NULL,
 	"created_at" timestamp(3) with time zone DEFAULT now() NOT NULL,
@@ -129,7 +131,7 @@ export async function up({ db }: MigrateUpArgs): Promise<void> {
 	"version_name_ja" varchar,
 	"version_name_en" varchar,
 	"version_work_id" integer,
-	"version_status" "enum__characters_v_version_status" DEFAULT 'active',
+	"version_status" "enum_characters_domain_status" DEFAULT 'active',
 	"version_soft_deleted" boolean DEFAULT false,
 	"version_updated_at" timestamp(3) with time zone,
 	"version_created_at" timestamp(3) with time zone,
@@ -152,7 +154,7 @@ export async function up({ db }: MigrateUpArgs): Promise<void> {
 	"id" serial PRIMARY KEY NOT NULL,
 	"fixture_i_d" varchar,
 	"canonical_name" varchar,
-	"status" "enum_manufacturers_status" DEFAULT 'draft',
+	"status" "enum_manufacturers_domain_status" DEFAULT 'draft',
 	"updated_at" timestamp(3) with time zone DEFAULT now() NOT NULL,
 	"created_at" timestamp(3) with time zone DEFAULT now() NOT NULL,
 	"deleted_at" timestamp(3) with time zone,
@@ -172,7 +174,7 @@ export async function up({ db }: MigrateUpArgs): Promise<void> {
 	"parent_id" integer,
 	"version_fixture_i_d" varchar,
 	"version_canonical_name" varchar,
-	"version_status" "enum__manufacturers_v_version_status" DEFAULT 'draft',
+	"version_status" "enum_manufacturers_domain_status" DEFAULT 'draft',
 	"version_updated_at" timestamp(3) with time zone,
 	"version_created_at" timestamp(3) with time zone,
 	"version_deleted_at" timestamp(3) with time zone,
@@ -858,8 +860,10 @@ export async function down({ db }: MigrateDownArgs): Promise<void> {
   DROP TYPE "public"."enum_works_status";
   DROP TYPE "public"."enum__works_v_version_status";
   DROP TYPE "public"."enum_characters_status";
+  DROP TYPE "public"."enum_characters_domain_status";
   DROP TYPE "public"."enum__characters_v_version_status";
   DROP TYPE "public"."enum_manufacturers_status";
+  DROP TYPE "public"."enum_manufacturers_domain_status";
   DROP TYPE "public"."enum__manufacturers_v_version_status";
   DROP TYPE "public"."enum_figure_prototypes_figure_type";
   DROP TYPE "public"."enum_figure_prototypes_publication_status";

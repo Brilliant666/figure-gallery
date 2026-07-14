@@ -28,6 +28,7 @@ export const Characters: CollectionConfig = {
     {
       name: 'status',
       type: 'select',
+      enumName: 'enum_characters_domain_status',
       defaultValue: 'active',
       options: ['active', 'hidden', 'matching-pending'],
       required: true,

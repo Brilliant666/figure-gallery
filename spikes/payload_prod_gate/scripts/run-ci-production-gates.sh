@@ -105,15 +105,59 @@ wait_container_health() {
   return 1
 }
 
+capture_service_diagnostics() {
+  local service="$1" id target
+  target="$WORK_DIR/${service}-container.log"
+  id="$(compose ps --all --quiet "$service" | head -n 1)"
+  if [[ -z "$id" ]]; then
+    printf 'service=%s container=missing\n' "$service" >"$target"
+  else
+    {
+      printf 'service=%s ' "$service"
+      docker inspect --format 'state={{.State.Status}} exit_code={{.State.ExitCode}} oom_killed={{.State.OOMKilled}} error={{json .State.Error}}' "$id"
+      docker logs --tail 60 "$id" 2>&1 || true
+    } | python -c '
+import os, sys
+
+secret_names = (
+    "POSTGRES_PASSWORD", "MINIO_ROOT_PASSWORD", "PAYLOAD_SECRET",
+    "S3_ACCESS_KEY_ID", "S3_SECRET_ACCESS_KEY",
+    "VAL02_PAYLOAD_CANDIDATE_TOKEN", "VAL02_PAYLOAD_CANDIDATE_TOKEN_B",
+    "VAL02_PAYLOAD_REVOKED_TOKEN", "DATABASE_URI",
+)
+text = sys.stdin.read()
+for value in sorted((os.environ.get(name, "") for name in secret_names), key=len, reverse=True):
+    if value:
+        text = text.replace(value, "[MASKED]")
+sys.stdout.write(text)
+' >"$target"
+  fi
+  cat "$target" >&2
+}
+
 wait_http() {
-  local url="$1" attempts="${2:-60}"
+  local url="$1" attempts="${2:-60}" diagnostic_service="${3:-}"
   for ((i=1; i<=attempts; i++)); do
-    if curl --noproxy '*' --fail --silent --show-error --max-time 2 "$url" >/dev/null; then
+    if curl --noproxy '*' --fail --silent --max-time 2 "$url" >/dev/null; then
       return 0
+    fi
+    if [[ -n "$diagnostic_service" ]]; then
+      local id state
+      id="$(compose ps --all --quiet "$diagnostic_service" | head -n 1)"
+      if [[ -n "$id" ]]; then
+        state="$(docker inspect --format '{{.State.Status}}' "$id")"
+        if [[ "$state" == "exited" || "$state" == "dead" ]]; then
+          capture_service_diagnostics "$diagnostic_service"
+          return 1
+        fi
+      fi
     fi
     sleep 1
   done
   printf 'HTTP endpoint did not become ready: %s\n' "$url" >&2
+  if [[ -n "$diagnostic_service" ]]; then
+    capture_service_diagnostics "$diagnostic_service"
+  fi
   return 1
 }
 
@@ -233,7 +277,7 @@ start_infrastructure() {
   compose config --quiet
   compose up --detach postgres minio
   wait_container_health postgres healthy 60
-  wait_http http://127.0.0.1:59000/minio/health/live 60
+  wait_http http://127.0.0.1:59000/minio/health/live 60 minio
   compose run --rm minio-init >/dev/null
 
   local postgres_id minio_id runner_ip
@@ -1025,10 +1069,8 @@ run_standalone() {
   mkdir -p .next/standalone/.next
   cp -R .next/static .next/standalone/.next/static
   [[ ! -d public ]] || cp -R public .next/standalone/public
-  local -a servers
-  mapfile -t servers < <(find .next/standalone -type f -name server.js -print)
-  [[ "${#servers[@]}" -eq 1 ]]
-  server="${servers[0]}"
+  server=".next/standalone/server.js"
+  [[ -f "$server" ]]
   sharp_count="$(find .next/standalone -type f -path '*sharp*' | wc -l)"
   [[ "$sharp_count" -gt 0 ]]
 
@@ -1141,6 +1183,7 @@ cleanup_all() {
   set +e
   local failed=0 containers_remaining=0 volumes_remaining=0
   local runtime_env_removed=false backup_removed=false work_dir_removed=false restored_next_removed=false
+  local checkout_media_absent=false
   local -a listening_ports=()
   stop_standalone || failed=1
   stop_restored_service || failed=1
@@ -1160,6 +1203,7 @@ cleanup_all() {
   if [[ ! -e "$RUNTIME_ENV" ]]; then runtime_env_removed=true; else failed=1; fi
   rm -rf "$PAYLOAD_DIR/.next" || failed=1
   if [[ ! -e "$PAYLOAD_DIR/.next" ]]; then restored_next_removed=true; else failed=1; fi
+  if [[ ! -e "$PAYLOAD_DIR/media" ]]; then checkout_media_absent=true; else failed=1; fi
   for port in 3100 3101 55432 59000 59001; do
     if ss -ltn | awk -v p=":$port" '$4 ~ p"$" {found=1} END {exit !found}'; then
       listening_ports+=("$port")
@@ -1174,6 +1218,7 @@ cleanup_all() {
   export CLEANUP_BACKUP_REMOVED="$backup_removed"
   export CLEANUP_WORK_DIR_REMOVED="$work_dir_removed"
   export CLEANUP_RESTORED_NEXT_REMOVED="$restored_next_removed"
+  export CLEANUP_CHECKOUT_MEDIA_ABSENT="$checkout_media_absent"
   python - "$RESULTS_DIR/cleanup.json" <<'PY'
 import json, os, pathlib, sys
 ports = [int(value) for value in os.environ.get("CLEANUP_PORTS", "").split() if value]
@@ -1190,9 +1235,11 @@ data = {
       and int(os.environ["CLEANUP_VOLUMES"]) == 0
       and as_bool("CLEANUP_WORK_DIR_REMOVED")
       and as_bool("CLEANUP_RESTORED_NEXT_REMOVED")
+      and as_bool("CLEANUP_CHECKOUT_MEDIA_ABSENT")
   ),
   "work_dir_removed": as_bool("CLEANUP_WORK_DIR_REMOVED"),
   "restored_next_removed": as_bool("CLEANUP_RESTORED_NEXT_REMOVED"),
+  "checkout_media_absent": as_bool("CLEANUP_CHECKOUT_MEDIA_ABSENT"),
 }
 pathlib.Path(sys.argv[1]).write_text(json.dumps(data, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 PY

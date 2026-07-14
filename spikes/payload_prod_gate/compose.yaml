@@ -64,4 +64,7 @@ volumes:
 
 networks:
   default:
-    internal: true
+    # Service ports are published only on loopback and verified below. Docker
+    # internal networks are externally isolated, so host-side gate clients
+    # cannot portably rely on their published-port behavior across engines.
+    driver: bridge

@@ -24,6 +24,7 @@ export const Manufacturers: CollectionConfig = {
     {
       name: 'status',
       type: 'select',
+      enumName: 'enum_manufacturers_domain_status',
       defaultValue: 'draft',
       options: ['draft', 'active', 'hidden'],
       required: true,

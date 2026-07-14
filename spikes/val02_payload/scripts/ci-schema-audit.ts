@@ -49,6 +49,23 @@ try {
         )
       order by table_name, column_name`,
   )
+  const enums = await pool.query(
+    `select t.typname, array_agg(e.enumlabel order by e.enumsortorder) as labels
+       from pg_type t
+       join pg_enum e on e.enumtypid = t.oid
+       join pg_namespace n on n.oid = t.typnamespace
+      where n.nspname = 'public'
+        and t.typname in (
+          'enum_characters_domain_status',
+          'enum_characters_status',
+          'enum__characters_v_version_status',
+          'enum_manufacturers_domain_status',
+          'enum_manufacturers_status',
+          'enum__manufacturers_v_version_status'
+        )
+      group by t.typname
+      order by t.typname`,
+  )
   const indexes = await pool.query(
     `select indexname, indexdef
        from pg_indexes
@@ -123,6 +140,23 @@ try {
     'operation_logs_operation_i_d_idx',
     'source_records_source_key_idx',
   ].filter((index) => !uniqueIndexes.has(index))
+  const expectedEnums: Record<string, string[]> = {
+    enum_characters_domain_status: ['active', 'hidden', 'matching-pending'],
+    enum_characters_status: ['draft', 'published'],
+    enum__characters_v_version_status: ['draft', 'published'],
+    enum_manufacturers_domain_status: ['draft', 'active', 'hidden'],
+    enum_manufacturers_status: ['draft', 'published'],
+    enum__manufacturers_v_version_status: ['draft', 'published'],
+  }
+  const actualEnums = new Map(
+    enums.rows.map((row) => [
+      String(row.typname),
+      Array.isArray(row.labels) ? row.labels.map((label) => String(label)) : [],
+    ]),
+  )
+  const invalidEnums = Object.entries(expectedEnums)
+    .filter(([name, labels]) => JSON.stringify(actualEnums.get(name)) !== JSON.stringify(labels))
+    .map(([name, labels]) => `${name} expected ${labels.join('|')} found ${(actualEnums.get(name) ?? []).join('|')}`)
   const reviewLock = columns.rows.find(
     (row) => row.table_name === 'review_work_items' && row.column_name === 'lock_version',
   )
@@ -132,6 +166,7 @@ try {
     ...(missingUniqueIndexes.length
       ? [`missing unique indexes: ${missingUniqueIndexes.join(', ')}`]
       : []),
+    ...(invalidEnums.length ? [`invalid enum definitions: ${invalidEnums.join(', ')}`] : []),
     ...(reviewLock?.is_nullable !== 'NO' ? ['review_work_items.lock_version is nullable'] : []),
     ...(foreignKeys.rows.length !== 5 ? [`expected 5 selected foreign keys, found ${foreignKeys.rows.length}`] : []),
     ...(migrations.rows.length < 1 ? ['no PostgreSQL migration record found'] : []),
@@ -143,6 +178,9 @@ try {
     schema_version: 1,
     adapter: 'postgres',
     checked_columns: requiredColumns,
+    checked_enums: Object.fromEntries(
+      Object.keys(expectedEnums).map((name) => [name, actualEnums.get(name) ?? []]),
+    ),
     checked_foreign_keys: foreignKeys.rows.map(
       (row) => `${String(row.table_name)}.${String(row.column_name)}->${String(row.foreign_table_name)}`,
     ),
@@ -152,6 +190,7 @@ try {
     migration_count: migrations.rows.length,
     migration_names: migrations.rows.map((row) => String(row.name)),
     required_column_checks: requiredColumns.length,
+    enum_checks: Object.keys(expectedEnums).length,
     required_table_checks: requiredTables.length,
     table_count: tables.rows.length,
     unique_index_checks: uniqueIndexes.size,

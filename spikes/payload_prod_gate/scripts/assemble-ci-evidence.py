@@ -396,6 +396,7 @@ def validate_run_and_cleanup(documents: Mapping[str, dict[str, Any]]) -> None:
             "temporary_objects_removed",
             "work_dir_removed",
             "restored_next_removed",
+            "checkout_media_absent",
         },
         "cleanup.json",
     )

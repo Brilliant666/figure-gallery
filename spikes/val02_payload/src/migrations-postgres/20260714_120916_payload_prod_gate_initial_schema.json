@@ -873,7 +873,7 @@
         },
         "status": {
           "name": "status",
-          "type": "enum_characters_status",
+          "type": "enum_characters_domain_status",
           "typeSchema": "public",
           "primaryKey": false,
           "notNull": false,
@@ -1236,7 +1236,7 @@
         },
         "version_status": {
           "name": "version_status",
-          "type": "enum__characters_v_version_status",
+          "type": "enum_characters_domain_status",
           "typeSchema": "public",
           "primaryKey": false,
           "notNull": false,
@@ -1645,7 +1645,7 @@
         },
         "status": {
           "name": "status",
-          "type": "enum_manufacturers_status",
+          "type": "enum_manufacturers_domain_status",
           "typeSchema": "public",
           "primaryKey": false,
           "notNull": false,
@@ -1888,7 +1888,7 @@
         },
         "version_status": {
           "name": "version_status",
-          "type": "enum__manufacturers_v_version_status",
+          "type": "enum_manufacturers_domain_status",
           "typeSchema": "public",
           "primaryKey": false,
           "notNull": false,
@@ -7105,6 +7105,15 @@
         "published"
       ]
     },
+    "public.enum_characters_domain_status": {
+      "name": "enum_characters_domain_status",
+      "schema": "public",
+      "values": [
+        "active",
+        "hidden",
+        "matching-pending"
+      ]
+    },
     "public.enum__characters_v_version_status": {
       "name": "enum__characters_v_version_status",
       "schema": "public",
@@ -7119,6 +7128,15 @@
       "values": [
         "draft",
         "published"
+      ]
+    },
+    "public.enum_manufacturers_domain_status": {
+      "name": "enum_manufacturers_domain_status",
+      "schema": "public",
+      "values": [
+        "draft",
+        "active",
+        "hidden"
       ]
     },
     "public.enum__manufacturers_v_version_status": {
