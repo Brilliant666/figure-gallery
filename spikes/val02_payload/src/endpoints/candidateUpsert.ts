@@ -192,6 +192,7 @@ const upsertSource = async (req: PayloadRequest, input: CandidateInput['source']
         and: [
           { sourceType: { equals: input.source_type } },
           { canonicalUrl: { equals: canonicalUrl } },
+          { sourceItemId: { exists: false } },
         ],
       },
     })

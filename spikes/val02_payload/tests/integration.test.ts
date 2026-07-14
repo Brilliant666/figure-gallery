@@ -734,6 +734,51 @@ describe.sequential(usePostgresProductionGate
     expect(markerCandidates.totalDocs).toBe(1)
   })
 
+  it('keeps distinct stable source IDs separate when they share one canonical URL', async () => {
+    const marker = randomUUID()
+    const upsert = async (label: string, sourceUrl: string) => {
+      const response = await candidateUpsertEndpoint.handler(
+        await jsonRequest(candidateUser, {
+          candidate: {
+            id: `stable-shared-url-${label}-${marker}`,
+            images: [],
+            raw_character_names: ['Stable source identity'],
+            raw_snapshot: { label, marker },
+            raw_title: `Stable shared URL candidate ${label}`,
+            source: {
+              source_item_id: `STABLE-SHARED-${label}-${marker}`,
+              source_status: 'active',
+              source_type: 'synthetic_feed',
+              source_url: sourceUrl,
+            },
+          },
+          operation: 'candidate_upsert',
+          protocol_version: 1,
+        }),
+      )
+      expect(response.status).toBe(201)
+      return response.json() as Promise<Doc>
+    }
+    const sourceUrl = `https://synthetic.invalid/stable-shared/${marker}`
+    const first = await upsert('a', `${sourceUrl}?utm_source=discarded`)
+    const second = await upsert('b', sourceUrl)
+
+    expect(first.source_id).not.toBe(second.source_id)
+    expect(first.candidate_id).not.toBe(second.candidate_id)
+    const sources = await payload.find({
+      collection: 'source-records',
+      depth: 0,
+      limit: 10,
+      overrideAccess: true,
+      where: { canonicalUrl: { equals: sourceUrl } },
+    })
+    expect(sources.totalDocs).toBe(2)
+    expect(sources.docs.map((source) => source.sourceKey).sort()).toEqual([
+      `synthetic_feed:id:STABLE-SHARED-a-${marker}`,
+      `synthetic_feed:id:STABLE-SHARED-b-${marker}`,
+    ])
+  })
+
   it('closes generic candidate, source and media collection writes for candidate clients', async () => {
     const candidate = fixtureDoc(maps.candidates, 'candidate-main-image-attack')
     const media = fixtureDoc(maps.media, 'candidate-image-002-a')

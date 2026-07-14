@@ -1,4 +1,5 @@
 import { randomBytes, randomUUID } from 'node:crypto'
+import { sql } from '@payloadcms/db-postgres'
 import type { Payload, PayloadRequest } from 'payload'
 import { createLocalReq, getPayload } from 'payload'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
@@ -343,6 +344,7 @@ postgresDescribe('Payload PostgreSQL production transaction gate', () => {
     expect(beforeWorks.totalDocs).toBe(0)
 
     let observedError: unknown
+    let observedSQLStates: string[] = []
     try {
       await withinPayloadTransaction(req, async () => {
         await payload.create({
@@ -374,31 +376,53 @@ postgresDescribe('Payload PostgreSQL production transaction gate', () => {
           overrideAccess: true,
           req,
         })
-        await payload.create({
-          collection: 'operation-logs',
-          data: {
-            actor: adminA.id,
-            actorLabel: String(adminA.email),
-            afterState: { duplicate: true },
-            beforeState: { duplicate: false },
-            operationID: duplicateOperationID,
-            operationType: 'maintain_formal',
-            operationVersion: 1,
-            reason: 'PostgreSQL real unique-index conflict',
-            relatedRecords: { baselineOperationLogID: baseline.id },
-            scope: { marker },
-            undone: false,
-          },
-          draft: false,
-          overrideAccess: true,
-          req,
-        })
+        const transactionID = await req.transactionID
+        const transactionDB = (payload.db as unknown as {
+          sessions?: Record<string, { db?: { execute: (query: unknown) => Promise<unknown> } }>
+        }).sessions?.[String(transactionID)]?.db
+        if (!transactionID || !transactionDB) {
+          throw new Error('Expected an active PostgreSQL transaction session.')
+        }
+
+        try {
+          await transactionDB.execute(sql`
+            INSERT INTO operation_logs (
+              operation_i_d,
+              operation_version,
+              scope,
+              actor_id,
+              actor_label,
+              operation_type,
+              reason,
+              before_state,
+              after_state,
+              related_records,
+              undone
+            ) VALUES (
+              ${duplicateOperationID},
+              1,
+              ${JSON.stringify({ marker })}::jsonb,
+              ${Number(adminA.id)},
+              ${String(adminA.email)},
+              'maintain_formal',
+              'PostgreSQL real unique-index conflict',
+              ${JSON.stringify({ duplicate: false })}::jsonb,
+              ${JSON.stringify({ duplicate: true })}::jsonb,
+              ${JSON.stringify({ baselineOperationLogID: baseline.id })}::jsonb,
+              false
+            )
+          `)
+        } catch (error) {
+          observedSQLStates = postgresSQLStates(error)
+          throw error
+        }
       })
     } catch (error) {
       observedError = error
     }
 
-    expect(postgresSQLStates(observedError)).toContain('23505')
+    expect(observedError).toBeTruthy()
+    expect(observedSQLStates).toContain('23505')
     const [afterLogs, afterWorks, baselineAfter] = await Promise.all([
       payload.count({ collection: 'operation-logs', overrideAccess: true }),
       payload.count({
@@ -434,7 +458,8 @@ postgresDescribe('Payload PostgreSQL production transaction gate', () => {
       overrideAccess: true,
       showHiddenFields: true,
     }) as Promise<Doc>
-    const [clientA, clientB] = await Promise.all([createClient('a'), createClient('b')])
+    const clientA = await createClient('a')
+    const clientB = await createClient('b')
     const sourceURLs = [
       `https://SYNTHETIC.invalid/postgres/shared/${marker}/?b=2&a=1&utm_source=discarded#fragment`,
       `https://synthetic.invalid/postgres/shared/${marker}?a=1&b=2`,

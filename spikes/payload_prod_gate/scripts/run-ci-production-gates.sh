@@ -61,6 +61,7 @@ def sanitize(text):
         text = text.replace(secret, "[MASKED]")
     text = re.sub(r"(?i)(postgres(?:ql)?://[^\s:@/]+:)[^\s@/]+(@)", r"\1[MASKED]\2", text)
     text = re.sub(r"(?i)(authorization\s*[:=]\s*[^\s]+\s+)[^\s]+", r"\1[MASKED]", text)
+    text = re.sub(r"(?im)^\s*params\s*:.*$", "params: [REDACTED]", text)
     return text
 diagnostics = []
 for path in sorted(work_path.glob("*.log"), key=lambda item: item.stat().st_mtime)[-3:]:
@@ -206,7 +207,7 @@ capture_service_diagnostics() {
       docker inspect --format 'state={{.State.Status}} exit_code={{.State.ExitCode}} oom_killed={{.State.OOMKilled}} error={{json .State.Error}}' "$id"
       docker logs --tail 60 "$id" 2>&1 || true
     } | python -c '
-import os, sys
+import os, re, sys
 
 secret_names = (
     "POSTGRES_USER", "POSTGRES_PASSWORD", "MINIO_ROOT_USER", "MINIO_ROOT_PASSWORD",
@@ -219,6 +220,9 @@ text = sys.stdin.read()
 for value in sorted((os.environ.get(name, "") for name in secret_names), key=len, reverse=True):
     if value:
         text = text.replace(value, "[MASKED]")
+text = re.sub(r"(?i)(postgres(?:ql)?://[^\s:@/]+:)[^\s@/]+(@)", r"\1[MASKED]\2", text)
+text = re.sub(r"(?i)(authorization\s*[:=]\s*[^\s]+\s+)[^\s]+", r"\1[MASKED]", text)
+text = re.sub(r"(?im)^\s*params\s*:.*$", "params: [REDACTED]", text)
 sys.stdout.write(text)
 ' >"$target"
   fi
