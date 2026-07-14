@@ -604,3 +604,5 @@ try {
 } finally {
   if (payload) await payload.destroy()
 }
+
+process.exit(0)

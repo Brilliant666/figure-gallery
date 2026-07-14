@@ -1984,3 +1984,4 @@ const main = async (): Promise<void> => {
 }
 
 await main()
+process.exit(0)
