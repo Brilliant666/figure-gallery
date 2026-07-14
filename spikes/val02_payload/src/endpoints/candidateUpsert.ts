@@ -93,6 +93,12 @@ const jsonError = (message: string, status: number) => Response.json({ error: me
 const sameJSON = (left: unknown, right: unknown): boolean =>
   JSON.stringify(left) === JSON.stringify(right)
 
+const relationID = (value: any): number | undefined => {
+  const id = value && typeof value === 'object' ? value.id : value
+  const numeric = Number(id)
+  return Number.isInteger(numeric) && numeric > 0 ? numeric : undefined
+}
+
 const sourceAuditState = (doc: any) =>
   doc
     ? {
@@ -415,10 +421,31 @@ export const candidateUpsertEndpoint: Endpoint = {
               req,
             })
         const mediaOutcome = await upsertCandidateMedia(req, candidateDoc.id, candidate.images ?? [])
-        const previousMediaIDs = (beforeCandidate?.images ?? []).map((value: any) =>
-          typeof value === 'object' ? value.id : value,
-        )
-        const imagesChanged = !sameJSON(previousMediaIDs, mediaOutcome.ids)
+        const previousMediaIDs = (beforeCandidate?.images ?? [])
+          .map(relationID)
+          .filter((id: number | undefined): id is number => id !== undefined)
+        let multipartMediaIDs: number[] = []
+        if (previousMediaIDs.length > 0) {
+          const previousMedia = await payload.find({
+            collection: 'media',
+            depth: 0,
+            limit: previousMediaIDs.length,
+            overrideAccess: true,
+            req,
+            where: { id: { in: previousMediaIDs } },
+          })
+          multipartMediaIDs = previousMedia.docs
+            .filter((media: any) =>
+              media.candidateOnly === true &&
+              Boolean(media.idempotencyKey) &&
+              relationID(media.candidate) === Number(candidateDoc.id) &&
+              relationID(media.candidateOwner) === Number(req.user?.id) &&
+              media.clientCandidateID === candidateDoc.externalKey,
+            )
+            .map((media: any) => Number(media.id))
+        }
+        const finalMediaIDs = [...new Set([...mediaOutcome.ids, ...multipartMediaIDs])]
+        const imagesChanged = !sameJSON(previousMediaIDs, finalMediaIDs)
         const changed =
           wasCreated ||
           sourceOutcome.changed ||
@@ -432,7 +459,7 @@ export const candidateUpsertEndpoint: Endpoint = {
         const finalCandidate = await payload.update({
           collection: 'candidate-records',
           data: {
-            images: mediaOutcome.ids,
+            images: finalMediaIDs,
             ...(shouldQueueReview ? { status: 'update_pending' } : {}),
           },
           id: candidateDoc.id,
@@ -442,7 +469,7 @@ export const candidateUpsertEndpoint: Endpoint = {
         await recordCandidateOperation(req, {
           afterState: {
             candidate: candidateAuditState(finalCandidate),
-            mediaIDs: mediaOutcome.ids,
+            mediaIDs: finalMediaIDs,
             source: sourceAuditState(source),
           },
           beforeState: {
@@ -456,7 +483,7 @@ export const candidateUpsertEndpoint: Endpoint = {
         return {
           candidateDoc: finalCandidate,
           changed,
-          mediaIDs: mediaOutcome.ids,
+          mediaIDs: finalMediaIDs,
           source,
           wasCreated,
         }

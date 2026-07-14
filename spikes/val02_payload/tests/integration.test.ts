@@ -2224,6 +2224,45 @@ describe.sequential(usePostgresProductionGate
       collection: 'candidate-records', depth: 0, id: val02bCandidateID, overrideAccess: true,
     })
     expect((candidate.images ?? []).map(relationID)).toContain(val02bMediaID)
+
+    const replayedUpsert = await candidateUpsertEndpoint.handler(
+      await jsonRequest(candidateUser, val02bCandidateBody),
+    )
+    expect(replayedUpsert.status, await replayedUpsert.clone().text()).toBe(200)
+    const replayedUpsertBody = (await replayedUpsert.clone().json()) as Doc
+    expect(replayedUpsertBody.created).toBe(false)
+    expect(replayedUpsertBody.media_ids).toContain(val02bMediaID)
+    const candidateAfterReplay = await payload.findByID({
+      collection: 'candidate-records', depth: 0, id: val02bCandidateID, overrideAccess: true,
+    })
+    expect((candidateAfterReplay.images ?? []).map(relationID)).toContain(val02bMediaID)
+
+    // Simulate an old partial relation state and prove that a byte-identical
+    // retry repairs the candidate link without creating a second media row.
+    await payload.update({
+      collection: 'candidate-records',
+      data: { images: [] },
+      id: val02bCandidateID,
+      overrideAccess: true,
+    })
+    const relinkedUpload = await candidateMediaUploadEndpoint.handler(
+      await multipartRequest(candidateUser, metadata, bytes),
+    )
+    expect(relinkedUpload.status, await relinkedUpload.clone().text()).toBe(200)
+    expect((await relinkedUpload.clone().json()) as Doc).toMatchObject({
+      created: false,
+      media_id: val02bMediaID,
+    })
+    const candidateAfterRelink = await payload.findByID({
+      collection: 'candidate-records', depth: 0, id: val02bCandidateID, overrideAccess: true,
+    })
+    expect((candidateAfterRelink.images ?? []).map(relationID)).toContain(val02bMediaID)
+    const matchingMediaAfterRelink = await payload.count({
+      collection: 'media',
+      overrideAccess: true,
+      where: { sha256: { equals: digest } },
+    })
+    expect(matchingMediaAfterRelink.totalDocs).toBe(1)
     const formalAfter = await payload.count({ collection: 'figure-prototypes', overrideAccess: true })
     expect(formalAfter.totalDocs).toBe(formalBefore.totalDocs)
 

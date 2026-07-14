@@ -347,12 +347,54 @@ const candidateMediaUploadHandler: Endpoint['handler'] = async (req) => {
           and: [
             { candidate: { equals: candidateID } },
             { candidateOwner: { equals: ownerID } },
+            { clientCandidateID: { equals: metadata.client_candidate_id } },
+            { idempotencyKey: { exists: true } },
             { sha256: { equals: verified.sha256 } },
           ],
         },
       })
       const existing = prior ?? byContent.docs[0]
       if (existing) {
+        if (
+          existing.candidateOnly !== true ||
+          relationID(existing.candidate) !== candidateID ||
+          existing.clientCandidateID !== metadata.client_candidate_id
+        ) {
+          throw new Error('Idempotent candidate media belongs to a different candidate record.')
+        }
+        const currentImageIDs = (candidate.images ?? [])
+          .map(relationID)
+          .filter((id: number | undefined): id is number => id !== undefined)
+        if (!currentImageIDs.includes(Number(existing.id))) {
+          req.context = { ...req.context, candidateSync: true }
+          await withinPayloadTransaction(req, async () => {
+            const imageIDs = [...new Set([...currentImageIDs, Number(existing.id)])]
+            await payload.update({
+              collection: 'candidate-records',
+              data: { images: imageIDs },
+              id: candidateID,
+              overrideAccess: true,
+              req,
+            })
+            await payload.create({
+              collection: 'operation-logs',
+              data: {
+                actor: ownerID,
+                actorLabel: `candidate-client:${clientID}`,
+                afterState: { linked: true, mediaID: existing.id, storageKey: existing.storageKey },
+                beforeState: { linked: false, mediaID: existing.id },
+                operationID: randomUUID(),
+                operationType: 'candidate_media_upload',
+                reason: 'Candidate protocol v2 idempotent media relink',
+                relatedRecords: { candidateID, mediaID: existing.id },
+                scope: { candidateIDs: [candidateID] },
+                undone: false,
+              },
+              overrideAccess: true,
+              req,
+            })
+          })
+        }
         return Response.json({ created: false, media_id: existing.id, ok: true, storage_key: existing.storageKey })
       }
 
