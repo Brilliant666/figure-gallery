@@ -24,9 +24,6 @@ jobs:
     env:
       CI: "true"
       NEXT_TELEMETRY_DISABLED: "1"
-      PAYLOAD_GATE_RESULTS_DIR: ${{ runner.temp }}/payload-prod-gate-results
-      PAYLOAD_GATE_UPLOAD_DIR: ${{ runner.temp }}/payload-prod-gate-upload
-      PAYLOAD_GATE_RUNTIME_ENV: ${{ runner.temp }}/payload-prod-gate.env
 
     steps:
       - name: Checkout
@@ -75,8 +72,8 @@ jobs:
         if: ${{ always() }}
         run: >-
           python spikes/payload_prod_gate/scripts/assemble-ci-evidence.py
-          --source "$PAYLOAD_GATE_RESULTS_DIR"
-          --destination "$PAYLOAD_GATE_UPLOAD_DIR"
+          --source "$RUNNER_TEMP/payload-prod-gate-results"
+          --destination "$RUNNER_TEMP/payload-prod-gate-upload"
 
       - name: Upload sanitized gate evidence
         id: artifact
@@ -107,7 +104,7 @@ jobs:
       - name: Enforce production-gate outcome
         if: ${{ always() && steps.sanitize.outcome == 'success' }}
         run: |
-          python - "$PAYLOAD_GATE_UPLOAD_DIR/production-gates.json" <<'PY'
+          python - "$RUNNER_TEMP/payload-prod-gate-upload/production-gates.json" <<'PY'
           import json, pathlib, sys
           result = json.loads(pathlib.Path(sys.argv[1]).read_text(encoding="utf-8"))
           if result.get("overall_status") != "pass":
