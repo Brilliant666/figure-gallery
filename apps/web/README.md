@@ -1,67 +1,76 @@
-# Payload Blank Template
+# Figure Gallery formal web baseline
 
-This template comes configured with the bare minimum to get started on anything you need.
+`apps/web` is the formal Payload CMS and Next.js application boundary created from the
+official `create-payload-app@3.86.0` blank template. PR-00 establishes infrastructure only;
+it does not implement Figure Gallery domain collections, candidate ingestion, review,
+media lifecycle, search, gallery, or public-read features.
 
-## Quick start
+## Runtime baseline
 
-This template can be deployed directly from our Cloud hosting and it will setup MongoDB and cloud S3 object storage for media.
+- Node.js `22.x` (`>=22.12.0 <23`) and npm with `package-lock.json`;
+- Payload CMS `3.86.0`, Next.js `16.2.10`, React `19.2.7`, and TypeScript;
+- PostgreSQL through `@payloadcms/db-postgres@3.86.0`; SQLite is not a runtime option;
+- S3-compatible storage through `@payloadcms/storage-s3@3.86.0` in production;
+- `.next/standalone` as the production-shaped output.
 
-## Quick Start - local setup
+All direct dependencies are exact pins. Dependency changes require a separate review and
+the complete production gate; do not use `npm audit fix` or floating versions.
 
-To spin up this template locally, follow these steps:
+The PR-00 development-tool pins are stable releases selected for the Node 22 and Next.js
+16 baseline and verified together by a clean npm install, typecheck, lint, unit tests, and
+production build: TypeScript `5.7.3`, ESLint `9.39.5` with `eslint-config-next` `16.2.10`,
+Vitest `4.0.18`, Playwright `1.58.2`, Prettier `3.9.5`, tsx `4.22.4`, and
+vite-tsconfig-paths `6.0.5`. The matching React/Node type packages and `cross-env` are also
+exactly pinned in `package.json`; prerelease channels are not used.
 
-### Clone
+## Configuration
 
-After you click the `Deploy` button above, you'll want to have standalone copy of this repo on your machine. If you've already cloned this repo, skip to [Development](#development).
+Copy `.env.example` to an ignored local environment file and provide runtime values. The
+server-only schema validates these variables without returning their values:
 
-### Development
+`NODE_ENV`, `PAYLOAD_SECRET`, `DATABASE_URI`, `PUBLIC_READ_ENABLED`,
+`MEDIA_STORAGE_DRIVER`, `MEDIA_LOCAL_ROOT`, `S3_ENDPOINT`, `S3_REGION`, `S3_BUCKET`,
+`S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`, `S3_FORCE_PATH_STYLE`, and `BUILD_VERSION`.
 
-1. First [clone the repo](#clone) if you have not done so already
-2. `cd my-project && cp .env.example .env` to copy the example environment variables. You'll need to add the `MONGODB_URL` from your Cloud project to your `.env` if you want to use S3 storage and the MongoDB database that was created for you.
+`PUBLIC_READ_ENABLED` defaults to `false`. PostgreSQL is mandatory. Production rejects
+filesystem media, while non-production may use an ignored local directory. Non-loopback
+S3 endpoints must use HTTPS; loopback HTTP is reserved for temporary local/CI services.
+No administrator, database, or object-storage credential is embedded in the repository.
 
-3. `pnpm install && pnpm dev` to install dependencies and start the dev server
-4. open `http://localhost:3000` to open the app in your browser
+## Commands
 
-That's it! Changes made in `./src` will be reflected in your app. Follow the on-screen instructions to login and create your first admin user. Then check out [Production](#production) once you're ready to build and serve your app, and [Deployment](#deployment) when you're ready to go live.
+```text
+npm ci
+npm run typecheck
+npm run lint
+npm test
+npm run test:e2e
+npm run migrate
+npm run migrate:status
+npm run build
+```
 
-#### Docker (Optional)
+Migrations are generated only by the pinned official Payload CLI, reviewed, and run by a
+controlled migrator. The application adapter uses `push: false`, does not create databases,
+and readiness fails when the checked-in migration set and database history differ.
 
-If you prefer to use Docker for local development instead of a local MongoDB instance, the provided docker-compose.yml file can be used.
+## Health and production shape
 
-To do so, follow these steps:
+- `GET /api/health/live` checks only the Node process and never queries PostgreSQL or S3.
+- `GET /api/health/ready` performs bounded, read-only configuration, PostgreSQL, migration,
+  and (when selected) S3 metadata checks. It returns `503` with classified, redacted status
+  when a required boundary is unavailable.
+- `npm run build` must produce `.next/standalone`; CI starts a clean copy with `node
+server.js`, loads the traced Sharp native runtime, and processes a one-pixel in-memory PNG.
+  `next dev` is not a production start path.
 
-- Modify the `MONGODB_URL` in your `.env` file to `mongodb://127.0.0.1/<dbname>`
-- Modify the `docker-compose.yml` file's `MONGODB_URL` to match the above `<dbname>`
-- Run `docker-compose up` to start the database, optionally pass `-d` to run in the background.
+The only Payload collections in PR-00 are the technical authenticated `users` collection
+and a private infrastructure-only `media` upload collection. Both deny anonymous CRUD.
+They are not Figure Gallery domain models or the formal media lifecycle.
 
-## How it works
+## Repository boundary
 
-The Payload config is tailored specifically to the needs of most websites. It is pre-configured in the following ways:
-
-### Collections
-
-See the [Collections](https://payloadcms.com/docs/configuration/collections) docs for details on how to extend this functionality.
-
-- #### Users (Authentication)
-
-  Users are auth-enabled collections that have access to the admin panel.
-
-  For additional help, see the official [Auth Example](https://github.com/payloadcms/payload/tree/3.x/examples/auth) or the [Authentication](https://payloadcms.com/docs/authentication/overview#authentication-overview) docs.
-
-- #### Media
-
-  This is the uploads enabled collection. It features pre-configured sizes, focal point and manual resizing to help you manage your pictures.
-
-### Docker
-
-Alternatively, you can use [Docker](https://www.docker.com) to spin up this template locally. To do so, follow these steps:
-
-1. Follow [steps 1 and 2 from above](#development), the docker-compose file will automatically use the `.env` file in your project root
-1. Next run `docker-compose up`
-1. Follow [steps 4 and 5 from above](#development) to login and create your first admin user
-
-That's it! The Docker instance will help you get up and running quickly while also standardizing the development environment across your teams.
-
-## Questions
-
-If you have any issues or questions, reach out to us on [Discord](https://discord.com/invite/payload) or start a [GitHub discussion](https://github.com/payloadcms/payload/discussions).
+Formal code must not import, execute, package, or read from `research/` or `spikes/` at
+runtime. No spike code was copied into this application. Hpoi is manual reference only:
+the app, tests, health probes, and tooling must make zero Hpoi requests. Do not add product
+features here until a separately authorized PR-01 task.

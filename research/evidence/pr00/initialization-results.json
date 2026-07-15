@@ -1,0 +1,87 @@
+{
+  "schemaVersion": 1,
+  "validationDate": "2026-07-15",
+  "branch": "feat/pr-00-formal-initialization",
+  "scaffoldCommit": "00f5f5675b968832cd4cb14a9ef6648b0d1886f8",
+  "overallStatus": "not_run",
+  "summary": {
+    "pass": 0,
+    "fail": 0,
+    "not_run": 12,
+    "environment_blocked": 0
+  },
+  "gates": [
+    {
+      "id": "INIT-01",
+      "status": "not_run",
+      "evidence": ["docs/PR00_SCAFFOLD_PROVENANCE.md"],
+      "note": "Pending final Git-history and no-spike-copy audit."
+    },
+    {
+      "id": "INIT-02",
+      "status": "not_run",
+      "evidence": [],
+      "note": "Pending exact-pin, clean npm ci, dependency and lockfile evidence."
+    },
+    {
+      "id": "INIT-03",
+      "status": "not_run",
+      "evidence": [],
+      "note": "Pending formal repository-boundary check evidence."
+    },
+    {
+      "id": "INIT-04",
+      "status": "not_run",
+      "evidence": [],
+      "note": "Pending environment-schema unit and redaction evidence."
+    },
+    {
+      "id": "INIT-05",
+      "status": "not_run",
+      "evidence": [],
+      "note": "Pending PostgreSQL 16 fresh/repeat migration and drift evidence."
+    },
+    {
+      "id": "INIT-06",
+      "status": "not_run",
+      "evidence": [],
+      "note": "Pending S3 configuration-boundary and readiness evidence."
+    },
+    {
+      "id": "INIT-07",
+      "status": "not_run",
+      "evidence": [],
+      "note": "Pending liveness/readiness success and failure-path evidence."
+    },
+    {
+      "id": "INIT-08",
+      "status": "not_run",
+      "evidence": [],
+      "note": "Pending typecheck, ESLint and Vitest evidence."
+    },
+    {
+      "id": "INIT-09",
+      "status": "not_run",
+      "evidence": [],
+      "note": "Pending production build and clean standalone start evidence."
+    },
+    {
+      "id": "INIT-10",
+      "status": "not_run",
+      "evidence": [],
+      "note": "Pending Playwright health, placeholder root and Admin-boundary evidence."
+    },
+    {
+      "id": "INIT-11",
+      "status": "not_run",
+      "evidence": [],
+      "note": "Pending final credential, large-file, binary and generated-artifact scan."
+    },
+    {
+      "id": "INIT-12",
+      "status": "not_run",
+      "evidence": [],
+      "note": "Pending final scope and zero-Hpoi-request audit."
+    }
+  ]
+}

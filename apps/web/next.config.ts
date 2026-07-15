@@ -7,6 +7,12 @@ const __filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(__filename)
 
 const nextConfig: NextConfig = {
+  output: 'standalone',
+  outputFileTracingRoot: dirname,
+  outputFileTracingIncludes: {
+    '/*': ['./node_modules/sharp/**/*', './node_modules/@img/**/*'],
+  },
+  poweredByHeader: false,
   images: {
     localPatterns: [
       {

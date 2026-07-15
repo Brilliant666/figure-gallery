@@ -1,15 +1,19 @@
 import { postgresAdapter } from '@payloadcms/db-postgres'
-import { lexicalEditor } from '@payloadcms/richtext-lexical'
-import path from 'path'
+import path from 'node:path'
 import { buildConfig } from 'payload'
-import { fileURLToPath } from 'url'
+import { fileURLToPath } from 'node:url'
 import sharp from 'sharp'
 
 import { Users } from './collections/Users'
-import { Media } from './collections/Media'
+import { buildTechnicalMediaCollection } from './collections/Media'
+import { GRAPHQL_POLICY } from './config/payload-policy'
+import { loadRuntimeEnvironment } from './config/runtime-environment'
+import { createStoragePlugins } from './storage/plugin'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
+const environment = loadRuntimeEnvironment()
+const localMediaRoot = environment.mediaLocalRoot ?? path.resolve(dirname, '../.runtime/media')
 
 export default buildConfig({
   admin: {
@@ -18,17 +22,23 @@ export default buildConfig({
       baseDir: path.resolve(dirname),
     },
   },
-  collections: [Users, Media],
-  editor: lexicalEditor(),
-  secret: process.env.PAYLOAD_SECRET || '',
+  collections: [Users, buildTechnicalMediaCollection(localMediaRoot)],
+  graphQL: GRAPHQL_POLICY,
+  secret: environment.payloadSecret,
   typescript: {
     outputFile: path.resolve(dirname, 'payload-types.ts'),
   },
   db: postgresAdapter({
+    disableCreateDatabase: true,
+    migrationDir: path.resolve(dirname, 'migrations'),
     pool: {
-      connectionString: process.env.DATABASE_URL || '',
+      connectionString: environment.databaseUri,
+      connectionTimeoutMillis: 2_000,
+      query_timeout: 2_000,
+      statement_timeout: 2_000,
     },
+    push: false,
   }),
   sharp,
-  plugins: [],
+  plugins: createStoragePlugins(environment),
 })

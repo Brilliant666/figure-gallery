@@ -1,20 +1,27 @@
-import { test, expect, Page } from '@playwright/test'
+import { expect, test } from '@playwright/test'
 
-test.describe('Frontend', () => {
-  let page: Page
+import { monitorLoopbackRequests } from './network-guard'
 
-  test.beforeAll(async ({ browser }, testInfo) => {
-    const context = await browser.newContext()
-    page = await context.newPage()
+test.describe('formal initialization surface', () => {
+  test('renders only the baseline placeholder', async ({ page }) => {
+    const assertNoExternalRequests = monitorLoopbackRequests(page)
+    await page.goto('/')
+    await expect(page).toHaveTitle('Figure Gallery')
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Figure Gallery')
+    await expect(page.getByText('formal initialization baseline', { exact: true })).toBeVisible()
+    await expect(page.locator('form, input')).toHaveCount(0)
+    assertNoExternalRequests()
   })
 
-  test('can go on homepage', async ({ page }) => {
-    await page.goto('http://localhost:3000')
+  test('exposes distinct live and ready probes', async ({ page }) => {
+    const assertNoExternalRequests = monitorLoopbackRequests(page)
+    const live = await page.goto('/api/health/live')
+    expect(live?.status()).toBe(200)
+    expect(JSON.parse(await page.locator('body').innerText())).toMatchObject({ status: 'ok' })
 
-    await expect(page).toHaveTitle(/Payload Blank Template/)
-
-    const heading = page.locator('h1').first()
-
-    await expect(heading).toHaveText('Welcome to your new project.')
+    const ready = await page.goto('/api/health/ready')
+    expect(ready?.status()).toBe(200)
+    expect(JSON.parse(await page.locator('body').innerText())).toMatchObject({ status: 'ok' })
+    assertNoExternalRequests()
   })
 })
