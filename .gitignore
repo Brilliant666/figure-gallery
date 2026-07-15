@@ -20,9 +20,17 @@ Desktop.ini
 
 # Logs, caches, and temporary files
 *.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.npm/
+.pnpm-store/
+.yarn/cache/
+.yarn/unplugged/
 .cache/
 tmp/
 temp/
+.tmp/
 coverage/
 htmlcov/
 .pytest_cache/
@@ -31,6 +39,8 @@ htmlcov/
 *.tsbuildinfo
 playwright-report/
 test-results/
+blob-report/
+playwright/.cache/
 
 # Local dependencies and generated output
 node_modules/
@@ -44,6 +54,10 @@ out/
 .next/
 staticfiles/
 media/
+uploads/
+local-media/
+.media/
+object-storage/
 
 # Archives, database dumps, and common large binaries
 *.zip
@@ -53,11 +67,21 @@ media/
 *.tar.gz
 *.tgz
 *.sql
+*.dump
+*.backup
+*.bak
+*.pgdump
 *.sqlite
 *.sqlite3
 *.db
 *.db-shm
 *.db-wal
+postgres-data/
+minio-data/
+docker-data/
+compose-data/
+.runtime/
+runtime-secrets/
 *.exe
 *.msi
 *.dmg

@@ -1,0 +1,33 @@
+# dependencies
+/node_modules/
+/.pnp/
+.pnp.js
+
+# runtime configuration and secrets
+.env*
+!.env.example
+*.pem
+
+# generated runtime data
+/.runtime/
+/media/
+
+# Next.js and production output
+/.next/
+/out/
+/build/
+/.vercel/
+
+# tests and reports
+/coverage/
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+
+# local tooling
+/.idea/
+.DS_Store
+*.tsbuildinfo
+next-env.d.ts
+npm-debug.log*

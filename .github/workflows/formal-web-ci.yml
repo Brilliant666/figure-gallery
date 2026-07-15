@@ -1,0 +1,381 @@
+name: Formal web CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: formal-web-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  pr00:
+    name: PR-00 initialization gates
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      APP_DIR: apps/web
+      CI: "true"
+      COMPOSE_ENV: infra/compose/.env
+      COMPOSE_FILE: infra/compose/compose.yml
+      NEXT_TELEMETRY_DISABLED: "1"
+
+    steps:
+      - name: Check out the exact source revision
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Configure Node 22.23.1 and the npm lock cache
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22.23.1
+          cache: npm
+          cache-dependency-path: apps/web/package-lock.json
+
+      - name: Generate masked runtime-only configuration
+        shell: bash
+        run: |
+          set -euo pipefail
+          payload_secret="$(openssl rand -hex 48)"
+          postgres_password="$(openssl rand -hex 24)"
+          s3_access_key="pr00-$(openssl rand -hex 8)"
+          s3_secret_key="$(openssl rand -hex 32)"
+          for value in "$payload_secret" "$postgres_password" "$s3_access_key" "$s3_secret_key"; do
+            echo "::add-mask::$value"
+          done
+
+          database_uri="postgresql://figure_gallery:${postgres_password}@127.0.0.1:55432/figure_gallery_pr00"
+          init_markers="$RUNNER_TEMP/pr00-init-markers"
+          pr00_summary="$RUNNER_TEMP/pr00-summary"
+          mkdir -p "$init_markers" "$pr00_summary"
+
+          {
+            echo "NODE_ENV=test"
+            echo "PAYLOAD_SECRET=$payload_secret"
+            echo "DATABASE_URI=$database_uri"
+            echo "PUBLIC_READ_ENABLED=false"
+            echo "MEDIA_STORAGE_DRIVER=s3"
+            echo "MEDIA_LOCAL_ROOT=$RUNNER_TEMP/pr00-local-media"
+            echo "S3_ENDPOINT=http://127.0.0.1:59000"
+            echo "S3_REGION=us-east-1"
+            echo "S3_BUCKET=figure-gallery-pr00"
+            echo "S3_ACCESS_KEY_ID=$s3_access_key"
+            echo "S3_SECRET_ACCESS_KEY=$s3_secret_key"
+            echo "S3_FORCE_PATH_STYLE=true"
+            echo "BUILD_VERSION=$GITHUB_SHA"
+            echo "INIT_MARKERS=$init_markers"
+            echo "PR00_SUMMARY=$pr00_summary"
+          } >> "$GITHUB_ENV"
+
+          printf '%s\n' \
+            'COMPOSE_PROJECT_NAME=figure-gallery-pr00' \
+            'POSTGRES_DB=figure_gallery_pr00' \
+            'POSTGRES_USER=figure_gallery' \
+            "POSTGRES_PASSWORD=$postgres_password" \
+            'POSTGRES_PORT=55432' \
+            "MINIO_ROOT_USER=$s3_access_key" \
+            "MINIO_ROOT_PASSWORD=$s3_secret_key" \
+            'MINIO_CONSOLE_PORT=59001' \
+            'S3_PORT=59000' \
+            'S3_BUCKET=figure-gallery-pr00' > "$COMPOSE_ENV"
+
+      - name: Verify pinned Node and npm toolchain
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(node --version)" = 'v22.23.1'
+          test "$(npm --version)" = '10.9.8'
+          npm config set registry https://registry.npmjs.org/ --location=user
+          registry="$(npm config get registry)"
+          test "${registry%/}" = 'https://registry.npmjs.org'
+
+      - name: Verify official scaffold provenance
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f docs/PR00_SCAFFOLD_PROVENANCE.md
+          scaffold_commit='00f5f5675b968832cd4cb14a9ef6648b0d1886f8'
+          scaffold_parent='34b717daffcd0035521c7b26497bf4716f9e4481'
+          test "$(git show -s --format='%s' "$scaffold_commit")" = 'chore: scaffold formal Payload application'
+          test "$(git rev-parse "$scaffold_commit^")" = "$scaffold_parent"
+          git merge-base --is-ancestor "$scaffold_commit" HEAD
+          grep -Fq "$scaffold_commit" docs/PR00_SCAFFOLD_PROVENANCE.md
+          if git show --format= --name-only "$scaffold_commit" | sed '/^$/d' | grep -Ev '^apps/web/' > "$RUNNER_TEMP/scaffold-outside-app.txt"; then
+            echo 'The scaffold-only commit changed paths outside apps/web.' >&2
+            exit 1
+          fi
+
+      - name: Enforce repository safety before install
+        run: node infra/scripts/check-repository-safety.mjs
+
+      - name: Enforce formal app and no-spike boundaries
+        shell: bash
+        run: |
+          set -euo pipefail
+          node infra/scripts/check-formal-boundaries.mjs
+          node infra/scripts/mark-init-gate.mjs INIT-01 "$INIT_MARKERS" "fixed create-payload-app scaffold commit, provenance, and no-spike boundary verified"
+          node infra/scripts/mark-init-gate.mjs INIT-03 "$INIT_MARKERS" "formal directory and dependency boundaries verified"
+
+      - name: Verify exact direct dependency and lock pins
+        run: node infra/scripts/check-dependency-pins.mjs
+
+      - name: Validate disposable Compose configuration
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker compose --env-file "$COMPOSE_ENV" -f "$COMPOSE_FILE" config --quiet
+          test "$(grep -c '127[.]0[.]0[.]1:${' "$COMPOSE_FILE")" -eq 3
+          test "$(grep -c '@sha256:' "$COMPOSE_FILE")" -eq 3
+          ! grep -E '(^|[[:space:]])image:[[:space:]]+[^@[:space:]]+:(latest|main|master)(@|[[:space:]]|$)' "$COMPOSE_FILE"
+
+      - name: Install from package-lock only
+        working-directory: apps/web
+        run: npm ci
+
+      - name: Record lock-install gate
+        run: node infra/scripts/mark-init-gate.mjs INIT-02 "$INIT_MARKERS" "exact pins, package-lock v3, and clean npm ci passed"
+
+      - name: Check peer dependency tree
+        working-directory: apps/web
+        run: npm ls --depth=0
+
+      - name: Summarize licenses and duplicate core packages
+        run: node infra/scripts/dependency-quality.mjs --output="$PR00_SUMMARY/dependency-quality.json"
+
+      - name: Audit production dependencies without mutation
+        shell: bash
+        working-directory: apps/web
+        run: |
+          set -euo pipefail
+          npm audit --omit=dev --audit-level=high --json > "$PR00_SUMMARY/npm-audit.json"
+
+      - name: Verify generated Payload Admin import map
+        shell: bash
+        working-directory: apps/web
+        run: |
+          set -euo pipefail
+          npm run generate:importmap
+          git diff --exit-code -- 'src/app/(payload)/admin/importMap.js'
+
+      - name: Typecheck the formal application
+        working-directory: apps/web
+        run: npm run typecheck
+
+      - name: Lint the formal application
+        working-directory: apps/web
+        run: npm run lint
+
+      - name: Run Vitest configuration and health contracts
+        shell: bash
+        working-directory: apps/web
+        run: |
+          set -euo pipefail
+          npm run test:unit
+          node ../../infra/scripts/mark-init-gate.mjs INIT-04 "$INIT_MARKERS" "environment schema, secret redaction, and production rejection tests passed"
+          node ../../infra/scripts/mark-init-gate.mjs INIT-08 "$INIT_MARKERS" "typecheck, ESLint, and Vitest passed"
+
+      - name: Remove any stale disposable services and volumes
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker compose --env-file "$COMPOSE_ENV" -f "$COMPOSE_FILE" down -v --remove-orphans
+
+      - name: Start loopback PostgreSQL and MinIO
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker compose --env-file "$COMPOSE_ENV" -f "$COMPOSE_FILE" up -d --wait --wait-timeout 120
+          docker compose --env-file "$COMPOSE_ENV" -f "$COMPOSE_FILE" ps --format json > "$RUNNER_TEMP/compose-services.json"
+          test "$(docker compose --env-file "$COMPOSE_ENV" -f "$COMPOSE_FILE" port postgres 5432)" = '127.0.0.1:55432'
+          test "$(docker compose --env-file "$COMPOSE_ENV" -f "$COMPOSE_FILE" port minio 9000)" = '127.0.0.1:59000'
+          test "$(docker compose --env-file "$COMPOSE_ENV" -f "$COMPOSE_FILE" port minio 9001)" = '127.0.0.1:59001'
+          timeout 15 bash -c 'until (echo > /dev/tcp/127.0.0.1/55432) >/dev/null 2>&1; do sleep 0.2; done'
+          curl --fail --silent --show-error http://127.0.0.1:59000/minio/health/live >/dev/null
+
+      - name: Apply migration to an empty PostgreSQL database
+        shell: bash
+        run: |
+          set -euo pipefail
+          (
+            cd "$APP_DIR"
+            npm run payload -- migrate
+          )
+          docker compose --env-file "$COMPOSE_ENV" -f "$COMPOSE_FILE" exec -T postgres \
+            psql -X -v ON_ERROR_STOP=1 -U figure_gallery -d figure_gallery_pr00 -Atc \
+            "SELECT md5(COALESCE(string_agg(entry, E'\\n' ORDER BY entry), '')) FROM (SELECT 'column|' || table_name || '|' || ordinal_position || '|' || column_name || '|' || data_type || '|' || is_nullable || '|' || COALESCE(column_default, '') AS entry FROM information_schema.columns WHERE table_schema = 'public' UNION ALL SELECT 'constraint|' || c.conname || '|' || pg_get_constraintdef(c.oid) FROM pg_constraint c JOIN pg_namespace n ON n.oid = c.connamespace WHERE n.nspname = 'public' UNION ALL SELECT 'index|' || tablename || '|' || indexname || '|' || indexdef FROM pg_indexes WHERE schemaname = 'public') state" \
+            > "$RUNNER_TEMP/schema-signature-fresh.txt"
+          docker compose --env-file "$COMPOSE_ENV" -f "$COMPOSE_FILE" exec -T postgres \
+            psql -X -v ON_ERROR_STOP=1 -U figure_gallery -d figure_gallery_pr00 -Atc \
+            'SELECT name FROM payload_migrations ORDER BY name' \
+            > "$RUNNER_TEMP/migrations-fresh.txt"
+          docker compose --env-file "$COMPOSE_ENV" -f "$COMPOSE_FILE" exec -T postgres \
+            psql -X -v ON_ERROR_STOP=1 -U figure_gallery -d figure_gallery_pr00 -Atc \
+            "SELECT name || '|' || batch::text FROM payload_migrations ORDER BY name" \
+            > "$RUNNER_TEMP/migration-state-fresh.txt"
+          test -s "$RUNNER_TEMP/schema-signature-fresh.txt"
+          test -s "$RUNNER_TEMP/migrations-fresh.txt"
+          test -s "$RUNNER_TEMP/migration-state-fresh.txt"
+          ! grep -Ev '^[^|]+\|[1-9][0-9]*$' "$RUNNER_TEMP/migration-state-fresh.txt"
+
+      - name: Repeat migration idempotently
+        shell: bash
+        run: |
+          set -euo pipefail
+          (
+            cd "$APP_DIR"
+            npm run payload -- migrate
+          )
+          docker compose --env-file "$COMPOSE_ENV" -f "$COMPOSE_FILE" exec -T postgres \
+            psql -X -v ON_ERROR_STOP=1 -U figure_gallery -d figure_gallery_pr00 -Atc \
+            "SELECT md5(COALESCE(string_agg(entry, E'\\n' ORDER BY entry), '')) FROM (SELECT 'column|' || table_name || '|' || ordinal_position || '|' || column_name || '|' || data_type || '|' || is_nullable || '|' || COALESCE(column_default, '') AS entry FROM information_schema.columns WHERE table_schema = 'public' UNION ALL SELECT 'constraint|' || c.conname || '|' || pg_get_constraintdef(c.oid) FROM pg_constraint c JOIN pg_namespace n ON n.oid = c.connamespace WHERE n.nspname = 'public' UNION ALL SELECT 'index|' || tablename || '|' || indexname || '|' || indexdef FROM pg_indexes WHERE schemaname = 'public') state" \
+            > "$RUNNER_TEMP/schema-signature-repeat.txt"
+          docker compose --env-file "$COMPOSE_ENV" -f "$COMPOSE_FILE" exec -T postgres \
+            psql -X -v ON_ERROR_STOP=1 -U figure_gallery -d figure_gallery_pr00 -Atc \
+            'SELECT name FROM payload_migrations ORDER BY name' \
+            > "$RUNNER_TEMP/migrations-repeat.txt"
+          docker compose --env-file "$COMPOSE_ENV" -f "$COMPOSE_FILE" exec -T postgres \
+            psql -X -v ON_ERROR_STOP=1 -U figure_gallery -d figure_gallery_pr00 -Atc \
+            "SELECT name || '|' || batch::text FROM payload_migrations ORDER BY name" \
+            > "$RUNNER_TEMP/migration-state-repeat.txt"
+          cmp "$RUNNER_TEMP/schema-signature-fresh.txt" "$RUNNER_TEMP/schema-signature-repeat.txt"
+          cmp "$RUNNER_TEMP/migrations-fresh.txt" "$RUNNER_TEMP/migrations-repeat.txt"
+          cmp "$RUNNER_TEMP/migration-state-fresh.txt" "$RUNNER_TEMP/migration-state-repeat.txt"
+          cp "$RUNNER_TEMP/schema-signature-repeat.txt" "$PR00_SUMMARY/postgres-schema-signature.txt"
+          cp "$RUNNER_TEMP/migration-state-repeat.txt" "$PR00_SUMMARY/postgres-migration-state.txt"
+
+      - name: Verify migration status and generated-file drift
+        shell: bash
+        run: |
+          set -euo pipefail
+          (
+            cd "$APP_DIR"
+            npm run payload -- migrate:status > "$RUNNER_TEMP/migration-status.txt"
+          )
+          grep -q 'Yes' "$RUNNER_TEMP/migration-status.txt"
+          ! grep -Eq '(^|[^[:alpha:]])No([^[:alpha:]]|$)|No migrations found' "$RUNNER_TEMP/migration-status.txt"
+          find apps/web/src/migrations -maxdepth 1 -type f -name '*.ts' ! -name 'index.ts' -printf '%f\n' \
+            | sed 's/\.ts$//' | sort > "$RUNNER_TEMP/migrations-expected.txt"
+          test -s "$RUNNER_TEMP/migrations-expected.txt"
+          diff -u "$RUNNER_TEMP/migrations-expected.txt" "$RUNNER_TEMP/migrations-repeat.txt"
+
+          drift_root="$RUNNER_TEMP/pr00-drift"
+          rm -rf "$drift_root"
+          mkdir -p "$drift_root"
+          git archive HEAD apps/web | tar -xf - -C "$drift_root"
+          ln -s "$GITHUB_WORKSPACE/apps/web/node_modules" "$drift_root/apps/web/node_modules"
+          find "$drift_root/apps/web/src/migrations" -maxdepth 1 -type f -print0 \
+            | sort -z | xargs -0 sha256sum > "$RUNNER_TEMP/migration-files-before.txt"
+          (
+            cd "$drift_root/apps/web"
+            npm run payload -- migrate:create ci_schema_drift --skip-empty
+          )
+          find "$drift_root/apps/web/src/migrations" -maxdepth 1 -type f -print0 \
+            | sort -z | xargs -0 sha256sum > "$RUNNER_TEMP/migration-files-after.txt"
+          cmp "$RUNNER_TEMP/migration-files-before.txt" "$RUNNER_TEMP/migration-files-after.txt"
+          git diff --exit-code -- apps/web/src/migrations apps/web/src/payload-types.ts
+          node infra/scripts/mark-init-gate.mjs INIT-05 "$INIT_MARKERS" "PostgreSQL fresh/repeat migration, status, and drift check passed"
+
+      - name: Build production standalone output
+        shell: bash
+        working-directory: apps/web
+        env:
+          NODE_ENV: production
+        run: |
+          set -euo pipefail
+          npm run build 2>&1 | tee "$RUNNER_TEMP/next-build.log"
+          ! grep -Eiq '(failed to copy traced files|missing[^[:cntrl:]]*trace|nft[^[:cntrl:]]*(missing|warning)|could not find[^[:cntrl:]]*sharp)' "$RUNNER_TEMP/next-build.log"
+
+      - name: Install project-local Playwright Chromium
+        working-directory: apps/web
+        run: npm exec playwright -- install --with-deps chromium
+
+      - name: Run browser smoke for health root and Admin boundary
+        shell: bash
+        working-directory: apps/web
+        run: |
+          set -euo pipefail
+          npm run test:e2e
+          node ../../infra/scripts/mark-init-gate.mjs INIT-10 "$INIT_MARKERS" "Playwright health, technical root, and unauthenticated Admin boundary passed"
+
+      - name: Verify clean standalone start restart and S3 outage
+        shell: bash
+        run: |
+          set -euo pipefail
+          node infra/scripts/standalone-smoke.mjs \
+            --app=apps/web \
+            --work="$RUNNER_TEMP/pr00-standalone" \
+            --output="$PR00_SUMMARY/standalone-smoke.json" \
+            --port=33100 \
+            --compose-file="$COMPOSE_FILE" \
+            --compose-env="$COMPOSE_ENV"
+          node infra/scripts/mark-init-gate.mjs INIT-06 "$INIT_MARKERS" "S3 configuration plus ready 503 and recovery 200 passed"
+          node infra/scripts/mark-init-gate.mjs INIT-07 "$INIT_MARKERS" "live/ready dependency and build-version semantics passed"
+          node infra/scripts/mark-init-gate.mjs INIT-09 "$INIT_MARKERS" "clean standalone start, static/Admin smoke, Sharp trace, and restart passed"
+
+      - name: Scan final tracked source and diff integrity
+        shell: bash
+        run: |
+          set -euo pipefail
+          node infra/scripts/check-repository-safety.mjs
+          node infra/scripts/check-formal-boundaries.mjs
+          node infra/scripts/check-dependency-pins.mjs
+          git diff --check
+          git diff --exit-code
+          test -z "$(git status --porcelain --untracked-files=no)"
+          if git rev-parse --verify origin/main >/dev/null 2>&1; then
+            git diff --check origin/main...HEAD
+          fi
+          node infra/scripts/mark-init-gate.mjs INIT-11 "$INIT_MARKERS" "credential, large, binary, database, media, build-output, and diff scans passed"
+          node infra/scripts/mark-init-gate.mjs INIT-12 "$INIT_MARKERS" "business Collections APIs pages are zero; server-side forbidden-host validation and loopback-only browser guard found zero forbidden-source requests"
+
+      - name: Assemble and verify INIT-01 through INIT-12
+        shell: bash
+        run: |
+          set -euo pipefail
+          node infra/scripts/verify-init-results.mjs \
+            --markers="$INIT_MARKERS" \
+            --output="$PR00_SUMMARY/initialization-results.json"
+
+      - name: Verify redacted summary artifact safety
+        id: summary-safety
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "${PR00_SUMMARY:-}" || ! -d "$PR00_SUMMARY" || -z "$(find "$PR00_SUMMARY" -type f -print -quit)" ]]; then
+            echo 'No CI summaries were produced before the earlier failure; nothing will be uploaded.'
+            echo 'safe=false' >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          node infra/scripts/check-ci-summaries.mjs "$PR00_SUMMARY"
+          echo 'safe=true' >> "$GITHUB_OUTPUT"
+
+      - name: Upload small redacted CI summaries
+        if: always() && steps.summary-safety.outputs.safe == 'true'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: pr00-initialization-summary-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/pr00-summary
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Clean disposable processes secrets objects and volumes
+        if: always()
+        shell: bash
+        run: |
+          set +e
+          cleanup_status=0
+          if [[ -f "$COMPOSE_ENV" ]]; then
+            docker compose --env-file "$COMPOSE_ENV" -f "$COMPOSE_FILE" down -v --remove-orphans || cleanup_status=$?
+          fi
+          rm -f "$COMPOSE_ENV"
+          rm -rf "$RUNNER_TEMP/pr00-standalone" "$RUNNER_TEMP/pr00-local-media" "$INIT_MARKERS"
+          exit "$cleanup_status"
