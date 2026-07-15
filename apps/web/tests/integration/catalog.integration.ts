@@ -294,6 +294,15 @@ try {
   )
   pass('work-duplicate-warning', 'same normalized name saved with a non-blocking Admin warning')
 
+  const logsBeforeReplayConflict = await payload.count({
+    collection: 'operation-logs',
+    overrideAccess: true,
+  })
+  check(
+    logsBeforeReplayConflict.totalDocs === logsAfterSeed.totalDocs + 2,
+    'Both same-name Work creations must append their own OperationLog.',
+  )
+
   const firstFixtureCommand = firstSeed.commands[0]
   check(
     firstFixtureCommand?.type === 'createWork',
@@ -310,7 +319,7 @@ try {
     overrideAccess: true,
   })
   check(
-    logsAfterReplayConflict.totalDocs === logsAfterSeed.totalDocs,
+    logsAfterReplayConflict.totalDocs === logsBeforeReplayConflict.totalDocs,
     'A changed replay must not append another OperationLog.',
   )
   pass(
