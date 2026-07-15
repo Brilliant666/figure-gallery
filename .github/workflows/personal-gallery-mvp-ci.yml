@@ -25,10 +25,6 @@ jobs:
       HPOI_WRITTEN_PERMISSION_CONFIRMED: "false"
       PERSONAL_GALLERY_HOST: 127.0.0.1
       PERSONAL_GALLERY_PORT: 4317
-      PERSONAL_GALLERY_ROOT: ${{ runner.temp }}/personal-gallery-runtime
-      MVP_BROWSER_RESULT: ${{ runner.temp }}/personal-gallery-summary/browser-results.json
-      MVP_CI_SUMMARY: ${{ runner.temp }}/personal-gallery-summary/ci-results.json
-      MVP_NETWORK_RESULT_DIR: ${{ runner.temp }}/personal-gallery-summary/network
 
     steps:
       - name: Check out the exact source revision
@@ -36,6 +32,17 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
+
+      - name: Set isolated runtime and summary paths
+        shell: bash
+        run: |
+          set -euo pipefail
+          {
+            echo "PERSONAL_GALLERY_ROOT=${RUNNER_TEMP}/personal-gallery-runtime"
+            echo "MVP_BROWSER_RESULT=${RUNNER_TEMP}/personal-gallery-summary/browser-results.json"
+            echo "MVP_CI_SUMMARY=${RUNNER_TEMP}/personal-gallery-summary/ci-results.json"
+            echo "MVP_NETWORK_RESULT_DIR=${RUNNER_TEMP}/personal-gallery-summary/network"
+          } >> "$GITHUB_ENV"
 
       - name: Configure Node 22.23.1 and independent npm lock cache
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
