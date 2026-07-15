@@ -1,9 +1,11 @@
 # Figure Gallery formal web baseline
 
 `apps/web` is the formal Payload CMS and Next.js application boundary created from the
-official `create-payload-app@3.86.0` blank template. PR-00 establishes infrastructure only;
-it does not implement Figure Gallery domain collections, candidate ingestion, review,
-media lifecycle, search, gallery, or public-read features.
+official `create-payload-app@3.86.0` blank template. PR-00 is merged. The current PR-01
+Draft candidate adds only the core catalog domain: eight read-only business Collections,
+audited catalog commands, a minimal Catalog Operations view, and the first catalog
+migration. Candidate ingestion, review, formal media, merge/split/undo, search, gallery,
+and public-read features remain unimplemented.
 
 ## Runtime baseline
 
@@ -64,13 +66,37 @@ and readiness fails when the checked-in migration set and database history diffe
 server.js`, loads the traced Sharp native runtime, and processes a one-pixel in-memory PNG.
   `next dev` is not a production start path.
 
-The only Payload collections in PR-00 are the technical authenticated `users` collection
-and a private infrastructure-only `media` upload collection. Both deny anonymous CRUD.
-They are not Figure Gallery domain models or the formal media lifecycle.
+The PR-00 technical authenticated `users` Collection and private infrastructure-only
+`media` upload Collection remain unchanged. They are not Figure Gallery domain models or
+the formal media lifecycle.
+
+PR-01 adds these business Collections:
+
+- `works`, `characters`, `character-aliases`, and `manufacturers`;
+- `figure-prototypes`, `figure-prototype-characters`, and `figure-versions`;
+- append-only `operation-logs`.
+
+Authenticated Admin users may list and read them, but generic REST, GraphQL, Local API,
+and Admin create/update/delete paths are denied. Formal writes enter through the explicit
+`POST /api/admin/catalog/commands` adapter and the PostgreSQL-transactional services in
+`src/domain/catalog/`. The custom `/admin/catalog-operations` view calls that command
+adapter; it never saves a Collection directly. Every successful mutation records a
+non-reversible PR-01 OperationLog in the same transaction.
+
+Payload 3.86.0 supports adapter-wide UUID IDs, but the merged PR-00 technical tables use
+serial IDs. PR-01 therefore preserves those technical IDs and adds an immutable, unique
+UUID `stableId` to each catalog entity/relation; commands and audit scope expose only the
+stable identity. See [the identity decision](../../docs/PR01_IDENTITY_IMPLEMENTATION.md).
+
+The checked-in `20260715_151314_pr01_core_catalog` migration creates the PR-01 tables,
+enums, foreign keys, partial unique indexes, and CHECK constraints. Its `down` path is
+intended only for an empty/non-production PR-01 test database and returns to the PR-00
+schema; final fresh/repeat/down/up/drift results belong to CI evidence, not this README.
 
 ## Repository boundary
 
 Formal code must not import, execute, package, or read from `research/` or `spikes/` at
 runtime. No spike code was copied into this application. Hpoi is manual reference only:
-the app, tests, health probes, and tooling must make zero Hpoi requests. Do not add product
-features here until a separately authorized PR-01 task.
+the app, tests, health probes, and tooling must make zero Hpoi requests. PR-01 must stop
+after its core catalog gates; do not add Candidate/Source/Review/media/public features or
+start PR-02 without separate authorization.

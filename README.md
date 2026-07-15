@@ -4,7 +4,9 @@ Figure Gallery 是一个以“角色—官方手办原型—主图”为核心�
 
 ## 当前状态
 
-项目处于 **PR-00 正式工程初始化** 阶段。仓库已从固定版本的 Payload 官方 blank 脚手架创建 `apps/web`，并正在建立依赖锁定、环境配置、health、空 baseline migration、测试与 CI 等技术基线。该基线不等于业务产品：Figure Gallery 的正式业务 Collection、API、审核流程、搜索和图库仍未实现。
+PR-00 正式工程基线已经通过普通 Merge commit 进入 `main`。当前 `feat/pr-01-core-catalog` 是 **PR-01 Draft 候选实现**：它只增加核心目录 Collection、框架无关合同、受控领域命令、最小审计骨架、只读 Admin 与 PostgreSQL migration，仍须通过最终 Formal web CI 和人工审查，尚未合并。
+
+该实现仍不等于可用产品：来源/候选池、审核工作流、正式媒体与主图、merge/split/undo、公开搜索和图库均未实现，PR-02 尚未开始。
 
 已接受的技术底座：
 
@@ -26,8 +28,10 @@ Figure Gallery 是一个以“角色—官方手办原型—主图”为核心�
 
 ## 仓库目录
 
-- `apps/web/`：由 Payload 官方脚手架干净生成的正式集成应用技术骨架；PR-00 不包含 Figure Gallery 业务实现。
-- `packages/`：规划中的框架无关协议、候选客户端、媒体契约与合成测试 fixture 边界；PR-00 仅建立说明，不提供可运行包。
+- `apps/web/`：由 Payload 官方脚手架干净生成的正式集成应用；PR-01 在此加入目录 Collection、领域命令端点、Catalog Operations 与 migration。
+- `packages/domain-contracts/`：框架无关的 PR-01 枚举、命令、DTO、规范化和不变量。
+- `packages/test-fixtures/`：只含完全虚构、可幂等重放的 PR-01 目录 fixture；不含图片或外部 URL。
+- `packages/candidate-client/`、`packages/media-contracts/`：后续阶段边界；PR-01 未实现其业务能力。
 - `infra/`：本地/CI 非生产配置、脚本和示例；不保存生产凭据或部署状态。
 - `docs/`：正式产品蓝图、架构、安全、运维和交付计划。
 - `research/`：历史研究结论与验证报告，不作为运行时输入。
@@ -47,13 +51,15 @@ Figure Gallery 是一个以“角色—官方手办原型—主图”为核心�
 - [交付路线](docs/DELIVERY_ROADMAP.md)
 - [正式初始化计划](docs/FORMAL_INITIALIZATION_PLAN.md)
 - [PR-00 脚手架溯源](docs/PR00_SCAFFOLD_PROVENANCE.md)
+- [PR-01 核心目录实现](docs/PR01_CORE_CATALOG_IMPLEMENTATION.md)
+- [PR-01 业务身份实现](docs/PR01_IDENTITY_IMPLEMENTATION.md)
 - [需求追踪矩阵](docs/TRACEABILITY_MATRIX.md)
 - [技术决策 ADR](research/TECH_STACK_DECISION.md)
 
 ## 来源与 Hpoi 边界
 
-Hpoi 当前只可作为人工参考，不得自动访问；未取得明确书面许可前，不得编写正式 Hpoi adapter。会员购和厂商官网也只作人工补充与核验，不自动访问。第一阶段资料只能人工录入、人工粘贴来源 URL、从明确允许的离线文件导入，或由未来获得授权的 Source Adapter 提交。所有来源数据必须先进入候选池，不能自动覆盖正式数据或正式主图。
+Hpoi 当前只可作为人工参考，不得自动访问；正式代码与 CI 必须保持 Hpoi 请求数为 0。未取得明确书面许可前，不得编写正式 Hpoi adapter。会员购和厂商官网也只作人工补充与核验，不自动访问。第一阶段资料只能人工录入、人工粘贴来源 URL、从明确允许的离线文件导入，或由未来获得授权的 Source Adapter 提交。所有来源数据必须先进入候选池，不能自动覆盖正式数据或正式主图。
 
 ## 开发状态
 
-当前 PR-00 只建立正式 Payload/Next.js 技术基线，没有 Figure Gallery 业务数据模型、正式业务 API、公开搜索、图库或生产部署。正式变化必须使用任务独立分支和独立 PR；未经明确授权不得合并或部署。PR-00 达到停止条件后必须停止；按 [PR-00—PR-08 交付路线](docs/DELIVERY_ROADMAP.md)开始 PR-01 需要新的明确授权。
+PR-00 已完成并合并；PR-01 正在独立 Draft 分支实现核心目录，最终门禁结果以 `research/evidence/pr01/catalog-results.json` 和对应 Formal web CI 为准，README 不预先宣称通过。正式变化必须使用任务独立分支和独立 PR；未经明确授权不得合并或部署。PR-01 达到停止条件后必须停止，并按 [PR-00—PR-08 交付路线](docs/DELIVERY_ROADMAP.md)等待新的 PR-02 授权。

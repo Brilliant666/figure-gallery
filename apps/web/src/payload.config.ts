@@ -6,8 +6,11 @@ import sharp from 'sharp'
 
 import { Users } from './collections/Users'
 import { buildTechnicalMediaCollection } from './collections/Media'
-import { GRAPHQL_POLICY } from './config/payload-policy'
+import { CatalogCollections } from './collections/CatalogCollections'
+import { ADMIN_AVATAR_POLICY, GRAPHQL_POLICY } from './config/payload-policy'
+import { applyCatalogForeignKeyPolicy } from './db/catalog-foreign-key-policy'
 import { loadRuntimeEnvironment } from './config/runtime-environment'
+import { CatalogCommandEndpoint } from './domain/catalog'
 import { createStoragePlugins } from './storage/plugin'
 
 const filename = fileURLToPath(import.meta.url)
@@ -17,18 +20,31 @@ const localMediaRoot = environment.mediaLocalRoot ?? path.resolve(dirname, '../.
 
 export default buildConfig({
   admin: {
+    avatar: ADMIN_AVATAR_POLICY,
     user: Users.slug,
+    components: {
+      beforeNavLinks: ['/admin/catalog/CatalogOperationsNavLink#CatalogOperationsNavLink'],
+      views: {
+        catalogOperations: {
+          Component: '/admin/catalog/CatalogOperationsView#CatalogOperationsView',
+          exact: true,
+          path: '/catalog-operations',
+        },
+      },
+    },
     importMap: {
       baseDir: path.resolve(dirname),
     },
   },
-  collections: [Users, buildTechnicalMediaCollection(localMediaRoot)],
+  collections: [Users, buildTechnicalMediaCollection(localMediaRoot), ...CatalogCollections],
+  endpoints: [CatalogCommandEndpoint],
   graphQL: GRAPHQL_POLICY,
   secret: environment.payloadSecret,
   typescript: {
     outputFile: path.resolve(dirname, 'payload-types.ts'),
   },
   db: postgresAdapter({
+    beforeSchemaInit: [applyCatalogForeignKeyPolicy],
     disableCreateDatabase: true,
     migrationDir: path.resolve(dirname, 'migrations'),
     pool: {

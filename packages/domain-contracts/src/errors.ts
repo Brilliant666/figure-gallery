@@ -1,0 +1,59 @@
+export const CATALOG_ERROR_CODES = [
+  "ADMIN_AUTHENTICATION_REQUIRED",
+  "ADMIN_AUTHORIZATION_REQUIRED",
+  "CATALOG_COMMAND_INVALID",
+  "CATALOG_DOMAIN_WRITE_REQUIRED",
+  "CATALOG_ENTITY_NOT_FOUND",
+  "CATALOG_ENTITY_DELETED",
+  "CATALOG_ENTITY_NOT_DELETED",
+  "CATALOG_REASON_REQUIRED",
+  "CATALOG_STABLE_ID_INVALID",
+  "CATALOG_STABLE_ID_IMMUTABLE",
+  "CATALOG_VERSION_CONFLICT",
+  "CATALOG_TRANSITION_FORBIDDEN",
+  "CATALOG_OPERATION_ID_CONFLICT",
+  "CATALOG_OPERATION_ID_INVALID",
+  "CATALOG_RELATION_INVALID",
+  "CHARACTER_ALIAS_DUPLICATE",
+  "CHARACTER_ALIAS_PREFERRED_CONFLICT",
+  "CHARACTER_IN_USE_BY_ELIGIBLE_PROTOTYPE",
+  "MANUFACTURER_DUPLICATE",
+  "MANUFACTURER_NOT_ACTIVE",
+  "MANUFACTURER_IN_USE_BY_ELIGIBLE_PROTOTYPE",
+  "PROTOTYPE_CHARACTER_REQUIRED",
+  "PROTOTYPE_PRIMARY_CHARACTER_REQUIRED",
+  "PROTOTYPE_GROUP_FLAG_INVALID",
+  "PROTOTYPE_AUTHORIZATION_REQUIRED",
+  "PROTOTYPE_AUTHORIZATION_REJECTED",
+  "PROTOTYPE_ELIGIBILITY_NOT_MET",
+  "PROTOTYPE_ELIGIBILITY_WOULD_BE_BROKEN",
+  "PROTOTYPE_EXCLUSION_REASON_REQUIRED",
+  "FIGURE_VERSION_DUPLICATE",
+  "GRAY_MODEL_COMPLETENESS_INVALID",
+  "FIGURE_TYPE_NOT_SUPPORTED",
+  "FORMAL_MAIN_IMAGE_CAPABILITY_NOT_AVAILABLE",
+  "MERGE_CAPABILITY_NOT_AVAILABLE",
+] as const;
+
+export type CatalogErrorCode = (typeof CATALOG_ERROR_CODES)[number];
+export type CatalogErrorKind =
+  "authentication" | "authorization" | "conflict" | "not_found" | "validation";
+
+export class CatalogDomainError extends Error {
+  readonly code: CatalogErrorCode;
+  readonly details?: Readonly<Record<string, unknown>>;
+  readonly kind: CatalogErrorKind;
+
+  constructor(
+    code: CatalogErrorCode,
+    message: string,
+    kind: CatalogErrorKind = "validation",
+    details?: Readonly<Record<string, unknown>>,
+  ) {
+    super(message);
+    this.name = "CatalogDomainError";
+    this.code = code;
+    this.kind = kind;
+    this.details = details;
+  }
+}

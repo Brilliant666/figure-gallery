@@ -69,6 +69,14 @@ export interface Config {
   collections: {
     users: User;
     media: Media;
+    works: Work;
+    characters: Character;
+    'character-aliases': CharacterAlias;
+    manufacturers: Manufacturer;
+    'figure-prototypes': FigurePrototype;
+    'figure-prototype-characters': FigurePrototypeCharacter;
+    'figure-versions': FigureVersion;
+    'operation-logs': OperationLog;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
@@ -78,6 +86,14 @@ export interface Config {
   collectionsSelect: {
     users: UsersSelect<false> | UsersSelect<true>;
     media: MediaSelect<false> | MediaSelect<true>;
+    works: WorksSelect<false> | WorksSelect<true>;
+    characters: CharactersSelect<false> | CharactersSelect<true>;
+    'character-aliases': CharacterAliasesSelect<false> | CharacterAliasesSelect<true>;
+    manufacturers: ManufacturersSelect<false> | ManufacturersSelect<true>;
+    'figure-prototypes': FigurePrototypesSelect<false> | FigurePrototypesSelect<true>;
+    'figure-prototype-characters': FigurePrototypeCharactersSelect<false> | FigurePrototypeCharactersSelect<true>;
+    'figure-versions': FigureVersionsSelect<false> | FigureVersionsSelect<true>;
+    'operation-logs': OperationLogsSelect<false> | OperationLogsSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
@@ -164,6 +180,237 @@ export interface Media {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "works".
+ */
+export interface Work {
+  id: number;
+  stableId: string;
+  displayName: string;
+  originalName?: string | null;
+  normalizedName: string;
+  workType: 'animation' | 'game' | 'comic' | 'novel' | 'other';
+  publicationStatus: 'draft' | 'published' | 'hidden';
+  lockVersion: number;
+  createdBy: number | User;
+  updatedBy: number | User;
+  deletedAt?: string | null;
+  deletedBy?: (number | null) | User;
+  deleteReason?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "characters".
+ */
+export interface Character {
+  id: number;
+  stableId: string;
+  work?: (number | null) | Work;
+  displayName: string;
+  nameZh?: string | null;
+  nameJa?: string | null;
+  nameEn?: string | null;
+  normalizedName: string;
+  searchDocument: string;
+  status: 'active' | 'matching_pending' | 'hidden';
+  lockVersion: number;
+  createdBy: number | User;
+  updatedBy: number | User;
+  deletedAt?: string | null;
+  deletedBy?: (number | null) | User;
+  deleteReason?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "character-aliases".
+ */
+export interface CharacterAlias {
+  id: number;
+  stableId: string;
+  character: number | Character;
+  value: string;
+  normalizedValue: string;
+  locale?: string | null;
+  aliasType: 'official' | 'translation' | 'common' | 'romanization' | 'source_only';
+  isPreferred: boolean;
+  createdBy: number | User;
+  deletedAt?: string | null;
+  deletedBy?: (number | null) | User;
+  deleteReason?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "manufacturers".
+ */
+export interface Manufacturer {
+  id: number;
+  stableId: string;
+  canonicalName: string;
+  normalizedName: string;
+  aliases?:
+    | {
+        value: string;
+        normalizedValue: string;
+        locale?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  officialSiteUrl?: string | null;
+  authorizationNote?: string | null;
+  sourceEvidence?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  status: 'draft' | 'active' | 'hidden';
+  lockVersion: number;
+  createdBy: number | User;
+  updatedBy: number | User;
+  deletedAt?: string | null;
+  deletedBy?: (number | null) | User;
+  deleteReason?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "figure-prototypes".
+ */
+export interface FigurePrototype {
+  id: number;
+  stableId: string;
+  title: string;
+  normalizedTitle: string;
+  work?: (number | null) | Work;
+  manufacturer: number | Manufacturer;
+  figureType: 'scale' | 'prize';
+  scale?: string | null;
+  costumeText?: string | null;
+  isGroup: boolean;
+  adultEntryFlag: boolean;
+  authorizationStatus: 'pending' | 'official' | 'authorized_third_party' | 'rejected';
+  authorizationEvidence?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  authorizationReason?: string | null;
+  authorizationReviewedBy?: (number | null) | User;
+  authorizationReviewedAt?: string | null;
+  inclusionStatus: 'pending' | 'eligible' | 'excluded';
+  inclusionReason?: string | null;
+  inclusionReviewedBy?: (number | null) | User;
+  inclusionReviewedAt?: string | null;
+  publicationStatus: 'draft' | 'published' | 'hidden' | 'merged' | 'archived';
+  mergedInto?: (number | null) | FigurePrototype;
+  lockVersion: number;
+  createdBy: number | User;
+  updatedBy: number | User;
+  archivedAt?: string | null;
+  archivedBy?: (number | null) | User;
+  archiveReason?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "figure-prototype-characters".
+ */
+export interface FigurePrototypeCharacter {
+  id: number;
+  stableId: string;
+  prototype: number | FigurePrototype;
+  character: number | Character;
+  displayOrder: number;
+  role: 'primary' | 'secondary' | 'companion';
+  createdBy: number | User;
+  deletedAt?: string | null;
+  deletedBy?: (number | null) | User;
+  deleteReason?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "figure-versions".
+ */
+export interface FigureVersion {
+  id: number;
+  stableId: string;
+  prototype: number | FigurePrototype;
+  name: string;
+  normalizedVersionKey: string;
+  kind: 'regular' | 'deluxe' | 'reissue' | 'bonus' | 'recolor' | 'channel-exclusive';
+  channelOrDistributorLabel?: string | null;
+  releaseStatus:
+    'announced' | 'gray_prototype' | 'painted_prototype' | 'preorder' | 'released' | 'cancelled' | 'unknown';
+  grayModelCompleteness: 'not_applicable' | 'complete' | 'partial' | 'unknown';
+  releaseDate?: string | null;
+  skuOrCode?: string | null;
+  notes?: string | null;
+  lockVersion: number;
+  createdBy: number | User;
+  updatedBy: number | User;
+  deletedAt?: string | null;
+  deletedBy?: (number | null) | User;
+  deleteReason?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "operation-logs".
+ */
+export interface OperationLog {
+  id: number;
+  operationId: string;
+  actorUser?: (number | null) | User;
+  actorType: 'admin' | 'system';
+  dutyContext: 'catalog_maintenance' | 'catalog_review';
+  action: string;
+  scopeType: string;
+  scopeStableId: string;
+  reason: string;
+  expectedVersion?: number | null;
+  resultVersion: number;
+  beforeSnapshot?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  afterSnapshot?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  requestDigest: string;
+  reversible: boolean;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv".
  */
 export interface PayloadKv {
@@ -193,6 +440,38 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'media';
         value: number | Media;
+      } | null)
+    | ({
+        relationTo: 'works';
+        value: number | Work;
+      } | null)
+    | ({
+        relationTo: 'characters';
+        value: number | Character;
+      } | null)
+    | ({
+        relationTo: 'character-aliases';
+        value: number | CharacterAlias;
+      } | null)
+    | ({
+        relationTo: 'manufacturers';
+        value: number | Manufacturer;
+      } | null)
+    | ({
+        relationTo: 'figure-prototypes';
+        value: number | FigurePrototype;
+      } | null)
+    | ({
+        relationTo: 'figure-prototype-characters';
+        value: number | FigurePrototypeCharacter;
+      } | null)
+    | ({
+        relationTo: 'figure-versions';
+        value: number | FigureVersion;
+      } | null)
+    | ({
+        relationTo: 'operation-logs';
+        value: number | OperationLog;
       } | null);
   globalSlug?: string | null;
   user: {
@@ -274,6 +553,196 @@ export interface MediaSelect<T extends boolean = true> {
   height?: T;
   focalX?: T;
   focalY?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "works_select".
+ */
+export interface WorksSelect<T extends boolean = true> {
+  stableId?: T;
+  displayName?: T;
+  originalName?: T;
+  normalizedName?: T;
+  workType?: T;
+  publicationStatus?: T;
+  lockVersion?: T;
+  createdBy?: T;
+  updatedBy?: T;
+  deletedAt?: T;
+  deletedBy?: T;
+  deleteReason?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "characters_select".
+ */
+export interface CharactersSelect<T extends boolean = true> {
+  stableId?: T;
+  work?: T;
+  displayName?: T;
+  nameZh?: T;
+  nameJa?: T;
+  nameEn?: T;
+  normalizedName?: T;
+  searchDocument?: T;
+  status?: T;
+  lockVersion?: T;
+  createdBy?: T;
+  updatedBy?: T;
+  deletedAt?: T;
+  deletedBy?: T;
+  deleteReason?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "character-aliases_select".
+ */
+export interface CharacterAliasesSelect<T extends boolean = true> {
+  stableId?: T;
+  character?: T;
+  value?: T;
+  normalizedValue?: T;
+  locale?: T;
+  aliasType?: T;
+  isPreferred?: T;
+  createdBy?: T;
+  deletedAt?: T;
+  deletedBy?: T;
+  deleteReason?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "manufacturers_select".
+ */
+export interface ManufacturersSelect<T extends boolean = true> {
+  stableId?: T;
+  canonicalName?: T;
+  normalizedName?: T;
+  aliases?:
+    | T
+    | {
+        value?: T;
+        normalizedValue?: T;
+        locale?: T;
+        id?: T;
+      };
+  officialSiteUrl?: T;
+  authorizationNote?: T;
+  sourceEvidence?: T;
+  status?: T;
+  lockVersion?: T;
+  createdBy?: T;
+  updatedBy?: T;
+  deletedAt?: T;
+  deletedBy?: T;
+  deleteReason?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "figure-prototypes_select".
+ */
+export interface FigurePrototypesSelect<T extends boolean = true> {
+  stableId?: T;
+  title?: T;
+  normalizedTitle?: T;
+  work?: T;
+  manufacturer?: T;
+  figureType?: T;
+  scale?: T;
+  costumeText?: T;
+  isGroup?: T;
+  adultEntryFlag?: T;
+  authorizationStatus?: T;
+  authorizationEvidence?: T;
+  authorizationReason?: T;
+  authorizationReviewedBy?: T;
+  authorizationReviewedAt?: T;
+  inclusionStatus?: T;
+  inclusionReason?: T;
+  inclusionReviewedBy?: T;
+  inclusionReviewedAt?: T;
+  publicationStatus?: T;
+  mergedInto?: T;
+  lockVersion?: T;
+  createdBy?: T;
+  updatedBy?: T;
+  archivedAt?: T;
+  archivedBy?: T;
+  archiveReason?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "figure-prototype-characters_select".
+ */
+export interface FigurePrototypeCharactersSelect<T extends boolean = true> {
+  stableId?: T;
+  prototype?: T;
+  character?: T;
+  displayOrder?: T;
+  role?: T;
+  createdBy?: T;
+  deletedAt?: T;
+  deletedBy?: T;
+  deleteReason?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "figure-versions_select".
+ */
+export interface FigureVersionsSelect<T extends boolean = true> {
+  stableId?: T;
+  prototype?: T;
+  name?: T;
+  normalizedVersionKey?: T;
+  kind?: T;
+  channelOrDistributorLabel?: T;
+  releaseStatus?: T;
+  grayModelCompleteness?: T;
+  releaseDate?: T;
+  skuOrCode?: T;
+  notes?: T;
+  lockVersion?: T;
+  createdBy?: T;
+  updatedBy?: T;
+  deletedAt?: T;
+  deletedBy?: T;
+  deleteReason?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "operation-logs_select".
+ */
+export interface OperationLogsSelect<T extends boolean = true> {
+  operationId?: T;
+  actorUser?: T;
+  actorType?: T;
+  dutyContext?: T;
+  action?: T;
+  scopeType?: T;
+  scopeStableId?: T;
+  reason?: T;
+  expectedVersion?: T;
+  resultVersion?: T;
+  beforeSnapshot?: T;
+  afterSnapshot?: T;
+  requestDigest?: T;
+  reversible?: T;
+  updatedAt?: T;
+  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema

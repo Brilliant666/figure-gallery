@@ -44,21 +44,30 @@ const runtimeExtensions = new Set([
   ".yaml",
   ".yml",
 ]);
-const businessCollections = [
-  "Work",
-  "Character",
-  "Manufacturer",
-  "FigurePrototype",
-  "FigureVersion",
+const postPr01BusinessTypes = [
   "CandidateClient",
   "SourceRecord",
   "CandidateRecord",
   "CandidateImage",
   "MediaAsset",
   "ReviewWorkItem",
-  "OperationLog",
   "SystemSetting",
 ];
+const allowedCollectionFiles = new Set([
+  "CatalogCollections.ts",
+  "Media.ts",
+  "Users.ts",
+  "catalog/Character.ts",
+  "catalog/CharacterAlias.ts",
+  "catalog/FigurePrototype.ts",
+  "catalog/FigurePrototypeCharacter.ts",
+  "catalog/FigureVersion.ts",
+  "catalog/Manufacturer.ts",
+  "catalog/OperationLog.ts",
+  "catalog/Work.ts",
+  "catalog/common.ts",
+  "catalog/index.ts",
+]);
 const forbiddenSourceDomain = `${["h", "p", "o", "i"].join("")}.net`;
 
 function walk(root) {
@@ -122,10 +131,10 @@ for (const path of productionFiles) {
   if (!readableExtensions.has(extname(path).toLowerCase())) continue;
   const normalized = toPosix(relative(repositoryRoot, path));
   const content = readFileSync(path, "utf8");
-  for (const name of businessCollections) {
+  for (const name of postPr01BusinessTypes) {
     if (new RegExp(`\\b${name}\\b`).test(content)) {
       errors.push(
-        `${normalized}: PR-00 must not implement business type ${name}`,
+        `${normalized}: PR-02 or later business type ${name} is outside PR-01`,
       );
     }
   }
@@ -136,7 +145,7 @@ for (const path of productionFiles) {
   }
   if (/\bprodMigrations\b/.test(content)) {
     errors.push(
-      `${normalized}: prodMigrations must not replace explicit PR-00 migration execution`,
+      `${normalized}: prodMigrations must not replace explicit formal migration execution`,
     );
   }
 }
@@ -153,9 +162,9 @@ if (existsSync(collectionsRoot)) {
     .filter((path) => /\.[cm]?[jt]sx?$/.test(path))
     .map((path) => toPosix(relative(collectionsRoot, path)));
   for (const collectionFile of collectionFiles) {
-    if (!["Users.ts", "Media.ts"].includes(collectionFile)) {
+    if (!allowedCollectionFiles.has(collectionFile)) {
       errors.push(
-        `apps/web/src/collections/${collectionFile}: only technical Users and Media collections are allowed in PR-00`,
+        `apps/web/src/collections/${collectionFile}: collection is outside the PR-01 catalog boundary`,
       );
     }
   }
@@ -192,13 +201,13 @@ for (const obsoleteFile of [
 ]) {
   if (existsSync(join(repositoryRoot, obsoleteFile))) {
     errors.push(
-      `${obsoleteFile}: formal PR-00 uses npm and infra/compose; remove the generic scaffold artifact`,
+      `${obsoleteFile}: the formal app uses npm and infra/compose; remove the generic scaffold artifact`,
     );
   }
 }
 if (existsSync(join(repositoryRoot, "package.json"))) {
   errors.push(
-    "package.json: a repository-root workspace is outside the approved PR-00 layout",
+    "package.json: a repository-root workspace is outside the approved formal layout",
   );
 }
 

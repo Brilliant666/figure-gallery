@@ -1,8 +1,8 @@
-# 正式产品领域模型蓝图
+# 正式产品领域模型（PR-01 核心目录实现基线）
 
 ## 1. 文档状态与适用范围
 
-本文是正式项目初始化前的规范性领域蓝图，不是数据库迁移、Payload Collection 配置或可直接部署的实现。后续正式项目必须从干净脚手架建立，并以本文约束业务模型、写入边界、事务、审计和管理界面。技术底座及运行边界见 [技术选型 ADR](../research/TECH_STACK_DECISION.md)，媒体对象的跨存储生命周期见 [媒体生命周期](MEDIA_LIFECYCLE.md)。
+本文是正式产品的规范性领域模型。PR-00 已从官方脚手架建立并合并；PR-01 Draft 正在把核心目录部分映射为 Payload Collection、PostgreSQL migration、领域服务和最小审计，但最终门禁仍以对应 CI 机器证据为准。PR-01 的实际字段、约束与临时边界见 [核心目录实现](PR01_CORE_CATALOG_IMPLEMENTATION.md)，业务身份映射见 [PR-01 业务身份实现](PR01_IDENTITY_IMPLEMENTATION.md)。技术底座及运行边界见 [技术选型 ADR](../research/TECH_STACK_DECISION.md)，媒体对象的跨存储生命周期见 [媒体生命周期](MEDIA_LIFECYCLE.md)。
 
 本文使用以下规范词：
 
@@ -11,7 +11,7 @@
 - **不得**：任何 Payload Admin、REST、GraphQL、Local API、后台任务或脚本都不能绕过；
 - **建议**：不影响领域正确性的实现选择。
 
-本文不授权初始化正式项目、迁移 spike、部署或访问任何外部数据源。
+本文不授权迁移 spike、部署、访问任何外部数据源或越过交付路线开始后续 PR。
 
 ## 2. 核心不变量
 
@@ -30,14 +30,21 @@
 
 ### 3.1 标识、时间与版本
 
-- 业务主键使用 UUID；建议 UUIDv7，以便按时间近似排序。外部 ID 只保存在独立字段，不能充当数据库主键。
+- 业务身份使用 UUID。Payload 3.86.0 支持 adapter 级 UUID ID，但已合并 PR-00 的技术表使用 serial ID；PR-01 因此保留内部 serial `id`，并给每个目录实体/关系增加不可变、唯一、非空的 UUID `stableId`。领域命令、审计、导出和未来公开接口只使用 `stableId`；内部 ID 不是合同。后续若全局迁移 UUID 主键，必须独立 ADR/migration 且不得改变 stableId。
+- 本文实体表中写作概念 `id` 的领域身份，在 PR-01 物理实现中映射为 `stableId`；关系 FK 可在数据库内使用 Payload technical ID，但不得向领域/API 暴露。
 - 时间统一保存为 UTC 的 timestamptz；至少包含 created_at、updated_at。操作者界面按用户时区显示。
 - 可变聚合根必须有 lock_version，初值 1；每个命令携带 expected_version，并以条件更新或 SELECT FOR UPDATE 拒绝过期提交。
 - 删除默认是软删除：deleted_at、deleted_by、delete_reason。硬删除只由保留策略任务执行，且必须先完成引用检查和审计。
 - display_name、canonical_name 等原文保留；用于匹配的 normalized_name 由确定性规则生成。修改规则必须版本化并重建索引。
 - raw_snapshot 只保存候选来源的脱敏原始字段；正式结构化字段不得只存在 JSON 中。
 
-### 3.2 Actor
+### 3.2 PR-01 实现切片
+
+PR-01 只实现 Work、Character、CharacterAlias、Manufacturer、FigurePrototype、FigurePrototypeCharacter、FigureVersion 和最小 OperationLog。前七者使用 `stableId`；OperationLog 使用唯一 `operationId` 和 `scopeStableId`。所有 generic CRUD 写入关闭，Admin 只读，正式变化只能经 Catalog domain service 以 expectedVersion/CAS、PostgreSQL transaction 和同事务 OperationLog 完成。
+
+Candidate/Source、Review、正式 Media/FigureImage、SystemSetting、merge/split/undo 与 public projection 在下文仍是后续规范，不表示已经创建 Collection 或 API。PR-02 明确未开始。
+
+### 3.3 Actor
 
 | Actor | 身份与能力 |
 | --- | --- |
@@ -77,7 +84,7 @@ AdminUser 与 CandidateClient 必须是不同权限模型。第一版只有一�
 | 字段 | 类型/要求 | 含义 |
 | --- | --- | --- |
 | id | UUID，主键 | 内部稳定身份 |
-| work_id | FK Work，可空 | 已知作品时用于同名角色消歧；未知作品角色保持 matching_pending |
+| work_id | FK Work，可空 | 已知作品时用于同名角色消歧；未知作品角色可以保持 matching_pending，状态仍由显式领域命令推进 |
 | display_name | text，必填 | 页面大标题使用 |
 | name_zh / name_ja / name_en | text，可空 | 常用语言名，不替代别名表 |
 | normalized_name | text，必填 | 搜索规范化值 |
@@ -122,7 +129,7 @@ AdminUser 与 CandidateClient 必须是不同权限模型。第一版只有一�
 
 #### FigurePrototype
 
-FigurePrototype 是正式目录的主聚合根，表示一个造型/原型，而不是某次发售 SKU。
+FigurePrototype 是正式目录的主聚合根，表示一个造型/原型，而不是某次发售 SKU。PR-01 已实现不依赖媒体的字段；正式主图字段与 FigureImage 仍属 PR-04，因此 PR-01 数据库和 service 明确禁止 published。
 
 | 字段 | 类型/要求 | 含义 |
 | --- | --- | --- |
@@ -141,7 +148,7 @@ FigurePrototype 是正式目录的主聚合根，表示一个造型/原型，而
 | inclusion_status | enum | pending、eligible、excluded；只由 Admin 收录审核命令决定 |
 | inclusion_reason / inclusion_reviewed_by / inclusion_reviewed_at | 可空 | eligible/excluded 时必填的理由、Admin 与时间 |
 | publication_status | enum | draft、published、hidden、merged、archived |
-| main_media_asset_id | FK MediaAsset，可空 | 人工主图；必须有有效 FigureImage |
+| main_media_asset_id | PR-04 计划字段，FK MediaAsset，可空 | PR-01 尚不存在；接入后才可人工选择且必须有有效 FigureImage |
 | merged_into_id | FK FigurePrototype，可空 | merged 状态的保留目标 |
 | lock_version | integer | 乐观锁和并发控制 |
 | created_by / updated_by | FK AdminUser | 最近正式变更归因 |
@@ -169,7 +176,7 @@ FigurePrototype 是正式目录的主聚合根，表示一个造型/原型，而
 | created_at / updated_at | timestamptz | 审计时间 |
 | deleted_at | timestamptz，可空 | 软删除 |
 
-#### FigureImage
+#### FigureImage（PR-04 计划，PR-01 未实现）
 
 FigureImage 是正式原型与媒体内容的关联，不与 CandidateImage 复用。
 
@@ -188,7 +195,7 @@ FigureImage 是正式原型与媒体内容的关联，不与 CandidateImage 复�
 
 main_media_asset_id 不是 FigureImage.is_main 的第二份真相；主图只有 FigurePrototype 上一个权威引用。查询时通过 prototype_id + media_asset_id 验证关联有效。
 
-### 4.3 来源、候选与身份
+### 4.3 来源、候选与身份（PR-02 以后计划，PR-01 未实现）
 
 #### CandidateClient
 
@@ -333,7 +340,7 @@ CandidateImage 只描述候选与内容的关系，不能充当文件实体或�
 
 同 URL 内容变化会创建或关联新的 MediaAsset，并用 supersedes_id 保留关系；URL 或文件名变化但 SHA-256 相同则复用 MediaAsset。
 
-### 4.4 媒体内容
+### 4.4 媒体内容（PR-04 完成，PR-01 未实现正式模型）
 
 #### MediaAsset
 
@@ -386,6 +393,8 @@ MediaObject 是 MediaAsset 在对象存储中的一个可验证对象；属于 M
 对象 key、提升、迁移、恢复和补偿流程见 [媒体生命周期](MEDIA_LIFECYCLE.md)。
 
 ### 4.5 审核、配置与审计
+
+本节的 ReviewWorkItem/SystemSetting 属于后续 PR。PR-01 只实现下文 OperationLog 字段的最小子集：operationId、actor、duty context、action/scope/reason、expected/result version、before/after snapshot、request digest、`reversible=false` 和 timestamps；dependency/undo/revert 字段留到 PR-05 migration。
 
 #### AdminUser
 
@@ -492,7 +501,7 @@ erDiagram
 
 关键基数：
 
-- Character 和 FigurePrototype 的 Work 均可空；已知 Work 时用于同名消歧，未知时保持待匹配且不能伪造作品关系。
+- Character 和 FigurePrototype 的 Work 均可空；已知 Work 时用于同名消歧，未知时可以保持待匹配且不能伪造作品关系。
 - 一个 FigurePrototype 至少关联一个 Character，可有多个 FigureVersion、FigureImage 和 SourceRecord。
 - 一个 CandidateRecord 属于且只属于一个 CandidateClient；CandidateImage 的 owner 必须与 CandidateRecord 相同。
 - 一个 MediaAsset 可被多个 CandidateImage 和 FigureImage 引用；共享内容不等于共享来源或共享审核决定。
@@ -633,6 +642,8 @@ stateDiagram-v2
 
 ### 9.3 FigurePrototype
 
+下图描述第一阶段最终状态机。PR-01 的临时子集只允许 draft、hidden、archived：published 固定返回 `FORMAL_MAIN_IMAGE_CAPABILITY_NOT_AVAILABLE` 并受数据库 CHECK 阻止；merged 固定返回 `MERGE_CAPABILITY_NOT_AVAILABLE`，且本轮没有写 mergedInto 的命令。PR-04/PR-05 只能通过显式 migration 和独立测试解除各自门禁。
+
 ~~~mermaid
 stateDiagram-v2
     [*] --> draft: explicit create
@@ -765,15 +776,16 @@ accessBlocked/stopReason 是正交合规门禁：System/Admin 设置 accessBlock
 - 管理端正式维护、merge、split、undo、隐藏/恢复和主图选择都必须显示 expected_version、影响 scope、reason 与最终 operation_id。
 - OperationLog、SourceRecord 和媒体对象状态默认只读；修复通过专用命令完成。
 
-## 12. 初始化与演进门禁
+## 12. 实现与演进门禁
 
-正式初始化前必须把本模型转为：
+PR-00 已完成正式初始化；PR-01 正在把核心目录切片转为：
 
 1. PostgreSQL migration 和约束清单；
 2. Payload Collections/Globals 的默认拒绝 access；
 3. 领域命令、事务和固定锁顺序；
 4. Admin UI 的 command-only 写入；
-5. owner、allowed target、generic CRUD、主图、并发、merge/split/undo 攻击测试；
-6. 数据库备份与对象 manifest 的联合恢复测试。
+5. PR-01 的 generic CRUD、stableId、CAS、并发和发布占位攻击测试。
+
+owner/allowed target、主图、merge/split/undo、数据库与对象 manifest 联合恢复分别属于 PR-02—PR-07，不能在 PR-01 伪实现或宣称验证。
 
 任何字段或状态变化都必须提供向前 migration、回滚/补偿策略和导出兼容说明。Payload、hook、adapter 或 Admin 插件升级后，应重跑 [Payload 生产门禁](../research/PAYLOAD_PRODUCTION_GATE_SPEC.md) 所定义的权限、恢复、对象存储和 standalone 边界。

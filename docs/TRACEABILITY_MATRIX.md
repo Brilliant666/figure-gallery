@@ -6,12 +6,14 @@
 
 第一阶段只有两类人类用户类型：公开访客和 Admin；首版可有多个独立 Admin 账号，但只有一个角色，审核、目录维护、设置及运维是动作上下文，不是首版可配置 RBAC。`CandidateClient` 是非人集成身份。
 
+当前交付状态：PR-00 已合并；PR-01 在 `feat/pr-01-core-catalog` 作为 Draft 候选实现，尚待最终 CI 与人工审查；PR-02—PR-08 未开始。PR-01 的 `CAT-01`—`CAT-21` 状态真值只存在于最终 Head 对应的 `research/evidence/pr01/catalog-results.json`，本矩阵只做需求/测试路由，不预先标记 pass。
+
 ## 2. PR 边界
 
 | PR | 精确主题 | 主要需求范围 |
 | --- | --- | --- |
 | PR-00 | 正式项目初始化 | NFR 基线、Hpoi guard、CI/health/空 migration |
-| PR-01 | 核心目录数据模型 | CAT、正式写 service/OperationLog 骨架 |
+| PR-01 | 核心目录数据模型 | Work、Character/Alias、Manufacturer、Prototype/Character relation/Version、正式写 service、OperationLog 骨架 |
 | PR-02 | 来源和候选池 | CAND、CandidateClient、owner/幂等/上传入口 |
 | PR-03 | 审核工作流 | REV、ReviewWorkItem、allowed target/并发 |
 | PR-04 | 媒体和正式主图 | MED、S3、派生图、提升和主图保护 |
@@ -43,14 +45,14 @@
 | 需求 ID | 实体/合同 | API / Admin / Public 面 | PR | 必须测试 | 风险 |
 | --- | --- | --- | --- | --- | --- |
 | PRD-001 | Character→FigurePrototype→mainImage 公开投影 | 角色搜索与图库 | PR-01, PR-04, PR-06 | T-CONTRACT-POSITIONING、T-PUB-E2E | R-01, R-11 |
-| PRD-002 | FigurePrototype category/authorization/inclusion、FigureVersion gray completeness、Manufacturer evidence、publication state | Admin 收录审核与发布 service | PR-01, PR-03 | T-CATALOG-AUTHORIZATION-INCLUSION、T-COMPLETE-GRAY-GATE、T-PUBLISH-PRECONDITION | R-01 |
+| PRD-002 | FigurePrototype category/authorization/inclusion、FigureVersion gray completeness、Manufacturer evidence、publication state | Admin 收录审核与发布 service | PR-01, PR-03 | CAT-07、CAT-11—14；T-PUBLISH-PRECONDITION | R-01 |
 | PRD-003 | FigurePrototype/FigureVersion 唯一与归属 | Admin 版本归入；公开投影去重 | PR-01, PR-03, PR-06 | T-PROTOTYPE-VERSION、T-PUB-NO-VERSION-CARDS | R-01 |
 | PRD-004 | Candidate/Formal aggregate、OperationLog、mainImage | candidate API、review/领域 service | PR-01—PR-05 | T-CANDIDATE-ISOLATION、T-MAIN-IMMUTABLE | R-02, R-05, R-12 |
-| CAT-001 | Work、alias、soft state | Admin Work commands | PR-01 | T-WORK-CRUD-SERVICE、T-WORK-SOFT-DELETE | R-01, R-12 |
-| CAT-002 | Character、aliases、可选 Work；Prototype↔Character M:N | Admin Character commands；public search | PR-01, PR-06 | T-CHARACTER-ALIASES、T-HOMONYM | R-01, R-11 |
-| CAT-003 | Manufacturer、verification/status | Admin Manufacturer commands | PR-01 | T-MANUFACTURER-STATE、T-PUBLISH-MANUFACTURER | R-01 |
-| CAT-004 | FigurePrototype、characters、statuses、mainImage | Admin Prototype commands；公开投影 | PR-01, PR-04, PR-06 | T-PROTOTYPE-RELATIONS、T-PUBLISH-MAIN | R-01, R-05 |
-| CAT-005 | FigureVersion→Prototype | Admin Version commands | PR-01, PR-03 | T-VERSION-OWNERSHIP、T-VERSION-NO-CARD | R-01 |
+| CAT-001 | Work、soft state（WorkAlias 不在 PR-01） | Admin Work commands | PR-01 | CAT-02—04、CAT-15—19 | R-01, R-12 |
+| CAT-002 | Character、CharacterAlias、可选 Work；Prototype↔Character M:N | Admin Character/Prototype commands；future public search | PR-01, PR-06 | CAT-02、CAT-05、CAT-06、CAT-08、CAT-16—19；T-HOMONYM | R-01, R-11, R-12 |
+| CAT-003 | Manufacturer、verification/status | Admin Manufacturer commands | PR-01 | CAT-02、CAT-07、CAT-13、CAT-16—19 | R-01, R-12 |
+| CAT-004 | FigurePrototype、Character relation、authorization/inclusion/publication placeholder；mainImage 延后 | Admin Prototype commands；future media/public projection | PR-01, PR-04, PR-06 | CAT-08、CAT-09、CAT-12—19；T-PUBLISH-MAIN | R-01, R-05, R-12 |
+| CAT-005 | FigureVersion→Prototype | Admin Version commands | PR-01, PR-03 | CAT-10、CAT-11、CAT-13、CAT-16—19；T-VERSION-NO-CARD | R-01, R-12 |
 | CAND-001 | Source policy、manual URL/offline import | Admin manual source form；无 fetch | PR-02 | T-SOURCE-MANUAL-ONLY、ATK-13 | R-10 |
 | CAND-002 | CandidateClient、credential digest/status | provision/rotate/revoke command | PR-02 | T-CLIENT-LIFECYCLE、ATK-01 | R-03 |
 | CAND-003 | SourceRecord 全局 stable key/fallback、首次发现归因；Candidate owner | candidate upsert service；无 Source 直接 client CRUD | PR-02 | T-SOURCE-IDEMPOTENCY、T-FALLBACK-UPGRADE、ATK-02 | R-03 |
@@ -69,7 +71,7 @@
 | MED-004 | CandidateImage→MediaAsset/FigureImage promotion、mainImage | Admin promote/select service | PR-04 | T-PROMOTE-MAIN、ATK-03 | R-02, R-05 |
 | MED-005 | reference protection/lifecycle state | invalidate/delete/cleanup commands | PR-04 | ATK-12、T-MAIN-REFERENCE-PROTECTION | R-05 |
 | MED-006 | compensation/missing/orphan audit | ingest worker、audit command | PR-04 | ATK-11、T-MISSING-ORPHAN-REPORT | R-04, R-05 |
-| OPS-001 | DomainCommand、OperationLog、lockVersion | 所有正式 Admin commands | PR-01—PR-05 | ATK-06、T-OPLOG-COVERAGE | R-12 |
+| OPS-001 | DomainCommand、OperationLog、stableId、lockVersion | 所有正式 Admin commands | PR-01—PR-05 | CAT-02、CAT-15—19、ATK-06、T-OPLOG-COVERAGE | R-12 |
 | OPS-002 | merge operation/scope/snapshot | Admin Operations view | PR-05 | T-MERGE-ATOMIC | R-07 |
 | OPS-003 | split operation/relationship closure | Admin Operations view | PR-05 | T-SPLIT-CLOSURE | R-07 |
 | OPS-004 | specified undo/dependencies | Admin Operations view | PR-05 | ATK-09、T-INDEPENDENT-UNDO | R-07 |
@@ -94,7 +96,7 @@
 | 需求 ID | 实现/接口 | PR | 必须测试或度量 | 风险 |
 | --- | --- | --- | --- | --- |
 | NFR-001 | 默认拒绝 access/hook/domain policy | PR-00—PR-08 | ATK-01—15 全绿，hard fail=0 | R-02, R-03, R-12 |
-| NFR-002 | PostgreSQL transaction/constraints/OperationLog | PR-01—PR-07 | T-RELATION-INVARIANTS、T-OPLOG-100 | R-06, R-07, R-12 |
+| NFR-002 | PostgreSQL transaction/constraints/OperationLog | PR-01—PR-07 | CAT-02、CAT-06—19；T-RELATION-INVARIANTS、T-OPLOG-100 | R-06, R-07, R-12 |
 | NFR-003 | idempotency receipt/compensation | PR-02, PR-04 | T-REPLAY-10X、T-INTERRUPT-RETRY | R-04 |
 | NFR-004 | search/gallery indexes and query budget | PR-06, PR-08 | T-PERF-READ-P95（记录数据规模/环境） | R-11 |
 | NFR-005 | semantic UI、keyboard/focus | PR-03, PR-06 | Playwright + WCAG 2.2 AA 自动检查 | R-11 |
@@ -121,7 +123,35 @@
 | ATK-14 | public/adult/cache 绕过 | public query/cache | PR-06 | 匿名浏览器/API 攻击 | R-08 |
 | ATK-15 | 恢复后完整攻击重放 | restored standalone | PR-07, PR-08 | 恢复前后相同拒绝与 digest | R-03, R-05, R-09, R-12 |
 
-## 7. 跨 PR 放行规则
+## 7. PR-01 机器验收追踪
+
+完整实现说明见 [PR-01 核心目录实现](PR01_CORE_CATALOG_IMPLEMENTATION.md)。下表不记录运行结果，只规定每个机器 gate 必须证明的需求与主要风险。
+
+| Gate | 需求/安全映射 | 主要风险 |
+| --- | --- | --- |
+| CAT-01 | CAT-001—005、OPS-001；只允许八个 PR-01 business Collections | R-01、R-12 |
+| CAT-02 | OPS-001、NFR-002；不可变唯一 UUID stableId/operationId | R-07、R-09、R-12 |
+| CAT-03 | CAT-001—005；versioned deterministic normalization/search document | R-01、R-11 |
+| CAT-04 | CAT-001；Work state、soft delete、CAS | R-01、R-12 |
+| CAT-05 | CAT-002；Character optional Work、homonym、matching_pending | R-01、R-11 |
+| CAT-06 | CAT-002；Alias unique/preferred 与 searchDocument 同事务重建 | R-01、R-12 |
+| CAT-07 | CAT-003、PRD-002；Manufacturer state 与 active gate | R-01、R-12 |
+| CAT-08 | CAT-002、CAT-004；Prototype character/primary/group 聚合 | R-01、R-07 |
+| CAT-09 | PRD-003、CAT-004；跨 Manufacturer 不自动合并 | R-01 |
+| CAT-10 | PRD-003、CAT-005；Version 归属、kind 与 composite uniqueness | R-01 |
+| CAT-11 | PRD-002、CAT-005；gray release/completeness 双层门禁 | R-01、R-12 |
+| CAT-12 | PRD-002、CAT-004；official/third-party/rejected | R-01 |
+| CAT-13 | PRD-002、CAT-003—005；eligible/excluded 前置与持续保护 | R-01、R-12 |
+| CAT-14 | CAT-004、MED-004、SEC-013；published/merged placeholder、技术 Media 不得充当主图 | R-05、R-07、R-12 |
+| CAT-15 | PRD-004、OPS-001、SEC-004/005；domain-only write + OperationLog | R-02、R-12 |
+| CAT-16 | OPS-001、NFR-002、SEC-014；expectedVersion 与事务回滚 | R-06、R-12 |
+| CAT-17 | SEC-001—005、ATK-03—06；REST/GraphQL/Local/Admin/overrideAccess 旁路 | R-02、R-12 |
+| CAT-18 | CAT-001—005、NFR-005；真实 Admin Catalog Operations 与只读详情 | R-11、R-12 |
+| CAT-19 | NFR-002、NFR-010；PG fresh/repeat/down/up/drift/signature | R-09、R-13 |
+| CAT-20 | CAT-001—005、SEC-019/020；合成 seed 幂等、无真实数据/图片/网络 | R-10、R-13 |
+| CAT-21 | SEC-019/020、ATK-13；Hpoi requests=0 且 PR-02—PR-06 未启动 | R-10、R-13 |
+
+## 8. 跨 PR 放行规则
 
 1. 每个 PR 必须在描述中列出本矩阵覆盖的需求/测试 ID、migration、回滚、风险和停止条件；
 2. 任一硬安全不变量失败、测试未执行却写成通过、相对链接失效、提交秘密/数据库/图片/构建产物，均不得放行；
