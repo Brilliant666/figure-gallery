@@ -93,8 +93,9 @@ jobs:
           set -euo pipefail
           test "$(node --version)" = 'v22.23.1'
           test "$(npm --version)" = '10.9.8'
-          npm config set registry https://registry.npmjs.org --location=user
-          test "$(npm config get registry)" = 'https://registry.npmjs.org/'
+          npm config set registry https://registry.npmjs.org/ --location=user
+          registry="$(npm config get registry)"
+          test "${registry%/}" = 'https://registry.npmjs.org'
 
       - name: Verify official scaffold provenance
         shell: bash
@@ -333,15 +334,24 @@ jobs:
       - name: Verify redacted summary artifact safety
         id: summary-safety
         if: always()
-        run: node infra/scripts/check-ci-summaries.mjs "$PR00_SUMMARY"
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "${PR00_SUMMARY:-}" || ! -d "$PR00_SUMMARY" || -z "$(find "$PR00_SUMMARY" -type f -print -quit)" ]]; then
+            echo 'No CI summaries were produced before the earlier failure; nothing will be uploaded.'
+            echo 'safe=false' >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          node infra/scripts/check-ci-summaries.mjs "$PR00_SUMMARY"
+          echo 'safe=true' >> "$GITHUB_OUTPUT"
 
       - name: Upload small redacted CI summaries
-        if: always() && steps.summary-safety.outcome == 'success'
+        if: always() && steps.summary-safety.outputs.safe == 'true'
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: pr00-initialization-summary-${{ github.run_id }}-${{ github.run_attempt }}
           path: ${{ runner.temp }}/pr00-summary
-          if-no-files-found: warn
+          if-no-files-found: error
           retention-days: 7
 
       - name: Clean disposable processes secrets objects and volumes
