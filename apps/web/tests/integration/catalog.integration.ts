@@ -1042,3 +1042,7 @@ try {
 } finally {
   await payload.destroy()
 }
+
+// Payload's PostgreSQL adapter retains an idle connection after destroy(). This is an
+// intentionally one-shot CI probe, so terminate only after the complete success path.
+process.exit(0)
