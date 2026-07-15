@@ -1,0 +1,142 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-07-15T17:30:05.444Z",
+  "source": "formal-web-ci-pr01",
+  "commitSha": "77569d980037509b3c9f636c80b4cb8b2895599a",
+  "counts": {
+    "pass": 21,
+    "fail": 0,
+    "not_run": 0,
+    "environment_blocked": 0
+  },
+  "gates": [
+    {
+      "id": "CAT-01",
+      "status": "pass",
+      "evidence": "eight PR-01 formal Collections and required relations executed on PostgreSQL; catalog boundary scan found no PR-02+ entity",
+      "recordedAt": "2026-07-15T17:28:46.366Z"
+    },
+    {
+      "id": "CAT-02",
+      "status": "pass",
+      "evidence": "UUID stable identities had database uniqueness and format constraints and were immutable through command, REST, GraphQL, Local API, and read-only Admin boundaries",
+      "recordedAt": "2026-07-15T17:29:48.172Z"
+    },
+    {
+      "id": "CAT-03",
+      "status": "pass",
+      "evidence": "normalization version, deterministic normalization/search document, enums, state transitions, errors, command digest, and eligibility primitives passed Vitest",
+      "recordedAt": "2026-07-15T17:28:03.421Z"
+    },
+    {
+      "id": "CAT-04",
+      "status": "pass",
+      "evidence": "Work lifecycle, soft-delete policy, and optimistic locking passed domain and PostgreSQL integration",
+      "recordedAt": "2026-07-15T17:28:46.407Z"
+    },
+    {
+      "id": "CAT-05",
+      "status": "pass",
+      "evidence": "Character optional Work, same-name Work disambiguation, and matching-pending behavior passed",
+      "recordedAt": "2026-07-15T17:28:46.459Z"
+    },
+    {
+      "id": "CAT-06",
+      "status": "pass",
+      "evidence": "CharacterAlias uniqueness/preferred constraints and deterministic searchDocument rebuild passed",
+      "recordedAt": "2026-07-15T17:28:46.510Z"
+    },
+    {
+      "id": "CAT-07",
+      "status": "pass",
+      "evidence": "Manufacturer draft/active/hidden lifecycle and active eligibility guard passed",
+      "recordedAt": "2026-07-15T17:28:46.561Z"
+    },
+    {
+      "id": "CAT-08",
+      "status": "pass",
+      "evidence": "prototype character minimum, single-primary, ordering, and group-flag invariants passed",
+      "recordedAt": "2026-07-15T17:28:46.621Z"
+    },
+    {
+      "id": "CAT-09",
+      "status": "pass",
+      "evidence": "same normalized prototype title under distinct manufacturers remained independent",
+      "recordedAt": "2026-07-15T17:28:46.666Z"
+    },
+    {
+      "id": "CAT-10",
+      "status": "pass",
+      "evidence": "FigureVersion grouping semantics and active composite uniqueness passed",
+      "recordedAt": "2026-07-15T17:28:46.724Z"
+    },
+    {
+      "id": "CAT-11",
+      "status": "pass",
+      "evidence": "gray-prototype completeness service and PostgreSQL constraints passed",
+      "recordedAt": "2026-07-15T17:28:46.768Z"
+    },
+    {
+      "id": "CAT-12",
+      "status": "pass",
+      "evidence": "official, authorized-third-party, and rejected authorization rules passed",
+      "recordedAt": "2026-07-15T17:28:46.809Z"
+    },
+    {
+      "id": "CAT-13",
+      "status": "pass",
+      "evidence": "eligible/excluded review rules and negative eligibility cases passed",
+      "recordedAt": "2026-07-15T17:28:46.852Z"
+    },
+    {
+      "id": "CAT-14",
+      "status": "pass",
+      "evidence": "published and merged fixed capability gates plus technical-Media exclusion constraints passed",
+      "recordedAt": "2026-07-15T17:28:46.902Z"
+    },
+    {
+      "id": "CAT-15",
+      "status": "pass",
+      "evidence": "successful formal writes used domain services and appended exactly one application-boundary append-only OperationLog with aggregate snapshots and duty context",
+      "recordedAt": "2026-07-15T17:28:46.952Z"
+    },
+    {
+      "id": "CAT-16",
+      "status": "pass",
+      "evidence": "expectedVersion concurrency produced one winner and one stable conflict; failed aggregate mutation rolled back",
+      "recordedAt": "2026-07-15T17:28:47.004Z"
+    },
+    {
+      "id": "CAT-17",
+      "status": "pass",
+      "evidence": "unauthenticated, generic REST, GraphQL mutation, Local API overrideAccess, forged context, and generic Admin write attacks were rejected",
+      "recordedAt": "2026-07-15T17:29:48.204Z"
+    },
+    {
+      "id": "CAT-18",
+      "status": "pass",
+      "evidence": "authenticated Catalog Operations created and reviewed a synthetic catalog, read-only Collections displayed it, and OperationLog was visible",
+      "recordedAt": "2026-07-15T17:29:48.237Z"
+    },
+    {
+      "id": "CAT-19",
+      "status": "pass",
+      "evidence": "PostgreSQL fresh/repeat/status/drift and isolated PR-00 baseline to PR-01 up/down/up schema-signature cycle passed",
+      "recordedAt": "2026-07-15T17:28:41.012Z"
+    },
+    {
+      "id": "CAT-20",
+      "status": "pass",
+      "evidence": "fully synthetic offline fixture seeded idempotently; repository and fixture scans found no real data, media, or network URL",
+      "recordedAt": "2026-07-15T17:30:05.293Z"
+    },
+    {
+      "id": "CAT-21",
+      "status": "pass",
+      "evidence": "forbidden-host source scans and Playwright loopback guard recorded zero forbidden-source requests; PR-02 through PR-06 boundaries remain absent",
+      "recordedAt": "2026-07-15T17:30:05.324Z"
+    }
+  ],
+  "hpoiRequests": 0,
+  "pr02Started": false
+}
