@@ -91,9 +91,12 @@ export async function ensureUniqueNormalizedName(input: {
   table: CatalogTableName
   transaction: CatalogSqlTransaction
 }): Promise<void> {
+  const excludeCurrent = input.excludeStableId
+    ? sql`and stable_id <> ${input.excludeStableId}`
+    : sql``
   const rows = await queryRows(
     input.transaction,
-    sql`select stable_id from ${sql.identifier(input.table)} where normalized_name = ${input.normalized} and deleted_at is null and (${input.excludeStableId ?? null} is null or stable_id <> ${input.excludeStableId ?? null}) limit 1`,
+    sql`select stable_id from ${sql.identifier(input.table)} where normalized_name = ${input.normalized} and deleted_at is null ${excludeCurrent} limit 1`,
   )
   if (rows.length) {
     throw new CatalogDomainError(

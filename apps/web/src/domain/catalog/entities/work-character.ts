@@ -314,6 +314,9 @@ async function ensureAliasAvailable(input: {
   normalizedValue: string
   transaction: CatalogSqlTransaction
 }): Promise<void> {
+  const excludeCurrent = input.excludeStableId
+    ? sql`and stable_id <> ${input.excludeStableId}`
+    : sql``
   const duplicates = await queryRows(
     input.transaction,
     sql`select stable_id
@@ -322,7 +325,7 @@ async function ensureAliasAvailable(input: {
           and normalized_value = ${input.normalizedValue}
           and coalesce(locale, '') = coalesce(${input.locale}, '')
           and deleted_at is null
-          and (${input.excludeStableId ?? null} is null or stable_id <> ${input.excludeStableId ?? null})
+          ${excludeCurrent}
         limit 1`,
   )
   if (duplicates.length) {
@@ -347,7 +350,7 @@ async function ensureAliasAvailable(input: {
           and coalesce(locale, '') = coalesce(${input.locale}, '')
           and is_preferred = true
           and deleted_at is null
-          and (${input.excludeStableId ?? null} is null or stable_id <> ${input.excludeStableId ?? null})
+          ${excludeCurrent}
         limit 1`,
   )
   if (preferred.length) {
