@@ -157,6 +157,14 @@ jobs:
           set -euo pipefail
           npm audit --omit=dev --audit-level=high --json > "$PR00_SUMMARY/npm-audit.json"
 
+      - name: Verify generated Payload Admin import map
+        shell: bash
+        working-directory: apps/web
+        run: |
+          set -euo pipefail
+          npm run generate:importmap
+          git diff --exit-code -- 'src/app/(payload)/admin/importMap.js'
+
       - name: Typecheck the formal application
         working-directory: apps/web
         run: npm run typecheck
