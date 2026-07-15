@@ -1,0 +1,51 @@
+import assert from 'node:assert/strict'
+import path from 'node:path'
+import test from 'node:test'
+
+import {
+  DEFAULT_RUNTIME_ROOT,
+  REPOSITORY_ROOT,
+  TOOL_ROOT,
+  validateFirecrawlBaseUrl,
+  validateRuntimeRoot,
+} from '../src/config.js'
+
+test('Firecrawl base URL is pinned to the official HTTPS Cloud origin', () => {
+  assert.equal(validateFirecrawlBaseUrl('https://api.firecrawl.dev'), 'https://api.firecrawl.dev')
+  assert.equal(validateFirecrawlBaseUrl('https://api.firecrawl.dev/'), 'https://api.firecrawl.dev')
+  for (const unsafe of [
+    'http://api.firecrawl.dev',
+    'https://firecrawl.dev',
+    'https://api.firecrawl.dev.evil.example',
+    'https://api.firecrawl.dev/v2',
+    'https://api.firecrawl.dev?redirect=evil',
+    'https://user:secret@api.firecrawl.dev',
+  ]) {
+    assert.throws(() => validateFirecrawlBaseUrl(unsafe), /must be exactly/)
+  }
+})
+
+test('runtime root accepts only the dedicated subtree when it is inside the repository', () => {
+  assert.equal(validateRuntimeRoot(DEFAULT_RUNTIME_ROOT), path.resolve(DEFAULT_RUNTIME_ROOT))
+  assert.equal(
+    validateRuntimeRoot(path.join(DEFAULT_RUNTIME_ROOT, 'profile-a')),
+    path.resolve(DEFAULT_RUNTIME_ROOT, 'profile-a'),
+  )
+  assert.throws(() => validateRuntimeRoot(REPOSITORY_ROOT), /Unsafe PERSONAL_GALLERY_ROOT/)
+  assert.throws(() => validateRuntimeRoot(TOOL_ROOT), /must stay under/)
+  assert.throws(() => validateRuntimeRoot(path.join(REPOSITORY_ROOT, '.local')), /must stay under/)
+  assert.throws(() => validateRuntimeRoot(path.parse(REPOSITORY_ROOT).root), /Unsafe PERSONAL_GALLERY_ROOT/)
+})
+
+test('runtime root refuses every ancestor that could recursively contain the repository', () => {
+  let candidate = path.dirname(REPOSITORY_ROOT)
+  while (candidate !== path.parse(candidate).root) {
+    assert.throws(() => validateRuntimeRoot(candidate), /Unsafe PERSONAL_GALLERY_ROOT/)
+    candidate = path.dirname(candidate)
+  }
+})
+
+test('runtime root may be an isolated directory outside the repository', () => {
+  const external = path.join(path.dirname(REPOSITORY_ROOT), 'figure-gallery-personal-runtime')
+  assert.equal(validateRuntimeRoot(external), path.resolve(external))
+})

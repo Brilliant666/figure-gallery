@@ -1,0 +1,258 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-07-16T03:25:16+08:00",
+  "baseline": {
+    "repository": "Brilliant666/figure-gallery",
+    "pr10HeadBeforeMerge": "60f99b62916d2ded1d35cfe8e935f2fa12f8f690",
+    "pr10MergeSha": "02d9ef2273509c182d2f174af057284875fa6e76",
+    "mainSha": "02d9ef2273509c182d2f174af057284875fa6e76",
+    "mainFormalWebCi": {
+      "runId": 29438305891,
+      "conclusion": "success",
+      "stepsPassed": 36,
+      "stepsTotal": 36
+    },
+    "branch": "feat/mvp-01-personal-auto-gallery"
+  },
+  "tool": {
+    "path": "tools/personal-gallery-mvp",
+    "runtimeRoot": ".local/personal-gallery",
+    "formalApplicationDependency": false,
+    "postgresqlRequired": false,
+    "s3Required": false,
+    "payloadRequired": false,
+    "loopbackHost": "127.0.0.1",
+    "defaultPort": 4317,
+    "nodeValidated": "22.13.1",
+    "npmValidated": "10.9.2"
+  },
+  "dependencies": {
+    "firecrawlSdk": {
+      "package": "@mendable/firecrawl-js",
+      "version": "4.30.0",
+      "license": "MIT"
+    },
+    "htmlParser": {
+      "package": "cheerio",
+      "version": "1.2.0",
+      "license": "MIT"
+    },
+    "sharp": {
+      "version": "0.35.3",
+      "license": "Apache-2.0"
+    },
+    "commander": {
+      "version": "15.0.0",
+      "license": "MIT"
+    },
+    "playwright": {
+      "version": "1.61.1",
+      "license": "Apache-2.0"
+    },
+    "npmAuditProduction": {
+      "registry": "https://registry.npmjs.org/",
+      "info": 0,
+      "low": 0,
+      "moderate": 0,
+      "high": 0,
+      "critical": 0,
+      "total": 0
+    }
+  },
+  "firecrawl": {
+    "apiVersion": "v2",
+    "allowedModes": [
+      "scrape",
+      "limited_search_for_character_discovery"
+    ],
+    "forbiddenModesPresent": false,
+    "crawl": false,
+    "agent": false,
+    "browserAutomation": false,
+    "enhancedProxy": false,
+    "cookieInjection": false
+  },
+  "offlineValidation": {
+    "unitAndIntegration": {
+      "status": "pass",
+      "tests": 114,
+      "passed": 114,
+      "failed": 0,
+      "testConcurrency": 1
+    },
+    "browser": {
+      "status": "pass",
+      "browser": "Google Chrome 150.0.7871.102",
+      "tests": 1,
+      "passed": 1,
+      "failed": 0,
+      "loopbackRequests": 54,
+      "externalRequests": 0,
+      "hpoiRequests": 0,
+      "firecrawlRequests": 0,
+      "desktopColumns": 4,
+      "tabletColumns": 3,
+      "mobileColumns": 2,
+      "lightbox": true,
+      "zoom": true,
+      "boundaryNavigation": true,
+      "fitAndActualSize": true,
+      "preferenceReload": true,
+      "preferredCover": true,
+      "manualNote": true,
+      "progressiveBrowsing": true,
+      "pollingStoppedAfterCompletion": true,
+      "screenshots": 0,
+      "videos": 0
+    },
+    "syntheticIdempotency": {
+      "firstRun": {
+        "pages": 2,
+        "productsDiscovered": 2,
+        "newProducts": 2,
+        "uniqueObjects": 2
+      },
+      "secondRun": {
+        "newProducts": 0,
+        "unchangedProducts": 2,
+        "newObjects": 0,
+        "duplicateImages": 2
+      },
+      "changeRun": {
+        "changedProducts": 1,
+        "unchangedProducts": 1,
+        "changedFields": [
+          "title"
+        ]
+      }
+    },
+    "networkGuard": {
+      "status": "pass",
+      "hpoiRequests": 0,
+      "firecrawlRequests": 0,
+      "blockedExternalAttempts": 0,
+      "loopbackRequests": 64,
+      "realPagesOrImagesStored": false
+    },
+    "safety": {
+      "runtimeRootGuard": "pass",
+      "targetBoundCleanupMarker": "pass",
+      "requestedRunIdTraversalGuard": "pass",
+      "loopbackHostAndSameOriginMutationGate": "pass",
+      "imageHostHttpsAndPublicAddressGate": "pass",
+      "imageManifestRegistrationsCoalescedPerProduct": "pass",
+      "finalPageAndImageLimitObservability": "pass",
+      "requestRecordsAndPhysicalRetryAccounting": "pass",
+      "crossProcessSingleCollectorLock": "pass_fail_closed_on_abnormal_exit",
+      "officialFirecrawlOriginPin": "pass",
+      "inFlightStopBehavior": "No new request or run starts after stop; because the official SDK exposes no physical AbortSignal, the run remains occupied until the in-flight transport settles.",
+      "residualRisks": [
+        "The official Firecrawl SDK transport cannot be physically cancelled mid-request, so a stop may wait for that single in-flight request and may still consume its credit.",
+        "Image hosts are resolved and required to be public before every request and redirect, but DNS lookup and fetch are separate operations; DNS rebinding remains a local-MVP TOCTOU risk.",
+        "Small run event arrays are atomically rewritten per event; this remains suitable for the bounded personal target but is not a database or distributed queue."
+      ]
+    },
+    "githubActions": {
+      "workflow": "Personal gallery MVP CI",
+      "statusAtEvidenceGeneration": "pending_draft_pr",
+      "requiredBeforeFinalDelivery": true
+    }
+  },
+  "firstCharacter": {
+    "query": "柴郡",
+    "liveRunStatus": "environment_blocked",
+    "missingGates": [
+      "HPOI_LIVE_FETCH_ENABLED=true",
+      "HPOI_WRITTEN_PERMISSION_CONFIRMED=true",
+      "FIRECRAWL_API_KEY"
+    ],
+    "rolePageParsing": "not_run_due_environment_blocked",
+    "pages": 0,
+    "productsDiscovered": 0,
+    "likelyScale": 0,
+    "likelyPrize": 0,
+    "unknown": 0,
+    "other": 0,
+    "productDetailsSucceeded": 0,
+    "productDetailsFailed": 0,
+    "imageUrls": 0,
+    "imagesDownloaded": 0,
+    "uniqueSha256Objects": 0,
+    "duplicateImages": 0,
+    "secondRunNewProducts": 0,
+    "secondRunNewObjects": 0,
+    "secondRunStatus": "not_run_due_environment_blocked",
+    "changeDetection": "not_run_live; passed_with_synthetic_fixture",
+    "hpoiRequests": 0,
+    "firecrawlRequests": 0,
+    "firecrawlCredits": 0,
+    "fixtureGalleryClaimedAsReal": false
+  },
+  "gates": {
+    "MVP-01": {
+      "status": "pass",
+      "evidence": "PR #10 squash merge and main Formal web CI run 29438305891 succeeded."
+    },
+    "MVP-02": {
+      "status": "pass",
+      "evidence": "Independent tools/personal-gallery-mvp package; formal application import scan passed."
+    },
+    "MVP-03": {
+      "status": "pass",
+      "evidence": "Provider and source scan permit only v2 scrape and limited Search; forbidden modes absent."
+    },
+    "MVP-04": {
+      "status": "pass",
+      "evidence": "Synthetic character input, stable ID, exact match, disambiguation, and owner-selection tests passed."
+    },
+    "MVP-05": {
+      "status": "pass",
+      "evidence": "Explicit-next pagination, URL deduplication, cycle/limit behavior, and no guessed pages passed offline."
+    },
+    "MVP-06": {
+      "status": "pass",
+      "evidence": "Current DOM, legacy DOM, recursive JSON-LD, missing fields, auxiliary product data, and DOM-change warnings passed."
+    },
+    "MVP-07": {
+      "status": "pass",
+      "evidence": "likely_scale, likely_prize, other, and unknown classification tests preserve unknown by default."
+    },
+    "MVP-08": {
+      "status": "pass",
+      "evidence": "ID-first/fallback identity, second-run unchanged, changed-field detection, and immutable historical run snapshots passed."
+    },
+    "MVP-09": {
+      "status": "pass",
+      "evidence": "HTTPS/public-host gate, magic/MIME/size/dimension validation, atomic storage, SHA-256 deduplication, URL-content change, and interruption cleanup passed."
+    },
+    "MVP-10": {
+      "status": "pass",
+      "evidence": "401/403/429/captcha/login/robot/robots/access-denied and outside-allowlist terminal behavior passed."
+    },
+    "MVP-11": {
+      "status": "pass",
+      "evidence": "Run/page/product/failure/warning/request manifests, immutable per-run snapshots, progressive checkpoints, partial preservation, status and restart read model passed."
+    },
+    "MVP-12": {
+      "status": "pass",
+      "evidence": "Chrome loopback browser test passed progressive display, 4/3/2, lazy gallery, lightbox, boundaries, zoom, fit and actual size."
+    },
+    "MVP-13": {
+      "status": "pass",
+      "evidence": "Product/image exclusion and restore, show-excluded, preferred cover, manual note, and reload persistence passed."
+    },
+    "MVP-14": {
+      "status": "pass",
+      "evidence": "Local workflow-equivalent guard recorded 0 Hpoi, 0 Firecrawl, 0 external browser requests; only synthetic HTML/PNG was used and no media is tracked. The committed GitHub workflow must also pass on the Draft PR before final delivery."
+    },
+    "MVP-15": {
+      "status": "environment_blocked",
+      "evidence": "The owner-confirmed CLI command was attempted, but no local .env, Firecrawl API key, live switch, or written-permission confirmation existed; it stopped before provider construction with 0 requests."
+    }
+  },
+  "gateTotals": {
+    "pass": 14,
+    "fail": 0,
+    "environmentBlocked": 1
+  }
+}

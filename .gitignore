@@ -82,6 +82,7 @@ docker-data/
 compose-data/
 .runtime/
 runtime-secrets/
+.local/
 *.exe
 *.msi
 *.dmg

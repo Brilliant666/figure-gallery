@@ -1,0 +1,30 @@
+{
+  "name": "@figure-gallery/personal-gallery-mvp",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Disposable, local-only personal figure gallery collector isolated from the formal application.",
+  "engines": {
+    "node": ">=22.13.0 <23"
+  },
+  "packageManager": "npm@10.9.8",
+  "scripts": {
+    "collect": "node src/cli/collect.js",
+    "serve": "node src/cli/serve.js",
+    "status": "node src/cli/status.js",
+    "clean:runtime": "node src/cli/clean-runtime.js",
+    "test": "node scripts/run-unit-tests.mjs",
+    "test:e2e": "playwright test",
+    "check": "node scripts/check-source.mjs",
+    "ci:summary": "node scripts/write-ci-summary.mjs"
+  },
+  "dependencies": {
+    "@mendable/firecrawl-js": "4.30.0",
+    "cheerio": "1.2.0",
+    "commander": "15.0.0",
+    "sharp": "0.35.3"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.61.1"
+  }
+}

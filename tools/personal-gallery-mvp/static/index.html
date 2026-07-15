@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Personal Figure Gallery</title>
+    <link rel="stylesheet" href="/assets/styles.css" />
+  </head>
+  <body>
+    <main class="shell home-shell">
+      <header class="hero">
+        <p class="eyebrow">LOCAL · PRIVATE · OWNER-OPERATED</p>
+        <h1>Personal Figure Gallery</h1>
+        <p>输入角色名，生成仅保存在本机的动作参考图库。</p>
+      </header>
+
+      <aside class="source-notice" role="alert">
+        <strong>来源规则</strong>
+        <p>
+          实时开关不等于取得 Hpoi 自动访问许可。只有在你已确认当前规则并取得明确书面许可后，才可启用实时任务。
+          本工具不使用 Cookie、登录、验证码绕过、代理轮换或反检测能力；遇到拒绝会停止。
+        </p>
+      </aside>
+
+      <form id="collect-form" class="panel collection-form">
+        <label>
+          角色名称
+          <input id="query" name="query" value="柴郡" required autocomplete="off" />
+        </label>
+        <label>
+          可选 Hpoi 角色页 URL
+          <input id="character-url" name="characterUrl" type="url" placeholder="https://www.hpoi.net/…" />
+        </label>
+        <div class="limit-grid">
+          <label>
+            最大分页
+            <input name="maxListPages" type="number" value="20" min="1" max="20" />
+          </label>
+          <label>
+            最大商品
+            <input name="maxProducts" type="number" value="200" min="1" max="200" />
+          </label>
+          <label>
+            每商品图片
+            <input name="maxImagesPerProduct" type="number" value="5" min="1" max="5" />
+          </label>
+        </div>
+        <label class="permission-confirmation">
+          <input name="confirmSourcePermission" type="checkbox" />
+          我确认已取得适用于本次自动访问的明确书面许可，并理解实时开关本身不构成许可。
+        </label>
+        <div class="actions">
+          <button id="start-button" type="submit">开始收集</button>
+          <button id="stop-button" type="button" class="secondary" disabled>停止当前任务</button>
+        </div>
+      </form>
+
+      <section class="panel" aria-labelledby="status-heading">
+        <div class="section-heading">
+          <h2 id="status-heading">运行状态</h2>
+          <span id="status-pill" class="status-pill">idle</span>
+        </div>
+        <p id="status-message" class="muted">暂无运行。</p>
+        <dl class="metrics">
+          <div><dt>页数</dt><dd id="pages-count">0</dd></div>
+          <div><dt>商品</dt><dd id="products-count">0</dd></div>
+          <div><dt>图片</dt><dd id="images-count">0</dd></div>
+          <div><dt>失败</dt><dd id="failures-count">0</dd></div>
+        </dl>
+        <a id="active-gallery-link" class="button-link hidden" href="#">打开图库</a>
+        <div id="disambiguation" class="disambiguation hidden" aria-live="polite"></div>
+      </section>
+
+      <section class="panel" aria-labelledby="recent-heading">
+        <h2 id="recent-heading">最近运行</h2>
+        <div id="recent-runs" class="recent-list"><p class="muted">尚无本地记录。</p></div>
+      </section>
+    </main>
+    <script type="module" src="/assets/home.js"></script>
+  </body>
+</html>

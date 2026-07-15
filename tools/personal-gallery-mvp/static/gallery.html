@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Private Gallery · Personal Figure Gallery</title>
+    <link rel="stylesheet" href="/assets/styles.css" />
+  </head>
+  <body>
+    <main class="shell gallery-shell">
+      <nav class="top-nav"><a href="/">← 返回收集首页</a></nav>
+      <header class="gallery-header">
+        <p class="eyebrow">PRIVATE LOCAL GALLERY</p>
+        <h1 id="gallery-title">正在读取图库…</h1>
+        <p id="gallery-meta" class="muted"></p>
+        <a id="recollect-link" class="button-link" href="/">重新收集</a>
+      </header>
+
+      <section class="panel filter-panel" aria-label="图库过滤">
+        <label>
+          类型
+          <select id="classification-filter">
+            <option value="default">比例 / 景品 / unknown</option>
+            <option value="all">全部类型</option>
+            <option value="likely_scale">likely scale</option>
+            <option value="likely_prize">likely prize</option>
+            <option value="unknown">unknown</option>
+            <option value="other">other</option>
+          </select>
+        </label>
+        <label>
+          厂商
+          <select id="manufacturer-filter"><option value="all">全部厂商</option></select>
+        </label>
+        <label>
+          分类/比例搜索
+          <input id="detail-filter" type="search" placeholder="分类或比例" />
+        </label>
+        <label class="inline-check">
+          <input id="show-excluded" type="checkbox" />
+          显示已排除
+        </label>
+      </section>
+
+      <dl id="gallery-metrics" class="metrics gallery-metrics"></dl>
+      <p id="gallery-error" class="error-message hidden" role="alert"></p>
+      <section id="product-grid" class="product-grid" aria-live="polite"></section>
+      <p id="empty-state" class="empty-state hidden">当前过滤条件下没有图片。</p>
+
+      <details class="panel failures-panel">
+        <summary>查看失败项目（<span id="failure-count">0</span>）</summary>
+        <ul id="failure-list"></ul>
+      </details>
+    </main>
+
+    <div id="lightbox" class="lightbox hidden" role="dialog" aria-modal="true" aria-label="候选图片灯箱">
+      <div class="lightbox-toolbar">
+        <button id="lightbox-close" type="button" aria-label="关闭">关闭 ×</button>
+        <button id="zoom-out" type="button" aria-label="缩小">−</button>
+        <output id="zoom-value">100%</output>
+        <button id="zoom-in" type="button" aria-label="放大">＋</button>
+        <button id="zoom-fit" type="button">Fit</button>
+        <button id="zoom-actual" type="button">Actual size</button>
+      </div>
+      <button id="lightbox-previous" class="lightbox-arrow previous" type="button" aria-label="上一张">‹</button>
+      <div id="lightbox-stage" class="lightbox-stage">
+        <img id="lightbox-image" alt="" draggable="false" />
+      </div>
+      <button id="lightbox-next" class="lightbox-arrow next" type="button" aria-label="下一张">›</button>
+      <footer class="lightbox-caption">
+        <span id="lightbox-position"></span>
+        <strong id="lightbox-product-title"></strong>
+        <span id="lightbox-product-meta"></span>
+      </footer>
+    </div>
+
+    <script type="module" src="/assets/gallery.js"></script>
+  </body>
+</html>

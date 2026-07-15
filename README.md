@@ -4,9 +4,9 @@ Figure Gallery 是一个以“角色—官方手办原型—主图”为核心�
 
 ## 当前状态
 
-PR-00 正式工程基线已经通过普通 Merge commit 进入 `main`。当前 `feat/pr-01-core-catalog` 是 **PR-01 Draft 候选实现**：它只增加核心目录 Collection、框架无关合同、受控领域命令、最小审计骨架、只读 Admin 与 PostgreSQL migration，仍须通过最终 Formal web CI 和人工审查，尚未合并。
+PR-00 正式工程基线和 PR-01 核心目录模型均已进入 `main`，对应 Formal web CI 已通过。来源/候选池、审核工作流、正式媒体与主图、merge/split/undo、公开搜索和图库仍未实现。
 
-该实现仍不等于可用产品：来源/候选池、审核工作流、正式媒体与主图、merge/split/undo、公开搜索和图库均未实现，PR-02 尚未开始。
+当前优先交付 **personal gallery MVP**：在 `tools/personal-gallery-mvp/` 建立一个可删除、只在本机运行、与正式应用完全隔离的个人拍摄参考工具。正式 PR-02—PR-08 路线暂时暂停但不删除；MVP 不是正式 Candidate、Review 或 Media 实现，也不会把自动数据写入正式目录。
 
 已接受的技术底座：
 
@@ -37,6 +37,7 @@ PR-00 正式工程基线已经通过普通 Merge commit 进入 `main`。当前 `
 - `research/`：历史研究结论与验证报告，不作为运行时输入。
 - `research/evidence/`：小型、必要、脱敏的历史证据。
 - `spikes/`：可丢弃技术验证，永远不得进入正式依赖图。
+- `tools/personal-gallery-mvp/`：独立、可删除的个人图库 MVP；不属于 `apps/web` dependency、正式构建上下文或正式数据边界。
 
 正式目录规划见 [系统架构](docs/SYSTEM_ARCHITECTURE.md)。`apps/web` 的脚手架来源见 [PR-00 脚手架溯源](docs/PR00_SCAFFOLD_PROVENANCE.md)。**不要复制、移动、改造或导入 `spikes/`；它们不属于正式 workspace、构建上下文或运行时依赖。**
 
@@ -53,13 +54,14 @@ PR-00 正式工程基线已经通过普通 Merge commit 进入 `main`。当前 `
 - [PR-00 脚手架溯源](docs/PR00_SCAFFOLD_PROVENANCE.md)
 - [PR-01 核心目录实现](docs/PR01_CORE_CATALOG_IMPLEMENTATION.md)
 - [PR-01 业务身份实现](docs/PR01_IDENTITY_IMPLEMENTATION.md)
+- [MVP-01 个人自动手办图库](docs/MVP01_PERSONAL_AUTO_GALLERY.md)
 - [需求追踪矩阵](docs/TRACEABILITY_MATRIX.md)
 - [技术决策 ADR](research/TECH_STACK_DECISION.md)
 
 ## 来源与 Hpoi 边界
 
-Hpoi 当前只可作为人工参考，不得自动访问；正式代码与 CI 必须保持 Hpoi 请求数为 0。未取得明确书面许可前，不得编写正式 Hpoi adapter。会员购和厂商官网也只作人工补充与核验，不自动访问。第一阶段资料只能人工录入、人工粘贴来源 URL、从明确允许的离线文件导入，或由未来获得授权的 Source Adapter 提交。所有来源数据必须先进入候选池，不能自动覆盖正式数据或正式主图。
+Hpoi 当前只可作为人工参考；正式应用与 CI 必须保持 Hpoi 请求数为 0。未取得明确书面许可前，不得编写正式 Hpoi adapter。独立 personal gallery MVP 只提供默认关闭的技术能力：真实请求还必须同时具有明确书面许可确认、项目所有者主动打开实时开关、有效 Firecrawl 配置和本次交互确认；开关本身不代表授权，个人用途也不自动构成豁免。会员购和厂商官网仍只作人工补充与核验，不自动访问。所有未来正式来源数据必须先进入候选池，不能自动覆盖正式数据或正式主图。
 
 ## 开发状态
 
-PR-00 已完成并合并；PR-01 正在独立 Draft 分支实现核心目录，最终门禁结果以 `research/evidence/pr01/catalog-results.json` 和对应 Formal web CI 为准，README 不预先宣称通过。正式变化必须使用任务独立分支和独立 PR；未经明确授权不得合并或部署。PR-01 达到停止条件后必须停止，并按 [PR-00—PR-08 交付路线](docs/DELIVERY_ROADMAP.md)等待新的 PR-02 授权。
+PR-00 与 PR-01 已完成并合并。当前 `feat/mvp-01-personal-auto-gallery` 只交付隔离的个人图库 Draft；正式 PR-02—PR-08 暂停，PR-02 尚未开始。正式变化必须使用任务独立分支和独立 PR；未经明确授权不得合并或部署。MVP 达到停止条件后必须停止，恢复正式路线仍需新的明确授权。
