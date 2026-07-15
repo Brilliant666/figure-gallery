@@ -10,6 +10,7 @@ import {
 import { seedCatalog } from '@figure-gallery/test-fixtures'
 import { getPayload, type PayloadRequest } from 'payload'
 
+import { RESTRICTED_CATALOG_REFERENCES } from '../../src/db/catalog-foreign-key-policy'
 import config from '../../src/payload.config'
 import { executeCatalogCommand } from '../../src/domain/catalog/services'
 
@@ -483,6 +484,10 @@ try {
   )
 
   const work = secondSeed.results.workFrontier
+  const logsBeforeConcurrentUpdate = await payload.count({
+    collection: 'operation-logs',
+    overrideAccess: true,
+  })
   const concurrentCommands: CatalogCommand[] = [
     {
       displayName: 'Lattice Frontier Concurrent Alpha',
@@ -512,6 +517,29 @@ try {
       rejected.reason instanceof CatalogDomainError &&
       rejected.reason.code === 'CATALOG_VERSION_CONFLICT',
     'The losing CAS update must return CATALOG_VERSION_CONFLICT.',
+  )
+  const workAfterConcurrentUpdate = await payload.find({
+    collection: 'works',
+    limit: 1,
+    overrideAccess: true,
+    where: { stableId: { equals: work.stableId } },
+  })
+  check(
+    workAfterConcurrentUpdate.docs[0]?.lockVersion === work.lockVersion + 1 &&
+      concurrentCommands.some(
+        (command) =>
+          command.type === 'updateWork' &&
+          command.displayName === workAfterConcurrentUpdate.docs[0]?.displayName,
+      ),
+    'The winning CAS update must be the only persisted state transition.',
+  )
+  const logsAfterConcurrentUpdate = await payload.count({
+    collection: 'operation-logs',
+    overrideAccess: true,
+  })
+  check(
+    logsAfterConcurrentUpdate.totalDocs === logsBeforeConcurrentUpdate.totalDocs + 1,
+    'Concurrent CAS updates must append exactly one OperationLog.',
   )
   pass('optimistic-concurrency', 'one winner and one stable 409-domain conflict')
 
@@ -630,11 +658,62 @@ try {
     'Hidden but undeleted Character must remain eligible.',
   )
   pass(
-    'transaction-rollback',
-    'hidden Character remained eligible while failed deletion left version and state unchanged',
+    'dependency-rejection-atomicity',
+    'hidden Character remained eligible while the pre-mutation dependency guard left state unchanged',
   )
 
   const eligiblePrototype = secondSeed.results.prototypeSolarArcA
+  const prototypeBeforeRollback = await payload.find({
+    collection: 'figure-prototypes',
+    limit: 1,
+    overrideAccess: true,
+    where: { stableId: { equals: eligiblePrototype.stableId } },
+  })
+  const prototypeBeforeRollbackDocument = prototypeBeforeRollback.docs[0]
+  check(prototypeBeforeRollbackDocument, 'Eligible rollback prototype must exist.')
+  check(
+    prototypeBeforeRollbackDocument.lockVersion === eligiblePrototype.lockVersion,
+    'Rollback fixture must begin at the expected aggregate version.',
+  )
+  const logsBeforeRollback = await payload.count({
+    collection: 'operation-logs',
+    overrideAccess: true,
+  })
+  await expectDomainError('MANUFACTURER_NOT_ACTIVE', () =>
+    execute({
+      expectedVersion: eligiblePrototype.lockVersion,
+      manufacturerStableId: secondSeed.stableIds.manufacturerDraft,
+      operationId: randomUUID(),
+      reason: 'Force a post-CAS eligibility failure to verify transaction rollback.',
+      stableId: eligiblePrototype.stableId,
+      type: 'updateFigurePrototype',
+    }),
+  )
+  const prototypeAfterRollback = await payload.find({
+    collection: 'figure-prototypes',
+    limit: 1,
+    overrideAccess: true,
+    where: { stableId: { equals: eligiblePrototype.stableId } },
+  })
+  check(
+    prototypeAfterRollback.docs[0]?.lockVersion === prototypeBeforeRollbackDocument.lockVersion &&
+      prototypeAfterRollback.docs[0]?.manufacturer ===
+        prototypeBeforeRollbackDocument.manufacturer,
+    'A post-CAS eligibility failure must roll back both version and manufacturer.',
+  )
+  const logsAfterRollback = await payload.count({
+    collection: 'operation-logs',
+    overrideAccess: true,
+  })
+  check(
+    logsAfterRollback.totalDocs === logsBeforeRollback.totalDocs,
+    'A rolled-back aggregate mutation must not append an OperationLog.',
+  )
+  pass(
+    'transaction-rollback',
+    'a post-CAS eligibility failure rolled back aggregate state, version and audit append',
+  )
+
   await expectDomainError('FORMAL_MAIN_IMAGE_CAPABILITY_NOT_AVAILABLE', () =>
     execute({
       expectedVersion: eligiblePrototype.lockVersion,
@@ -945,26 +1024,44 @@ try {
   )
 
   const pool = payload.db.pool
-  const restrictedCatalogForeignKeys = [
-    'character_aliases_character_id_characters_id_fk',
-    'characters_work_id_works_id_fk',
-    'figure_prototype_characters_character_id_characters_id_fk',
-    'figure_prototype_characters_prototype_id_figure_prototypes_id_fk',
-    'figure_prototypes_manufacturer_id_manufacturers_id_fk',
-    'figure_prototypes_merged_into_id_figure_prototypes_id_fk',
-    'figure_prototypes_work_id_works_id_fk',
-    'figure_versions_prototype_id_figure_prototypes_id_fk',
-  ]
-  const foreignKeyPolicies = await pool.query<{ confdeltype: string; conname: string }>(
-    `select conname, confdeltype
-       from pg_constraint
-       where conname = any($1::text[])
-       order by conname`,
-    [restrictedCatalogForeignKeys],
+  const foreignKeyPolicies = await pool.query<{
+    confdeltype: string
+    source_column: string
+    source_table: string
+    target_column: string
+    target_table: string
+  }>(
+    `select fk.confdeltype,
+            source_table.relname as source_table,
+            source_column.attname as source_column,
+            target_table.relname as target_table,
+            target_column.attname as target_column
+       from pg_constraint fk
+       join pg_class source_table on source_table.oid = fk.conrelid
+       join pg_namespace source_namespace on source_namespace.oid = source_table.relnamespace
+       join pg_class target_table on target_table.oid = fk.confrelid
+       join pg_namespace target_namespace on target_namespace.oid = target_table.relnamespace
+       join pg_attribute source_column
+         on source_column.attrelid = source_table.oid and source_column.attnum = fk.conkey[1]
+       join pg_attribute target_column
+         on target_column.attrelid = target_table.oid and target_column.attnum = fk.confkey[1]
+       where fk.contype = 'f'
+         and source_namespace.nspname = 'public'
+         and target_namespace.nspname = 'public'
+         and source_table.relname = any($1::text[])`,
+    [[...new Set(RESTRICTED_CATALOG_REFERENCES.map(([sourceTable]) => sourceTable))]],
+  )
+  const foreignKeyPolicyByRelation = new Map(
+    foreignKeyPolicies.rows.map((row) => [
+      `${row.source_table}.${row.source_column}->${row.target_table}.${row.target_column}`,
+      row.confdeltype,
+    ]),
   )
   check(
-    foreignKeyPolicies.rows.length === restrictedCatalogForeignKeys.length &&
-      foreignKeyPolicies.rows.every(({ confdeltype }) => confdeltype === 'r'),
+    RESTRICTED_CATALOG_REFERENCES.every(
+      ([sourceTable, sourceColumn, targetTable]) =>
+        foreignKeyPolicyByRelation.get(`${sourceTable}.${sourceColumn}->${targetTable}.id`) === 'r',
+    ),
     'All eight formal catalog foreign keys must use ON DELETE RESTRICT.',
   )
   pass('postgres-foreign-key-policy', '8/8 formal catalog references use ON DELETE RESTRICT')
