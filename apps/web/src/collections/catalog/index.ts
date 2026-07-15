@@ -1,0 +1,8 @@
+export { Character } from './Character'
+export { CharacterAlias } from './CharacterAlias'
+export { FigurePrototype } from './FigurePrototype'
+export { FigurePrototypeCharacter } from './FigurePrototypeCharacter'
+export { FigureVersion } from './FigureVersion'
+export { Manufacturer } from './Manufacturer'
+export { OperationLog } from './OperationLog'
+export { Work } from './Work'

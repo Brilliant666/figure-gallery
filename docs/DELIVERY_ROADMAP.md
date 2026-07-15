@@ -4,6 +4,8 @@
 
 本路线把正式产品拆成九个可独立审核、验证和回滚的 PR。顺序是依赖顺序，不是自动执行许可；每个 PR 都必须由单独任务明确授权、从最新 `main` 创建独立分支，并默认以 Draft PR 交付。达到当前 PR 的停止条件后立即停止。
 
+当前状态：PR-00 已合并；PR-01 在 `feat/pr-01-core-catalog` 作为 Draft 候选实现，等待最终 Formal web CI 与人工审查；PR-02—PR-08 均未开始。此状态不改变任何后续 PR 的原定范围。
+
 共同规则：
 
 - 技术底座固定为 Payload CMS `3.86.x`、Next.js `16.2.x`、React `19.2.x`、TypeScript、Node.js `22.x`、PostgreSQL 16 与 S3 兼容对象存储。
@@ -15,19 +17,21 @@
 
 ## 2. 总览
 
-| PR | 主题 | 主要交付 | 依赖 |
-| --- | --- | --- | --- |
-| PR-00 | 正式项目初始化 | 官方脚手架、目录边界、CI、health、空 migration | 本蓝图获批 |
-| PR-01 | 核心目录数据模型 | Work、Character、Manufacturer、FigurePrototype、FigureVersion | PR-00 |
-| PR-02 | 来源和候选池 | CandidateClient、SourceRecord、CandidateRecord、CandidateImage | PR-01 |
-| PR-03 | 审核工作流 | ReviewWorkItem、字段决定、允许目标、OperationLog | PR-02 |
-| PR-04 | 媒体和正式主图 | 内容寻址媒体、S3、派生图、提升与主图保护 | PR-03 |
-| PR-05 | Merge/Split/Undo | operation dependency、事务、乐观锁、管理操作 UI | PR-04 |
-| PR-06 | 公开搜索和图库 | 搜索、消歧、图库、分页、成人过滤、灯箱 | PR-05 |
-| PR-07 | 导出、备份和恢复 | JSON/CSV、对象 manifest、恢复与完整性审计 | PR-06 |
-| PR-08 | 部署准备 | standalone、readiness、可观测性、runbook、非生产验证 | PR-07 |
+| PR | 状态 | 主题 | 主要交付 | 依赖 |
+| --- | --- | --- | --- | --- |
+| PR-00 | 已合并 | 正式项目初始化 | 官方脚手架、目录边界、CI、health、空 migration | 本蓝图获批 |
+| PR-01 | Draft 候选实现，验证中 | 核心目录数据模型 | Work、Character/Alias、Manufacturer、Prototype/Character relation/Version、OperationLog 骨架 | PR-00 |
+| PR-02 | 未开始 | 来源和候选池 | CandidateClient、SourceRecord、CandidateRecord、CandidateImage | PR-01 |
+| PR-03 | 未开始 | 审核工作流 | ReviewWorkItem、字段决定、允许目标、OperationLog | PR-02 |
+| PR-04 | 未开始 | 媒体和正式主图 | 内容寻址媒体、S3、派生图、提升与主图保护 | PR-03 |
+| PR-05 | 未开始 | Merge/Split/Undo | operation dependency、事务、乐观锁、管理操作 UI | PR-04 |
+| PR-06 | 未开始 | 公开搜索和图库 | 搜索、消歧、图库、分页、成人过滤、灯箱 | PR-05 |
+| PR-07 | 未开始 | 导出、备份和恢复 | JSON/CSV、对象 manifest、恢复与完整性审计 | PR-06 |
+| PR-08 | 未开始 | 部署准备 | standalone、readiness、可观测性、runbook、非生产验证 | PR-07 |
 
 ## 3. PR-00：正式项目初始化
+
+**状态：已合并。** 后续 PR 必须保留 scaffold provenance、PR-00 migration 与 Formal web CI 回归，不能改写历史以迁就当前实现。
 
 ### 目标
 
@@ -66,10 +70,12 @@
 
 ## 4. PR-01：核心目录数据模型
 
+**状态：Draft 候选实现，最终门禁待 CI。** 具体实现见 [PR-01 核心目录实现](PR01_CORE_CATALOG_IMPLEMENTATION.md) 和 [业务身份实现](PR01_IDENTITY_IMPLEMENTATION.md)；只有最终 `CAT-01`—`CAT-21` 全部 pass 才可进入人工审查。
+
 ### 目标
 
-- 实现 Work、Character、Character aliases、Manufacturer、FigurePrototype、FigureVersion。
-- 建立 stable ID、状态、软删除、时间戳、关系、原型级授权/收录审核、完整灰模门禁和数据库约束。
+- 实现 Work、Character、CharacterAlias、Manufacturer、FigurePrototype、FigurePrototypeCharacter、FigureVersion 和最小 OperationLog。
+- 保留 Payload serial technical ID，并建立不可变、唯一 UUID `stableId` 业务身份、状态、软删除、时间戳、关系、原型级授权/收录审核、完整灰模门禁和数据库约束。
 - 提供基础只读或受限 Payload Collection Admin 页面。
 - 建立正式写入的领域 service 和 `OperationLog` 最小骨架。
 
@@ -80,15 +86,16 @@
 
 ### 数据迁移
 
-- 新增核心目录表、关系表、枚举/检查约束和索引。
+- 新增八个核心目录/审计表、Manufacturer owned alias 表、枚举/检查约束和部分唯一索引；不修改 PR-00 baseline migration。
 - migration 必须提供向下回滚或明确的 forward-fix 方案；seed 只含合成测试数据。
 
 ### 测试
 
-- 关系、多角色/可选作品、别名搜索文档、状态和软删除单元/集成测试。
+- 关系、多角色/可选作品、别名搜索文档、状态、稳定身份、软删除和 CAS/事务单元/集成测试。
 - 正版/正式授权第三方、排除未授权类别、不同制造商必须独立原型，以及 gray_prototype 只有 completeness=complete 才可发布的收录测试。
 - published prototype 的主图与 active Manufacturer 前置约束先以不可发布占位策略验证。
-- Admin 不能绕过领域 service 的攻击测试。
+- REST、GraphQL、Local API、Admin save 与 overrideAccess 不能绕过领域 service 的攻击测试；Catalog Operations 使用真实浏览器验证。
+- 最终机器证据必须覆盖 `CAT-01`—`CAT-21`，未运行项不得写成通过。
 
 ### 回滚
 

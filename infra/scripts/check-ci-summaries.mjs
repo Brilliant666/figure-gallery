@@ -30,6 +30,7 @@ const secretValues = [
   "DATABASE_URI",
   "S3_ACCESS_KEY_ID",
   "S3_SECRET_ACCESS_KEY",
+  "PR01_ADMIN_PASSWORD",
 ]
   .map((name) => [name, process.env[name]])
   .filter((entry) => entry[1]);

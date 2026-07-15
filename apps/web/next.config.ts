@@ -5,10 +5,11 @@ import { fileURLToPath } from 'url'
 
 const __filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(__filename)
+const repositoryRoot = path.resolve(dirname, '../..')
 
 const nextConfig: NextConfig = {
   output: 'standalone',
-  outputFileTracingRoot: dirname,
+  outputFileTracingRoot: repositoryRoot,
   outputFileTracingIncludes: {
     '/*': ['./node_modules/sharp/**/*', './node_modules/@img/**/*'],
   },
@@ -30,7 +31,7 @@ const nextConfig: NextConfig = {
     return webpackConfig
   },
   turbopack: {
-    root: path.resolve(dirname),
+    root: repositoryRoot,
   },
 }
 

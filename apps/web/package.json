@@ -17,6 +17,8 @@
     "start": "cross-env NEXT_TELEMETRY_DISABLED=1 NODE_OPTIONS=--no-deprecation next start",
     "test": "npm run test:unit",
     "test:e2e": "cross-env NODE_OPTIONS=\"--no-deprecation --import=tsx/esm\" playwright test --config=playwright.config.ts",
+    "test:integration": "cross-env NODE_OPTIONS=\"--no-deprecation --import=tsx/esm\" tsx tests/integration/catalog.integration.ts",
+    "test:migration-cycle": "cross-env NODE_OPTIONS=\"--no-deprecation --import=tsx/esm\" tsx tests/integration/migration-cycle.ts",
     "test:unit": "cross-env NODE_OPTIONS=--no-deprecation vitest run --config ./vitest.config.mts",
     "typecheck": "tsc --noEmit"
   },

@@ -16,7 +16,7 @@ concurrency:
 
 jobs:
   pr00:
-    name: PR-00 initialization gates
+    name: PR-00 regression and PR-01 core catalog gates
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     env:
@@ -53,9 +53,20 @@ jobs:
           done
 
           database_uri="postgresql://figure_gallery:${postgres_password}@127.0.0.1:55432/figure_gallery_pr00"
+          cycle_database="figure_gallery_pr01_cycle_${GITHUB_RUN_ID}_${GITHUB_RUN_ATTEMPT}"
+          cycle_database_uri="postgresql://figure_gallery:${postgres_password}@127.0.0.1:55432/${cycle_database}"
+          admin_email="catalog-admin-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}@synthetic.invalid"
+          admin_password="$(openssl rand -base64 36 | tr -d '\n')"
           init_markers="$RUNNER_TEMP/pr00-init-markers"
-          pr00_summary="$RUNNER_TEMP/pr00-summary"
-          mkdir -p "$init_markers" "$pr00_summary"
+          cat_markers="$RUNNER_TEMP/pr01-catalog-markers"
+          formal_summary_root="$RUNNER_TEMP/formal-web-summary"
+          pr00_summary="$formal_summary_root/pr00"
+          pr01_summary="$formal_summary_root/pr01"
+          mkdir -p "$init_markers" "$cat_markers" "$pr00_summary" "$pr01_summary"
+
+          for value in "$database_uri" "$cycle_database_uri" "$admin_password"; do
+            echo "::add-mask::$value"
+          done
 
           {
             echo "NODE_ENV=test"
@@ -72,7 +83,16 @@ jobs:
             echo "S3_FORCE_PATH_STYLE=true"
             echo "BUILD_VERSION=$GITHUB_SHA"
             echo "INIT_MARKERS=$init_markers"
+            echo "CAT_MARKERS=$cat_markers"
+            echo "FORMAL_SUMMARY_ROOT=$formal_summary_root"
             echo "PR00_SUMMARY=$pr00_summary"
+            echo "PR01_SUMMARY=$pr01_summary"
+            echo "PR01_ADMIN_EMAIL=$admin_email"
+            echo "PR01_ADMIN_PASSWORD=$admin_password"
+            echo "PR01_INTEGRATION_OUTPUT=$pr01_summary/catalog-integration.json"
+            echo "PR01_MIGRATION_OUTPUT=$pr01_summary/migration-cycle.json"
+            echo "PR01_CYCLE_DB=$cycle_database"
+            echo "PR01_CYCLE_DATABASE_URI=$cycle_database_uri"
           } >> "$GITHUB_ENV"
 
           printf '%s\n' \
@@ -121,6 +141,7 @@ jobs:
         run: |
           set -euo pipefail
           node infra/scripts/check-formal-boundaries.mjs
+          node infra/scripts/check-catalog-boundaries.mjs
           node infra/scripts/mark-init-gate.mjs INIT-01 "$INIT_MARKERS" "fixed create-payload-app scaffold commit, provenance, and no-spike boundary verified"
           node infra/scripts/mark-init-gate.mjs INIT-03 "$INIT_MARKERS" "formal directory and dependency boundaries verified"
 
@@ -157,13 +178,14 @@ jobs:
           set -euo pipefail
           npm audit --omit=dev --audit-level=high --json > "$PR00_SUMMARY/npm-audit.json"
 
-      - name: Verify generated Payload Admin import map
+      - name: Verify generated Payload types and Admin import map
         shell: bash
         working-directory: apps/web
         run: |
           set -euo pipefail
+          npm run generate:types
           npm run generate:importmap
-          git diff --exit-code -- 'src/app/(payload)/admin/importMap.js'
+          git diff --exit-code -- 'src/payload-types.ts' 'src/app/(payload)/admin/importMap.js'
 
       - name: Typecheck the formal application
         working-directory: apps/web
@@ -181,6 +203,7 @@ jobs:
           npm run test:unit
           node ../../infra/scripts/mark-init-gate.mjs INIT-04 "$INIT_MARKERS" "environment schema, secret redaction, and production rejection tests passed"
           node ../../infra/scripts/mark-init-gate.mjs INIT-08 "$INIT_MARKERS" "typecheck, ESLint, and Vitest passed"
+          node ../../infra/scripts/mark-catalog-gate.mjs CAT-03 "$CAT_MARKERS" "normalization version, deterministic normalization/search document, enums, state transitions, errors, command digest, and eligibility primitives passed Vitest"
 
       - name: Remove any stale disposable services and volumes
         shell: bash
@@ -210,7 +233,7 @@ jobs:
           )
           docker compose --env-file "$COMPOSE_ENV" -f "$COMPOSE_FILE" exec -T postgres \
             psql -X -v ON_ERROR_STOP=1 -U figure_gallery -d figure_gallery_pr00 -Atc \
-            "SELECT md5(COALESCE(string_agg(entry, E'\\n' ORDER BY entry), '')) FROM (SELECT 'column|' || table_name || '|' || ordinal_position || '|' || column_name || '|' || data_type || '|' || is_nullable || '|' || COALESCE(column_default, '') AS entry FROM information_schema.columns WHERE table_schema = 'public' UNION ALL SELECT 'constraint|' || c.conname || '|' || pg_get_constraintdef(c.oid) FROM pg_constraint c JOIN pg_namespace n ON n.oid = c.connamespace WHERE n.nspname = 'public' UNION ALL SELECT 'index|' || tablename || '|' || indexname || '|' || indexdef FROM pg_indexes WHERE schemaname = 'public') state" \
+            "SELECT md5(COALESCE(string_agg(entry, E'\\n' ORDER BY entry), '')) FROM (SELECT 'column|' || table_name || '|' || ordinal_position || '|' || column_name || '|' || data_type || '|' || is_nullable || '|' || COALESCE(column_default, '') AS entry FROM information_schema.columns WHERE table_schema = 'public' UNION ALL SELECT 'constraint|' || c.conname || '|' || pg_get_constraintdef(c.oid) FROM pg_constraint c JOIN pg_namespace n ON n.oid = c.connamespace WHERE n.nspname = 'public' UNION ALL SELECT 'index|' || tablename || '|' || indexname || '|' || indexdef FROM pg_indexes WHERE schemaname = 'public' UNION ALL SELECT 'enum|' || t.typname || '|' || e.enumsortorder::text || '|' || e.enumlabel FROM pg_type t JOIN pg_enum e ON t.oid = e.enumtypid JOIN pg_namespace n ON n.oid = t.typnamespace WHERE n.nspname = 'public') state" \
             > "$RUNNER_TEMP/schema-signature-fresh.txt"
           docker compose --env-file "$COMPOSE_ENV" -f "$COMPOSE_FILE" exec -T postgres \
             psql -X -v ON_ERROR_STOP=1 -U figure_gallery -d figure_gallery_pr00 -Atc \
@@ -235,7 +258,7 @@ jobs:
           )
           docker compose --env-file "$COMPOSE_ENV" -f "$COMPOSE_FILE" exec -T postgres \
             psql -X -v ON_ERROR_STOP=1 -U figure_gallery -d figure_gallery_pr00 -Atc \
-            "SELECT md5(COALESCE(string_agg(entry, E'\\n' ORDER BY entry), '')) FROM (SELECT 'column|' || table_name || '|' || ordinal_position || '|' || column_name || '|' || data_type || '|' || is_nullable || '|' || COALESCE(column_default, '') AS entry FROM information_schema.columns WHERE table_schema = 'public' UNION ALL SELECT 'constraint|' || c.conname || '|' || pg_get_constraintdef(c.oid) FROM pg_constraint c JOIN pg_namespace n ON n.oid = c.connamespace WHERE n.nspname = 'public' UNION ALL SELECT 'index|' || tablename || '|' || indexname || '|' || indexdef FROM pg_indexes WHERE schemaname = 'public') state" \
+            "SELECT md5(COALESCE(string_agg(entry, E'\\n' ORDER BY entry), '')) FROM (SELECT 'column|' || table_name || '|' || ordinal_position || '|' || column_name || '|' || data_type || '|' || is_nullable || '|' || COALESCE(column_default, '') AS entry FROM information_schema.columns WHERE table_schema = 'public' UNION ALL SELECT 'constraint|' || c.conname || '|' || pg_get_constraintdef(c.oid) FROM pg_constraint c JOIN pg_namespace n ON n.oid = c.connamespace WHERE n.nspname = 'public' UNION ALL SELECT 'index|' || tablename || '|' || indexname || '|' || indexdef FROM pg_indexes WHERE schemaname = 'public' UNION ALL SELECT 'enum|' || t.typname || '|' || e.enumsortorder::text || '|' || e.enumlabel FROM pg_type t JOIN pg_enum e ON t.oid = e.enumtypid JOIN pg_namespace n ON n.oid = t.typnamespace WHERE n.nspname = 'public') state" \
             > "$RUNNER_TEMP/schema-signature-repeat.txt"
           docker compose --env-file "$COMPOSE_ENV" -f "$COMPOSE_FILE" exec -T postgres \
             psql -X -v ON_ERROR_STOP=1 -U figure_gallery -d figure_gallery_pr00 -Atc \
@@ -269,7 +292,7 @@ jobs:
           drift_root="$RUNNER_TEMP/pr00-drift"
           rm -rf "$drift_root"
           mkdir -p "$drift_root"
-          git archive HEAD apps/web | tar -xf - -C "$drift_root"
+          git archive HEAD apps/web packages/domain-contracts | tar -xf - -C "$drift_root"
           ln -s "$GITHUB_WORKSPACE/apps/web/node_modules" "$drift_root/apps/web/node_modules"
           find "$drift_root/apps/web/src/migrations" -maxdepth 1 -type f -print0 \
             | sort -z | xargs -0 sha256sum > "$RUNNER_TEMP/migration-files-before.txt"
@@ -282,6 +305,45 @@ jobs:
           cmp "$RUNNER_TEMP/migration-files-before.txt" "$RUNNER_TEMP/migration-files-after.txt"
           git diff --exit-code -- apps/web/src/migrations apps/web/src/payload-types.ts
           node infra/scripts/mark-init-gate.mjs INIT-05 "$INIT_MARKERS" "PostgreSQL fresh/repeat migration, status, and drift check passed"
+
+      - name: Verify PR-00 baseline to PR-01 up down up in an independent database
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$PR01_CYCLE_DB" != 'figure_gallery_pr00'
+          [[ "$PR01_CYCLE_DB" =~ ^[a-z0-9_]+$ ]]
+          docker compose --env-file "$COMPOSE_ENV" -f "$COMPOSE_FILE" exec -T postgres \
+            createdb -U figure_gallery --maintenance-db=postgres "$PR01_CYCLE_DB"
+          (
+            cd "$APP_DIR"
+            DATABASE_URI="$PR01_CYCLE_DATABASE_URI" npm run test:migration-cycle
+          )
+          test -s "$PR01_MIGRATION_OUTPUT"
+          docker compose --env-file "$COMPOSE_ENV" -f "$COMPOSE_FILE" exec -T postgres \
+            dropdb -f -U figure_gallery --maintenance-db=postgres "$PR01_CYCLE_DB"
+          node infra/scripts/mark-catalog-gate.mjs CAT-19 "$CAT_MARKERS" "PostgreSQL fresh/repeat/status/drift and isolated PR-00 baseline to PR-01 up/down/up schema-signature cycle passed"
+
+      - name: Run PostgreSQL core catalog domain integration and attack tests
+        shell: bash
+        working-directory: apps/web
+        run: |
+          set -euo pipefail
+          npm run test:integration
+          test -s "$PR01_INTEGRATION_OUTPUT"
+          node ../../infra/scripts/mark-catalog-gate.mjs CAT-01 "$CAT_MARKERS" "eight PR-01 formal Collections and required relations executed on PostgreSQL; catalog boundary scan found no PR-02+ entity"
+          node ../../infra/scripts/mark-catalog-gate.mjs CAT-04 "$CAT_MARKERS" "Work lifecycle, soft-delete policy, and optimistic locking passed domain and PostgreSQL integration"
+          node ../../infra/scripts/mark-catalog-gate.mjs CAT-05 "$CAT_MARKERS" "Character optional Work, same-name Work disambiguation, and matching-pending behavior passed"
+          node ../../infra/scripts/mark-catalog-gate.mjs CAT-06 "$CAT_MARKERS" "CharacterAlias uniqueness/preferred constraints and deterministic searchDocument rebuild passed"
+          node ../../infra/scripts/mark-catalog-gate.mjs CAT-07 "$CAT_MARKERS" "Manufacturer draft/active/hidden lifecycle and active eligibility guard passed"
+          node ../../infra/scripts/mark-catalog-gate.mjs CAT-08 "$CAT_MARKERS" "prototype character minimum, single-primary, ordering, and group-flag invariants passed"
+          node ../../infra/scripts/mark-catalog-gate.mjs CAT-09 "$CAT_MARKERS" "same normalized prototype title under distinct manufacturers remained independent"
+          node ../../infra/scripts/mark-catalog-gate.mjs CAT-10 "$CAT_MARKERS" "FigureVersion grouping semantics and active composite uniqueness passed"
+          node ../../infra/scripts/mark-catalog-gate.mjs CAT-11 "$CAT_MARKERS" "gray-prototype completeness service and PostgreSQL constraints passed"
+          node ../../infra/scripts/mark-catalog-gate.mjs CAT-12 "$CAT_MARKERS" "official, authorized-third-party, and rejected authorization rules passed"
+          node ../../infra/scripts/mark-catalog-gate.mjs CAT-13 "$CAT_MARKERS" "eligible/excluded review rules and negative eligibility cases passed"
+          node ../../infra/scripts/mark-catalog-gate.mjs CAT-14 "$CAT_MARKERS" "published and merged fixed capability gates plus technical-Media exclusion constraints passed"
+          node ../../infra/scripts/mark-catalog-gate.mjs CAT-15 "$CAT_MARKERS" "successful formal writes used domain services and appended exactly one application-boundary append-only OperationLog with aggregate snapshots and duty context"
+          node ../../infra/scripts/mark-catalog-gate.mjs CAT-16 "$CAT_MARKERS" "expectedVersion concurrency produced one winner and one stable conflict; failed aggregate mutation rolled back"
 
       - name: Build production standalone output
         shell: bash
@@ -297,13 +359,16 @@ jobs:
         working-directory: apps/web
         run: npm exec playwright -- install --with-deps chromium
 
-      - name: Run browser smoke for health root and Admin boundary
+      - name: Run loopback-only browser regression and Catalog Operations flow
         shell: bash
         working-directory: apps/web
         run: |
           set -euo pipefail
           npm run test:e2e
           node ../../infra/scripts/mark-init-gate.mjs INIT-10 "$INIT_MARKERS" "Playwright health, technical root, and unauthenticated Admin boundary passed"
+          node ../../infra/scripts/mark-catalog-gate.mjs CAT-02 "$CAT_MARKERS" "UUID stable identities had database uniqueness and format constraints and were immutable through command, REST, GraphQL, Local API, and read-only Admin boundaries"
+          node ../../infra/scripts/mark-catalog-gate.mjs CAT-17 "$CAT_MARKERS" "unauthenticated, generic REST, GraphQL mutation, Local API overrideAccess, forged context, and generic Admin write attacks were rejected"
+          node ../../infra/scripts/mark-catalog-gate.mjs CAT-18 "$CAT_MARKERS" "authenticated Catalog Operations created and reviewed a synthetic catalog, read-only Collections displayed it, and OperationLog was visible"
 
       - name: Verify clean standalone start restart and S3 outage
         shell: bash
@@ -326,7 +391,13 @@ jobs:
           set -euo pipefail
           node infra/scripts/check-repository-safety.mjs
           node infra/scripts/check-formal-boundaries.mjs
+          node infra/scripts/check-catalog-boundaries.mjs
           node infra/scripts/check-dependency-pins.mjs
+          node -e "const fs=require('node:fs'); for (const path of [process.env.PR01_INTEGRATION_OUTPUT, process.env.PR01_MIGRATION_OUTPUT]) { const value=JSON.parse(fs.readFileSync(path,'utf8')); if (value.hpoiRequests !== 0) throw new Error(path + ': forbidden-source request count is not zero'); }"
+          if rg -n 'https?://' packages/test-fixtures; then
+            echo 'Synthetic fixtures must not contain network URLs.' >&2
+            exit 1
+          fi
           git diff --check
           git diff --exit-code
           test -z "$(git status --porcelain --untracked-files=no)"
@@ -334,7 +405,9 @@ jobs:
             git diff --check origin/main...HEAD
           fi
           node infra/scripts/mark-init-gate.mjs INIT-11 "$INIT_MARKERS" "credential, large, binary, database, media, build-output, and diff scans passed"
-          node infra/scripts/mark-init-gate.mjs INIT-12 "$INIT_MARKERS" "business Collections APIs pages are zero; server-side forbidden-host validation and loopback-only browser guard found zero forbidden-source requests"
+          node infra/scripts/mark-init-gate.mjs INIT-12 "$INIT_MARKERS" "PR-01 catalog scope is present while PR-02+ business entities, source adapters, formal media, public catalog pages, and later capabilities remain zero; forbidden-host validation and loopback-only browser guard found zero forbidden-source requests"
+          node infra/scripts/mark-catalog-gate.mjs CAT-20 "$CAT_MARKERS" "fully synthetic offline fixture seeded idempotently; repository and fixture scans found no real data, media, or network URL"
+          node infra/scripts/mark-catalog-gate.mjs CAT-21 "$CAT_MARKERS" "forbidden-host source scans and Playwright loopback guard recorded zero forbidden-source requests; PR-02 through PR-06 boundaries remain absent"
 
       - name: Assemble and verify INIT-01 through INIT-12
         shell: bash
@@ -344,28 +417,40 @@ jobs:
             --markers="$INIT_MARKERS" \
             --output="$PR00_SUMMARY/initialization-results.json"
 
+      - name: Assemble and verify CAT-01 through CAT-21
+        shell: bash
+        run: |
+          set -euo pipefail
+          node infra/scripts/verify-catalog-results.mjs \
+            --markers="$CAT_MARKERS" \
+            --output="$PR01_SUMMARY/catalog-results.json"
+
       - name: Verify redacted summary artifact safety
         id: summary-safety
         if: always()
         shell: bash
         run: |
           set -euo pipefail
-          if [[ -z "${PR00_SUMMARY:-}" || ! -d "$PR00_SUMMARY" || -z "$(find "$PR00_SUMMARY" -type f -print -quit)" ]]; then
+          if [[ -z "${FORMAL_SUMMARY_ROOT:-}" || ! -d "$FORMAL_SUMMARY_ROOT" || -z "$(find "$FORMAL_SUMMARY_ROOT" -type f -print -quit)" ]]; then
             echo 'No CI summaries were produced before the earlier failure; nothing will be uploaded.'
             echo 'safe=false' >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          node infra/scripts/check-ci-summaries.mjs "$PR00_SUMMARY"
+          node infra/scripts/check-ci-summaries.mjs "$FORMAL_SUMMARY_ROOT"
+          if [[ -n "${PR01_ADMIN_PASSWORD:-}" ]] && grep -R -F -q -- "$PR01_ADMIN_PASSWORD" "$FORMAL_SUMMARY_ROOT"; then
+            echo 'Runtime PR-01 administrator password leaked into a CI summary.' >&2
+            exit 1
+          fi
           echo 'safe=true' >> "$GITHUB_OUTPUT"
 
-      - name: Upload small redacted CI summaries
+      - name: Upload small redacted PR-00 and PR-01 CI summaries
         if: always() && steps.summary-safety.outputs.safe == 'true'
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: pr00-initialization-summary-${{ github.run_id }}-${{ github.run_attempt }}
-          path: ${{ runner.temp }}/pr00-summary
+          name: formal-web-summary-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/formal-web-summary
           if-no-files-found: error
-          retention-days: 7
+          retention-days: 5
 
       - name: Clean disposable processes secrets objects and volumes
         if: always()
@@ -374,8 +459,22 @@ jobs:
           set +e
           cleanup_status=0
           if [[ -f "$COMPOSE_ENV" ]]; then
+            if [[ -n "${PR01_CYCLE_DB:-}" && "$PR01_CYCLE_DB" =~ ^[a-z0-9_]+$ ]]; then
+              docker compose --env-file "$COMPOSE_ENV" -f "$COMPOSE_FILE" exec -T postgres \
+                dropdb --if-exists -f -U figure_gallery --maintenance-db=postgres "$PR01_CYCLE_DB" || cleanup_status=$?
+            fi
             docker compose --env-file "$COMPOSE_ENV" -f "$COMPOSE_FILE" down -v --remove-orphans || cleanup_status=$?
           fi
           rm -f "$COMPOSE_ENV"
-          rm -rf "$RUNNER_TEMP/pr00-standalone" "$RUNNER_TEMP/pr00-local-media" "$INIT_MARKERS"
+          rm -rf \
+            "$RUNNER_TEMP/pr00-standalone" \
+            "$RUNNER_TEMP/pr00-local-media" \
+            "$RUNNER_TEMP/pr00-drift" \
+            "$RUNNER_TEMP/pr01-catalog-markers" \
+            "$RUNNER_TEMP/pr00-init-markers" \
+            "$RUNNER_TEMP/formal-web-summary" \
+            "$RUNNER_TEMP/playwright-results" \
+            "$GITHUB_WORKSPACE/apps/web/.runtime" \
+            "$INIT_MARKERS" \
+            "$CAT_MARKERS"
           exit "$cleanup_status"

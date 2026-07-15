@@ -1,4 +1,5 @@
-import * as migration_20260715_114831_pr00_baseline from './20260715_114831_pr00_baseline'
+import * as migration_20260715_114831_pr00_baseline from './20260715_114831_pr00_baseline';
+import * as migration_20260715_151314_pr01_core_catalog from './20260715_151314_pr01_core_catalog';
 
 export const migrations = [
   {
@@ -6,4 +7,9 @@ export const migrations = [
     down: migration_20260715_114831_pr00_baseline.down,
     name: '20260715_114831_pr00_baseline',
   },
-]
+  {
+    up: migration_20260715_151314_pr01_core_catalog.up,
+    down: migration_20260715_151314_pr01_core_catalog.down,
+    name: '20260715_151314_pr01_core_catalog'
+  },
+];
