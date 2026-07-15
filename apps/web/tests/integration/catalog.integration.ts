@@ -805,7 +805,7 @@ try {
     type: 'createFigureVersion',
   })
   const draftManufacturerAuthorized = await execute({
-    authorizationEvidence: { fixture: true },
+    authorizationEvidence: 'Synthetic JSON scalar authorization evidence.',
     authorizationStatus: 'official',
     expectedVersion: draftManufacturerPrototype.result.lockVersion,
     operationId: randomUUID(),

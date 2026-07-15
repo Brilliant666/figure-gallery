@@ -29,6 +29,7 @@ import type { CatalogMutationOutcome } from '../types'
 import {
   assertDeleted,
   assertNotDeleted,
+  jsonbParameter,
   normalizeRequired,
   optionalText,
   randomUUID,
@@ -546,7 +547,7 @@ export async function executePrototypeCommand(
     patch.is_group = prototypeCommand.isGroup
   } else if (prototypeCommand.type === 'reviewPrototypeAuthorization') {
     patch.authorization_status = prototypeCommand.authorizationStatus
-    patch.authorization_evidence = prototypeCommand.authorizationEvidence ?? null
+    patch.authorization_evidence = jsonbParameter(prototypeCommand.authorizationEvidence)
     patch.authorization_reason = command.reason.trim()
     patch.authorization_reviewed_at = now
     patch.authorization_reviewed_by_id = actorUserId

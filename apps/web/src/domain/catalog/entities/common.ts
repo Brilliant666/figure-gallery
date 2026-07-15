@@ -4,6 +4,7 @@ import {
   CatalogDomainError,
   normalizeCatalogName,
   type CatalogCommandResult,
+  type JsonValue,
 } from '@figure-gallery/domain-contracts'
 
 import {
@@ -38,6 +39,11 @@ export function rowVersion(row: CatalogRow): number {
 export function optionalText(value: unknown): null | string {
   if (value === null || value === undefined || value === '') return null
   return String(value).trim()
+}
+
+export function jsonbParameter(value: JsonValue | undefined): null | string {
+  if (value === undefined || value === null) return null
+  return JSON.stringify(value)
 }
 
 export function requiredText(value: string, field: string): string {

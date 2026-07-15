@@ -47,8 +47,28 @@ async function submitCommand(page: Page, form: Locator): Promise<CommandResult> 
   const operationId = (await page.getByTestId('catalog-operation-id').innerText()).trim()
 
   await form.locator('button[type="submit"]').click()
-  await expect(page.getByTestId('catalog-command-success')).toBeVisible()
+  await expect
+    .poll(async () => {
+      const error = page.getByTestId('catalog-command-error')
+      if ((await error.count()) > 0 && (await error.isVisible())) {
+        const code = (await page.getByTestId('catalog-command-error-code').innerText()).trim()
+        return `error:${code}:${(await error.innerText()).trim()}`
+      }
+
+      const success = page.getByTestId('catalog-command-success')
+      const resultOperationId = page.getByTestId('catalog-result-operation-id')
+      if (
+        (await success.count()) > 0 &&
+        (await success.isVisible()) &&
+        (await resultOperationId.innerText()).trim() === operationId
+      ) {
+        return 'success'
+      }
+      return 'pending'
+    })
+    .toBe('success')
   await expect(page.getByTestId('catalog-result-operation-id')).toHaveText(operationId)
+  await expect(page.getByTestId('catalog-operation-id')).not.toHaveText(operationId)
 
   const stableId = (await page.getByTestId('catalog-result-stable-id').innerText()).trim()
   const lockVersion = Number(await page.getByTestId('catalog-result-lock-version').innerText())

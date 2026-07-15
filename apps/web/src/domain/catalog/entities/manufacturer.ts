@@ -22,6 +22,7 @@ import {
   assertDeleted,
   assertNotDeleted,
   ensureUniqueNormalizedName,
+  jsonbParameter,
   normalizeRequired,
   optionalText,
   randomUUID,
@@ -161,7 +162,7 @@ export async function executeManufacturerCommand(
       lock_version: 1,
       normalized_name: name.normalized,
       official_site_url: optionalText(manufacturerCommand.officialSiteUrl),
-      source_evidence: manufacturerCommand.sourceEvidence ?? null,
+      source_evidence: jsonbParameter(manufacturerCommand.sourceEvidence),
       stable_id: randomUUID(),
       status: 'draft',
       updated_at: now,
@@ -207,7 +208,7 @@ export async function executeManufacturerCommand(
       patch.official_site_url = optionalText(manufacturerCommand.officialSiteUrl)
     }
     if (manufacturerCommand.sourceEvidence !== undefined) {
-      patch.source_evidence = manufacturerCommand.sourceEvidence
+      patch.source_evidence = jsonbParameter(manufacturerCommand.sourceEvidence)
     }
   } else if (manufacturerCommand.type === 'setManufacturerStatus') {
     assertNotDeleted(beforeRow)
