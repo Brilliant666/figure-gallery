@@ -10,7 +10,7 @@ test.describe('Payload Admin authentication boundary', () => {
     await expect(page).toHaveURL(/\/admin\/(login|create-first-user)/)
     await expect(page).not.toHaveURL(/\/admin\/collections\/users/)
     await expect(page.locator('input[name="email"]')).toBeVisible()
-    await expect(page.locator('input[type="password"]')).toBeVisible()
+    await expect(page.locator('input[name="password"]')).toBeVisible()
     assertNoExternalRequests()
   })
 })
