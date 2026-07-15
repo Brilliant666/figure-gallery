@@ -59,7 +59,10 @@ const REQUIRED_PR01_SCHEMA_OBJECTS = [
 async function signature(): Promise<{ digest: string; entries: string[]; tables: string[] }> {
   const state = await payload.db.pool.query<{ entry: string }>(`
     SELECT entry FROM (
-      SELECT 'column|' || table_name || '|' || ordinal_position || '|' || column_name || '|' || data_type || '|' || is_nullable || '|' || COALESCE(column_default, '') AS entry
+      -- PostgreSQL does not reuse dropped attribute numbers. A down/up cycle therefore changes
+      -- information_schema.ordinal_position for re-added columns even when the logical schema is
+      -- identical. Compare the stable logical column contract rather than physical attnums.
+      SELECT 'column|' || table_name || '|' || column_name || '|' || data_type || '|' || is_nullable || '|' || COALESCE(column_default, '') AS entry
         FROM information_schema.columns WHERE table_schema = 'public'
       UNION ALL
       SELECT 'constraint|' || c.conname || '|' || pg_get_constraintdef(c.oid)

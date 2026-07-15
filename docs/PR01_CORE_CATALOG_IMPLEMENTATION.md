@@ -158,7 +158,7 @@ OperationLog append-only，generic create/update/delete 全拒绝；PR-01 所有
 
 ### 7.2 Up/down 验证与回滚
 
-CI 必须验证 PR-00 baseline → PR-01 up、repeat、status、drift、独立数据库 down 回 PR-00 schema signature、再 up 和最终 signature 一致。down 只适用于无生产数据的 PR-01 测试数据库；一旦存在保留数据，回滚使用独立 revert/forward-fix PR，先导出计数与关系摘要，绝不手工改写已合并 baseline。
+CI 必须验证 PR-00 baseline → PR-01 up、repeat、status、drift、独立数据库 down 回 PR-00 logical schema signature、再 up 和最终 logical signature 一致。logical signature 比较列名/类型/可空/default、约束、索引和 enum，不使用 PostgreSQL 在 DROP COLUMN 后不会复用的物理 attribute ordinal。down 只适用于无生产数据的 PR-01 测试数据库；一旦存在保留数据，回滚使用独立 revert/forward-fix PR，先导出计数与关系摘要，绝不手工改写已合并 baseline。
 
 本文只说明验证合同；未拿到最终 CI 机器结果前，不对 fresh/repeat/down/up/drift 作成功结论。
 
