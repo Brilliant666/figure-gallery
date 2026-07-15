@@ -102,7 +102,7 @@ jobs:
           test -z "$(git status --short)"
 
       - name: Upload only the small test summaries
-        uses: actions/upload-artifact@b7c865dfe5528c7ee2c576210cb5d5200bd6ee08 # v6.0.0
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         with:
           name: personal-gallery-mvp-summary
           path: ${{ runner.temp }}/personal-gallery-summary/*.json
