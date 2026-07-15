@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { buildTechnicalMediaCollection } from '../../src/collections/Media'
 import { denyAnonymousTechnicalUserCreation, Users } from '../../src/collections/Users'
-import { GRAPHQL_POLICY } from '../../src/config/payload-policy'
+import { ADMIN_AVATAR_POLICY, GRAPHQL_POLICY } from '../../src/config/payload-policy'
 
 const invokeAccess = async (access: unknown, user: unknown): Promise<unknown> => {
   if (typeof access !== 'function') throw new Error('access rule is not callable')
@@ -10,6 +10,10 @@ const invokeAccess = async (access: unknown, user: unknown): Promise<unknown> =>
 }
 
 describe('technical collection and API policy', () => {
+  it('uses the local default Admin avatar instead of an external Gravatar request', () => {
+    expect(ADMIN_AVATAR_POLICY).toBe('default')
+  })
+
   it('closes production GraphQL introspection and playground', () => {
     expect(GRAPHQL_POLICY).toEqual({
       disableIntrospectionInProduction: true,

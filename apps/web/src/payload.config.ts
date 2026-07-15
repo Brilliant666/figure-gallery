@@ -7,7 +7,7 @@ import sharp from 'sharp'
 import { Users } from './collections/Users'
 import { buildTechnicalMediaCollection } from './collections/Media'
 import { CatalogCollections } from './collections/CatalogCollections'
-import { GRAPHQL_POLICY } from './config/payload-policy'
+import { ADMIN_AVATAR_POLICY, GRAPHQL_POLICY } from './config/payload-policy'
 import { applyCatalogForeignKeyPolicy } from './db/catalog-foreign-key-policy'
 import { loadRuntimeEnvironment } from './config/runtime-environment'
 import { CatalogCommandEndpoint } from './domain/catalog'
@@ -20,6 +20,7 @@ const localMediaRoot = environment.mediaLocalRoot ?? path.resolve(dirname, '../.
 
 export default buildConfig({
   admin: {
+    avatar: ADMIN_AVATAR_POLICY,
     user: Users.slug,
     components: {
       beforeNavLinks: ['/admin/catalog/CatalogOperationsNavLink#CatalogOperationsNavLink'],
