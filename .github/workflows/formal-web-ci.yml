@@ -186,6 +186,11 @@ jobs:
           set -euo pipefail
           docker compose --env-file "$COMPOSE_ENV" -f "$COMPOSE_FILE" up -d --wait --wait-timeout 120
           docker compose --env-file "$COMPOSE_ENV" -f "$COMPOSE_FILE" ps --format json > "$RUNNER_TEMP/compose-services.json"
+          test "$(docker compose --env-file "$COMPOSE_ENV" -f "$COMPOSE_FILE" port postgres 5432)" = '127.0.0.1:55432'
+          test "$(docker compose --env-file "$COMPOSE_ENV" -f "$COMPOSE_FILE" port minio 9000)" = '127.0.0.1:59000'
+          test "$(docker compose --env-file "$COMPOSE_ENV" -f "$COMPOSE_FILE" port minio 9001)" = '127.0.0.1:59001'
+          timeout 15 bash -c 'until (echo > /dev/tcp/127.0.0.1/55432) >/dev/null 2>&1; do sleep 0.2; done'
+          curl --fail --silent --show-error http://127.0.0.1:59000/minio/health/live >/dev/null
 
       - name: Apply migration to an empty PostgreSQL database
         shell: bash

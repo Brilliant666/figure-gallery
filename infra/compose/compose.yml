@@ -88,4 +88,4 @@ volumes:
 
 networks:
   pr00:
-    internal: true
+    driver: bridge
