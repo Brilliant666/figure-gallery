@@ -43,6 +43,10 @@ const optionalS3Plugin = (): Plugin[] => {
       collections: {
         media: {
           prefix: required('S3_PREFIX'),
+          // The test bucket remains private. Payload issues bounded signed
+          // downloads through its own file route instead of requiring a
+          // public bucket policy or leaking object credentials.
+          signedDownloads: true,
         },
       },
       config: {
@@ -87,6 +91,11 @@ const databaseAdapter = () => {
       pool: { connectionString },
       prodMigrations: postgresMigrations,
       push: false,
+      // Domain services use read/check/write optimistic locks. PostgreSQL's
+      // default READ COMMITTED isolation permits two transactions to observe
+      // the same lockVersion and then silently overwrite one another. Make a
+      // true simultaneous writer fail with SQLSTATE 40001 instead.
+      transactionOptions: { isolationLevel: 'serializable' },
     })
   }
 

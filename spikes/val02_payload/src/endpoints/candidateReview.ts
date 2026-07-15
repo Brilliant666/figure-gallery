@@ -1,6 +1,7 @@
+import { randomUUID } from 'node:crypto'
 import type { Endpoint, PayloadRequest } from 'payload'
 
-import { withinPayloadTransaction } from '@/domain/payloadDomainService'
+import { buildDomainScope, withinPayloadTransaction } from '@/domain/payloadDomainService'
 import {
   createFormalTargetForReview,
   updateSystemSettings,
@@ -102,7 +103,10 @@ const logReviewAction = async (
       actorLabel: user.email ?? `user:${user.id}`,
       afterState,
       beforeState,
+      dependsOn: [],
+      operationID: randomUUID(),
       operationType: typeMap[body.action],
+      operationVersion: 1,
       reason: body.reason?.trim() || `Admin candidate review: ${body.action}`,
       relatedRecords: {
         candidateID: body.candidateID,
@@ -110,6 +114,14 @@ const logReviewAction = async (
         mediaID: body.mediaID,
         prototypeID: body.prototypeID,
       },
+      scope: buildDomainScope({
+        candidateIDs: body.candidateID === undefined ? [] : [body.candidateID],
+        manufacturerIDs: body.manufacturerID === undefined ? [] : [body.manufacturerID],
+        mediaIDs: body.mediaID === undefined ? [] : [body.mediaID],
+        prototypeIDs: body.prototypeID === undefined ? [] : [body.prototypeID],
+        reviewWorkItemIDs: body.workItemID === undefined ? [] : [body.workItemID],
+        versionIDs: body.versionID === undefined ? [] : [body.versionID],
+      }),
       undone: false,
     },
     overrideAccess: true,

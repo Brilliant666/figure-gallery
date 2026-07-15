@@ -1,0 +1,28 @@
+{
+  "images": {
+    "mc": {
+      "digest": "minio/mc@sha256:aead63c77f9db9107f1696fb08ecb0faeda23729cde94b0f663edf4fe09728e3",
+      "id": "sha256:721f526e0990874970624a8b17e5ddc9344467ce40e9112e1bf1dd55ceecb0a6",
+      "ref": "minio/mc:RELEASE.2025-04-16T18-13-26Z"
+    },
+    "minio": {
+      "digest": "minio/minio@sha256:a1ea29fa28355559ef137d71fc570e508a214ec84ff8083e39bc5428980b015e",
+      "id": "sha256:9d668e47f1fc60ea49af4203deee87a657eb1aa0e2761fee2c7c2d1df282c880",
+      "ref": "minio/minio:RELEASE.2025-04-22T22-12-26Z"
+    },
+    "postgres": {
+      "digest": "postgres@sha256:253815cf7579ffa05e1673d92e78d37273e61be0e4414e9a1449337d7925be94",
+      "id": "sha256:00d06ace1e0b51d5ef8170bbc38557092c83253c9f21ad68a85a49d46c825ce0",
+      "ref": "postgres:16.9-bookworm"
+    }
+  },
+  "loopback_bindings": [
+    "127.0.0.1:55432",
+    "127.0.0.1:59000",
+    "127.0.0.1:59001"
+  ],
+  "minio_health": "healthy",
+  "non_loopback_probe": "refused",
+  "postgres_health": "healthy",
+  "schema_version": 1
+}

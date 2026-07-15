@@ -3,7 +3,9 @@ import path from 'node:path'
 import { describe, expect, it } from 'vitest'
 
 import { CandidateRecords } from '@/collections/CandidateRecords'
+import { Characters } from '@/collections/Characters'
 import { FigurePrototypes } from '@/collections/FigurePrototypes'
+import { Manufacturers } from '@/collections/Manufacturers'
 import { Media } from '@/collections/Media'
 import { assertPostgresMigrationsReady } from '@/databaseRuntime'
 
@@ -31,6 +33,12 @@ describe('Payload-native configuration', () => {
       '/upload-media',
       '/review-action',
     ])
+    expect(Characters.fields.find((field) => 'name' in field && field.name === 'status')).toMatchObject({
+      enumName: 'enum_characters_domain_status',
+    })
+    expect(
+      Manufacturers.fields.find((field) => 'name' in field && field.name === 'status'),
+    ).toMatchObject({ enumName: 'enum_manufacturers_domain_status' })
   })
 
   it('keeps the candidate review custom view server-guarded', async () => {
@@ -84,10 +92,19 @@ describe('Payload-native configuration', () => {
   })
 
   it('configures runtime-selected databases and optional official S3 storage fail-closed', async () => {
-    const [config, uploadEndpoint] = await Promise.all([
+    const [config, uploadEndpoint, migrationSnapshotText] = await Promise.all([
       readFile(path.resolve('src/payload.config.ts'), 'utf8'),
       readFile(path.resolve('src/endpoints/candidateMediaUpload.ts'), 'utf8'),
+      readFile(
+        path.resolve(
+          'src/migrations-postgres/20260714_120916_payload_prod_gate_initial_schema.json',
+        ),
+        'utf8',
+      ),
     ])
+    const migrationSnapshot = JSON.parse(migrationSnapshotText) as {
+      tables: Record<string, { columns: Record<string, { type: string }> }>
+    }
     const packageDocument = JSON.parse(await readFile(path.resolve('package.json'), 'utf8')) as {
       dependencies: Record<string, string>
       scripts: Record<string, string>
@@ -100,6 +117,7 @@ describe('Payload-native configuration', () => {
     expect(config).toContain("if (process.env.S3_ENABLED !== 'true') return []")
     expect(config).toContain("required('S3_ACCESS_KEY_ID')")
     expect(config).toContain("prefix: required('S3_PREFIX')")
+    expect(config).toContain('signedDownloads: true')
     expect(config).toContain('useCompositePrefixes: true')
     expect(config).toContain('guardedS3Endpoint(process.env.S3_ENDPOINT)')
     expect(uploadEndpoint).toContain("process.env.S3_ENABLED === 'true' ? { prefix: objectPrefix } : {}")
@@ -107,6 +125,18 @@ describe('Payload-native configuration', () => {
     expect(config).toContain('telemetry: false')
     expect(packageDocument.scripts.dev).toContain('-H 127.0.0.1')
     expect(packageDocument.scripts.start).toBe('node .next/standalone/server.js')
+    expect(migrationSnapshot.tables['public.characters'].columns.status.type).toBe(
+      'enum_characters_domain_status',
+    )
+    expect(migrationSnapshot.tables['public.characters'].columns._status.type).toBe(
+      'enum_characters_status',
+    )
+    expect(migrationSnapshot.tables['public.manufacturers'].columns.status.type).toBe(
+      'enum_manufacturers_domain_status',
+    )
+    expect(migrationSnapshot.tables['public.manufacturers'].columns._status.type).toBe(
+      'enum_manufacturers_status',
+    )
 
     expect(() =>
       assertPostgresMigrationsReady({

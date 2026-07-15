@@ -1,0 +1,52 @@
+{
+  "collection_counts": {
+    "candidate-records": 4,
+    "characters": 4,
+    "figure-prototypes": 5,
+    "figure-versions": 8,
+    "manufacturers": 3,
+    "media": 11,
+    "operation-logs": 1,
+    "review-work-items": 0,
+    "source-records": 9,
+    "works": 2
+  },
+  "collection_counts_first": {
+    "candidate-records": 4,
+    "characters": 4,
+    "figure-prototypes": 5,
+    "figure-versions": 8,
+    "manufacturers": 3,
+    "media": 11,
+    "operation-logs": 1,
+    "review-work-items": 0,
+    "source-records": 9,
+    "works": 2
+  },
+  "collection_counts_second": {
+    "candidate-records": 4,
+    "characters": 4,
+    "figure-prototypes": 5,
+    "figure-versions": 8,
+    "manufacturers": 3,
+    "media": 11,
+    "operation-logs": 1,
+    "review-work-items": 0,
+    "source-records": 9,
+    "works": 2
+  },
+  "data_digest_sha256": "2f958df3414c9dbf88a1c3cb43891ff56c985204e40f0fec8a627b1558ccbe7e",
+  "difference_count": 0,
+  "existing_main_image_preserved": true,
+  "first_digest": "2f958df3414c9dbf88a1c3cb43891ff56c985204e40f0fec8a627b1558ccbe7e",
+  "fresh_migration": "pass",
+  "migration_status": "pass",
+  "repeat_migration": "pass",
+  "repeat_seed": "pass",
+  "schema_version": 1,
+  "second_digest": "2f958df3414c9dbf88a1c3cb43891ff56c985204e40f0fec8a627b1558ccbe7e",
+  "settings_digest_first": "470b7dfa27e5f6f24f692d078648efb4beb6b6670ed3b52f6fe360c818fe2dc9",
+  "settings_digest_second": "470b7dfa27e5f6f24f692d078648efb4beb6b6670ed3b52f6fe360c818fe2dc9",
+  "system_settings_count_first": 1,
+  "system_settings_count_second": 1
+}

@@ -2,9 +2,9 @@
 
 ## 状态
 
-`Proposed — Payload CMS + Next.js`
+`Accepted — Payload CMS + Next.js`
 
-Payload CMS + Next.js 是项目所有者基于实际后台体验、业务适配程度和既有验证结果确定的当前首选方向；Wagtail 保留为备用方案。由于 PostgreSQL、S3、备份恢复和完整 standalone 生产门禁尚未取得真实通过证据，本状态不是 `Accepted`，也不是最终正式技术选型。
+本状态接受 Payload CMS + Next.js 作为项目技术底座，并接受 PostgreSQL、S3 兼容对象存储和 `.next/standalone` 作为当前验证过的正式运行边界。它不表示正式项目已经初始化，也不授权把 spike 复制成正式应用或立即部署。
 
 ## 决策日期
 
@@ -12,121 +12,136 @@ Payload CMS + Next.js 是项目所有者基于实际后台体验、业务适配�
 
 ## 背景
 
-项目需要一套能够表达作品、角色、别名、厂商、手办原型、版本、来源、候选记录和多张候选图片的技术底座。采集数据只能进入候选池；正式字段、版本归属和主图必须经人工审核，所有正式变更必须可审计。merge、split 和 undo 还必须具备稳定操作 ID、作用域、依赖和并发冲突控制。
+项目需要表达 Work、Character/alias、Manufacturer、FigurePrototype、FigureVersion、SourceRecord、CandidateRecord、CandidateImage、ReviewWorkItem、OperationLog 与 SystemSetting。外部采集只能写候选池；正式字段、版本归属和主图必须人工确认；所有正式变化需要可审计；merge、split 和指定 undo 需要稳定 operation ID、作用域、依赖和并发冲突控制。
 
-VAL-02 已用可丢弃原型比较 Wagtail 与 Payload CMS + Next.js。VAL-02B 进一步验证真实浏览器交互、合成文件导入、每客户端身份和 owner 隔离、ReviewWorkItem、并发、指定 undo、最小正式管理入口，以及 PostgreSQL、对象存储、备份恢复和非生产部署门禁。本 ADR 只决定技术方向，不授权把 spike 迁移为正式项目。
+VAL-02 用可丢弃原型比较 Wagtail 与 Payload CMS + Next.js。VAL-02B 验证真实浏览器审核、合成文件导入、per-client 身份和 owner 隔离、ReviewWorkItem、并发、指定 undo、最小正式管理入口及本地生产形态。项目所有者随后明确把 Payload 定为首选方向，但 PR #6 时本机 Docker daemon 不可用，PostgreSQL、S3、联合恢复和完整 standalone 仍是 `environment_blocked`，ADR 因而保持 Proposed。
+
+本轮没有修改本机 Docker，而是在 GitHub-hosted Ubuntu 24.04 runner 建立只读权限、不读取或依赖仓库 Secret、loopback-only 的可重复 CI，补齐 PG-01—PG-14。
 
 ## 候选
 
-1. `Payload CMS + Next.js`：当前首选方向；
-2. `Wagtail`（Django + Wagtail）：备用方案。
+1. `Payload CMS + Next.js`：本 ADR 选择；
+2. `Wagtail`：保留历史研究与备用信息，不继续平行验证，也不作为当前技术底座。
 
-没有把其他框架重新加入本轮，也没有 Fork、复制或导入任何图库仓库作为项目底座。
+没有新增第三种框架，没有 Fork、复制或导入任何图库仓库。
 
 ## 证据
 
-证据基线见 [VAL02B_ACCEPTANCE_SPEC.md](VAL02B_ACCEPTANCE_SPEC.md)、[VAL02B_COMPARISON.md](VAL02B_COMPARISON.md)、[VAL02B_WAGTAIL_RESULTS.md](VAL02B_WAGTAIL_RESULTS.md)、[VAL02B_PAYLOAD_RESULTS.md](VAL02B_PAYLOAD_RESULTS.md) 和 [双端机器校验摘要](evidence/val02b/val02b-pair-summary.json)。
+### 历史产品与业务证据
 
-- PR #5 合并时的 VAL-02B 机器结果记录双端均为 **17 pass / 0 fail / 0 not_run / 13 environment_blocked**，当时合同/fixture 哈希一致且 pair valid；
-- 双端均在本机 Chrome 中通过管理员登录、完整候选审核、图库灯箱和 4/3/2 响应式布局；Wagtail 审核为 **5,896 ms / 6 clicks**，Payload 为 **1,560 ms / 6 clicks**；
-- 双端均通过真实 loopback multipart、SHA-256/aHash、内容去重、非法文件拒绝、失败重试、per-client hash-only 凭据、撤销、owner 隔离、正式数据/主图/generic CRUD 攻击；
-- 双端均通过工作项目标范围、乐观锁冲突、稳定 operation ID、无关作用域指定 undo、依赖操作保护和最小审计管理入口；
-- VAL-02B 决策基线记录的实现/测试/Admin LOC 为：Wagtail **5,263 / 2,476 / 331**，Payload **6,019 / 2,885 / 641**；本轮 Payload 回归刷新后的对应值为 **6,085 / 2,926 / 641**，见 [`val02b-acceptance-results.json`](../spikes/val02_payload/val02b-acceptance-results.json)，未据此重算历史双端评分；
-- Payload 已通过 production build 和本地 standalone smoke，未出现 NFT tracing 警告；Wagtail 已完成本地 `DEBUG=false`、`collectstatic` 和 WSGI/health 补充检查，但完整生产形态均未验证；
-- Wagtail 仍有两条可见 `treebeard.E001`，当前通过精确锁定 `django-treebeard==5.3.0`、版本不符 fail closed 和 tree mutation 测试设立升级门禁；
-- VAL-02B 当轮九维评分为 Wagtail **79.0/100**、Payload CMS + Next.js **78.5/100**；本次生产门禁没有重跑 Wagtail 或重算双端评分。
+- VAL-02/VAL-02B 已证明两端都能表达核心业务合同；
+- 项目所有者的实际后台体验明确偏好 Payload 的信息结构和交互；
+- Payload 已通过浏览器审核、候选 multipart、SHA-256/aHash、per-client hash-only 凭据、撤销、owner 隔离、主图保护、ReviewWorkItem、乐观锁、merge/split/指定 undo 和最小领域管理入口；
+- Wagtail 的历史原型和风险记录继续保留，但本轮按授权没有重跑或修改 Wagtail。
 
-在上述 VAL-02/VAL-02B 历史证据之外，本次 Payload 生产门禁判定见 [PAYLOAD_PRODUCTION_GATE_DECISION.md](PAYLOAD_PRODUCTION_GATE_DECISION.md)：
+### Payload 生产门禁
 
-- Docker daemon 在两次无需系统修改的有限重启后仍因 `rpcbind` 崩溃及 CLI 超时不可用；
-- 本地 PostgreSQL 与 MinIO 未能启动，PG-01—PG-14 全部为 `environment_blocked`；
-- 生产门禁汇总为 **0 pass / 0 fail / 14 environment_blocked**；0 个硬失败不等于生产门禁通过；
-- 因关键生产证据全部缺失，Payload 只能保持首选提案，不能更新为正式接受。
+GitHub Actions `Payload production gates` run `29354756205`、attempt 1、source commit `d204767803b9c629ab262bc5ad5ccfc89751162e` 得到：
 
-本机 Docker daemon、PostgreSQL 和 MinIO/S3 不可用，任务又禁止安装或修改系统服务。因此 BG-17—BG-29 没有执行，不能由 SQLite、本地文件存储、production build 或单机 smoke 冒充通过。三族硬门禁仍未知：
+- PG-01—PG-14 全部 `pass`；
+- 14 pass / 0 fail / 0 not_run / 0 environment_blocked；
+- 硬失败 0，validation errors 0；
+- 清理 pass，Hpoi 请求 0。
 
-1. PostgreSQL 恢复后数据一致性（BG-22）；
-2. 来源删除后对象存储仍保留正式主图（BG-26）；
-3. PostgreSQL + S3 完整生产形态从干净环境启动（BG-29）。
+核心结果：
+
+- Payload migration engine 从空 PostgreSQL 应用 migration，重复执行幂等；重复 seed 计数与 digest 一致；
+- PostgreSQL integration 30/30、并发/回滚 8/8、聚合事务场景 15/15；
+- PostgreSQL custom backup 经删库、空库重建与恢复后，业务计数、数据 digest、关系 digest 差异均为 0；
+- 恢复后 shared contract 78/78、权限攻击 12/12、联合服务与正式主图/媒体关系通过；
+- S3 合成 PNG/JPEG 原图、thumbnail、preview、SHA-256、aHash、去重、故障补偿、生命周期、67 对象 prefix migration 和联合恢复均通过；
+- 来源失效/软删与候选软删不会删除已提升的正式主图；
+- 同一提交的干净 `git archive` 从空 PostgreSQL/空 bucket 完成 `npm ci`、migration、seed、production build 和 `.next/standalone` clean start；
+- Restart 后数据/媒体 digest、30 个对象以及 candidate/source/multipart-media 身份保持；
+- 初始、恢复后、standalone clean/restart 四轮共 44 次攻击执行全部拒绝且不破坏正式数据、主图或审计边界；
+- Production GraphQL introspection 关闭；直接正式 mutation 被 access control 拒绝；
+- NFT warning 未出现，114 个 Sharp runtime 文件随 standalone 实际运行，原图和派生图端点在 clean/restart 均为 200。
+
+解释性证据：
+
+- [PAYLOAD_CI_PRODUCTION_GATE.md](PAYLOAD_CI_PRODUCTION_GATE.md)
+- [PAYLOAD_POSTGRES_RESULTS.md](PAYLOAD_POSTGRES_RESULTS.md)
+- [PAYLOAD_S3_RESULTS.md](PAYLOAD_S3_RESULTS.md)
+- [PAYLOAD_STANDALONE_RESULTS.md](PAYLOAD_STANDALONE_RESULTS.md)
+- [PAYLOAD_PRODUCTION_GATE_DECISION.md](PAYLOAD_PRODUCTION_GATE_DECISION.md)
+- [机器门禁汇总](evidence/payload-prod-gate-ci/production-gates.json)
+- [Artifact 独立校验](evidence/payload-prod-gate-ci/artifact-provenance.json)
 
 ## 决策
 
-**`Proposed — Payload CMS + Next.js`**
+**选择 Payload CMS + Next.js。**
 
-Payload CMS + Next.js 作为当前首选技术方向继续进入下一次生产门禁验证；Wagtail 作为备用方案保留，不再平行投入同等验证成本。该决策只确定验证和投入优先级，不是 `Accepted`，不代表已经完成最终正式技术选型，也不授权初始化正式项目。
-
-PG-01—PG-14 全部受基础设施阻塞。0 个硬门禁失败只表示没有执行出失败，不表示任何 `environment_blocked` 门禁已经通过。
+- Payload CMS + Next.js 成为项目技术底座；
+- PostgreSQL 是目标正式数据库；
+- S3 兼容对象存储是正式图片存储边界；
+- Next.js/Payload `.next/standalone` 是当前被验证过的部署形态；
+- 正式初始化必须等待后续独立授权任务，并从官方脚手架干净创建；
+- `spikes/val02_payload/` 与 `spikes/payload_prod_gate/` 继续是可丢弃验证代码，禁止直接迁移为正式项目。
 
 ## 选择理由
 
-1. **项目所有者的实际体验与产品偏好明确指向 Payload。** Payload 的后台结构、交互方式和业务气质更符合项目所有者对图库审核与管理工作的预期；Wagtail 的内容/博客式产品气质不是当前偏好。这是确定验证优先级的有效输入，但不能覆盖生产硬门禁。
-2. **既有功能证据支持优先继续 Payload。** Payload 已在 VAL-02/VAL-02B 中通过浏览器审核、候选文件导入、per-client 身份与 owner 隔离、主图保护、工作项范围、冲突、指定 undo、攻击回归、production build 和本地 standalone smoke；这些证据足以支持只对 Payload 补齐生产门禁。
-3. **停止双轨投入不等于淘汰 Wagtail。** Wagtail 保留既有结果和备用地位，但不再与 Payload 平行投入同等验证成本；只有 Payload 出现硬失败或方向需要重新评估时，才重新打开 Wagtail 或其他经授权候选。
-4. **生产证据仍不足以正式接受。** 本次 Docker daemon 在两次有限重启后仍不可用，PG-01—PG-14 为 0 pass / 0 fail / 14 environment_blocked。PostgreSQL、备份恢复、S3、联合恢复和完整 standalone 均没有实际执行。
-5. **0 个硬失败不能外推为通过。** 当前没有观察到生产硬失败，仅因为生产门禁没有运行；在全部 PG 门禁取得真实 `pass` 前，Payload 只能是 `Proposed`，不能是 `Accepted`。
+1. **业务模型和审核边界已被真实实现验证。** Payload 能表达候选、正式记录、媒体、工作项和操作日志；专用 endpoint、owner、领域 service、事务与乐观锁已经证明可建立不可绕过边界。
+2. **项目所有者对实际管理体验的偏好明确。** Payload 的 Admin 和 Next.js 组合更符合图库审核与管理预期；该偏好现在由生产门禁证据支撑，而不再只是产品观感。
+3. **此前的关键生产未知项已关闭。** PostgreSQL migration/seed/并发/恢复、S3 生命周期/故障/联合恢复、standalone clean/restart 和安全回归都已实际执行，没有 hard fail 或 environment block。
+4. **数据与媒体迁移边界清晰。** PostgreSQL 可用标准 dump/restore；媒体以稳定 storage key、内容哈希和独立 manifest 表达，公开 URL 不进入业务主键。
+5. **可重复部署形态已经实际启动。** 锁文件安装、production build、standalone trace、Sharp runtime、静态/Admin/媒体/health 和重启均在 Linux clean tree 通过。
 
 ## 被拒绝方案
 
-### Wagtail 不作为当前首选
+### Wagtail
 
-Wagtail 不是因已发生硬失败而被淘汰。项目所有者更偏好 Payload 的后台结构与交互方式，因此当前不再对 Wagtail 平行投入同等验证成本。Wagtail 的 VAL-02/VAL-02B 历史证据继续保留，它仍是 Payload 出现硬失败时的备用方案；若未来重新启用，还必须处理 PostgreSQL/S3 生产证据和 Treebeard 版本/manager 风险。
+Wagtail 不作为当前技术底座。它并非因本轮出现新失败而被淘汰；本轮按授权没有继续验证它。历史证据仍可用于 Payload 未来发生硬门禁失败时的重新评估，但恢复 Wagtail 路线必须是新的明确授权任务，并重新处理 PostgreSQL/S3 生产证据与 Treebeard 版本/manager 风险。
 
-### Payload 尚未被正式接受
+### 直接把 spike 当正式项目
 
-Payload 是当前首选方向，但仍未被正式接受。PG-01—PG-14 全部 `environment_blocked`，它还必须在真实 PostgreSQL/S3 适配器和完整 standalone 环境中证明 migration、并发和事务、备份恢复关系一致、对象生命周期安全，以及 generic CRUD、Admin 和候选身份不能绕过领域服务。较快的合成浏览器审核和本地 standalone smoke 不能替代完整生产门禁。
-
-“被拒绝”在本 ADR 中仅表示拒绝把对应方案现在写成最终正式选择：Wagtail 保留为备用，Payload 保持首选提案。
+明确拒绝。Spike 包含验证便利、合成 fixture 和门禁专用结构，不具有正式项目的初始化、配置、运维和长期升级承诺。技术接受不改变其“可丢弃验证代码”属性。
 
 ## 风险
 
-- Docker daemon 在两次无需系统修改的重启后仍因 `rpcbind` 崩溃或 CLI 超时不可用；在环境修复前，全部生产门禁仍无法取得真实证据；
-- PG-01—PG-14 当前均为 `environment_blocked`；0 个硬失败不能降低这些未知项的风险等级；
-- SQLite 上的事务、乐观锁和关系操作可能与 PostgreSQL 的真实并发、约束、迁移和回滚行为不同；
-- 未执行数据库备份/空库恢复，无法证明关系、OperationLog、ReviewWorkItem、主图和设置在灾难恢复后保持一致；
-- 未执行 S3 上传、读取、派生图、服务中断、prefix 迁移和来源删除，正式主图生命周期仍可能存在数据丢失风险；
-- 未从 PostgreSQL + S3 的干净环境重复启动完整生产形态，依赖、静态文件、媒体、迁移、health 和 Admin 的组合风险未知；
-- Wagtail 的 Treebeard 警告需要持续精确锁版，未来升级可能影响 manager、树变更、workflow 或 migration；
-- Payload 的 generic Collections/Admin CRUD、hook 顺序和 adapter 升级可能重新打开绕过领域 service 的路径；
-- 浏览器耗时来自单机、单用户、合成 fixture，不代表生产吞吐或长期审核效率；Payload 在反复导航期间记录的 9 次 loopback `ERR_ABORTED` 尚未进一步归因，仍应在下一轮持续观察；
-- 两端均未取得可比较的文件导入耗时、冷启动时间、热页面响应、恢复时间和部署步骤数。
+- 单次 GitHub-hosted runner、小型合成数据不足以证明生产规模吞吐、长期稳定性或运维容量；
+- MinIO 的 S3 兼容验证不等于 AWS S3 或其他真实 provider；同一临时服务的 backup prefix 不等于异地/跨区灾备；
+- Prefix migration 没有实际更换 provider、endpoint、bucket、区域或凭据；
+- 三个合成样本的 aHash 均为 `ffffffffffffffff`，真实图片的感知相似度区分能力仍未验证；
+- Clean tree 来自同提交 `git archive`；没有网络 clone、公开域名、TLS、CDN、真实 secret manager、生产观测和云部署证据；
+- Payload hooks、generic Collections/Admin/Local API、GraphQL、adapter 和 migration 升级都可能重新打开领域旁路；
+- Next.js NFT、Sharp 原生依赖与 hosted runner 镜像升级可能改变 standalone 完整性；
+- 当前 Windows 本机 Docker daemon 仍不可用，本轮没有修复；这不影响 GitHub runner 证据，但会影响未来本机基础设施开发体验；
+- Hpoi 数据源风险与本 ADR 无关，本轮 Hpoi 请求为 0。
 
 ## 缓解措施
 
-1. 在已有、可运行且只绑定 loopback 的 Docker/Compose 或等价本地基础设施上，为 Payload 创建独立 PostgreSQL 数据库/schema 和独立 MinIO bucket/prefix；不使用生产账号或云资源，也不为此安装或永久修改系统组件。
-2. 对 Payload 逐项重跑 PG-01—PG-14，尤其是 migration 重入、双 seed、真实并发、备份、删库重建、恢复后共享合同、对象中断/恢复、prefix 迁移和来源/候选删除保留主图。
-3. 从干净临时目录用 PostgreSQL + S3 的生产模式启动完整 Payload standalone，记录冷启动、health、静态/Admin/媒体读取、进程和步骤，并核对 standalone trace、Sharp 与 NFT 结果。
-4. 对数据库备份和对象 manifest 记录哈希、记录数、关系 ID、storage key、SHA-256/aHash 和恢复后差异，不提交备份或对象本体。
-5. 保留并扩展跨 owner、正式写入、主图、generic CRUD、并发和 specified undo 攻击回归；任何框架或 adapter 升级都必须重跑。
-6. 不继续平行开发 Wagtail；保留其历史证据、Treebeard 风险记录和备用地位，只有 Payload 硬失败或用户明确重新授权时才恢复验证。
-7. 只有 PG-01—PG-14 全部真实通过、无硬失败且无关键 `environment_blocked`，才把本 ADR 从 `Proposed` 更新为 `Accepted`；否则继续保持当前状态或在硬失败时重新评估。
+1. 固定 Payload、Next.js、PostgreSQL adapter、S3 plugin、Sharp、PostgreSQL 和对象存储版本；依赖升级前重跑完整 PG-01—PG-14；
+2. 正式云环境建立后，使用非生产账号补做实际 provider、bucket policy、签名 URL、TLS、CDN、故障与跨区恢复演练；
+3. 将数据库 dump 与对象 manifest 写入独立备份介质，并验证共同 snapshot、恢复顺序和恢复后合同；
+4. 用经过授权的小型真实风格但不受版权限制的图像集单独评估 pHash/aHash，内容主身份继续使用 SHA-256；
+5. 把攻击矩阵、Hpoi network guard、schema 签名、storage-key 审计和 clean standalone 保持为必过 CI；
+6. 正式项目初始化时重新建立环境变量、secret manager、health/readiness、日志、监控、告警、备份保留和回滚流程；
+7. 不为本任务修改 Windows Docker；若本地开发需要容器，另行授权修复或使用可用的远程/CI 非生产环境。
 
 ## 正式项目必须遵守的架构约束
 
-即使未来重新评估后选择任一技术栈，正式项目也必须遵守以下约束：
-
-1. 不直接把任一 `spikes/` 原型移动、复制或重命名为正式项目；正式初始化必须是后续明确授权的独立任务。
-2. 候选区与正式区保持独立写边界。采集器只能候选 upsert 和候选媒体上传，不能写 Work、Character、Manufacturer、FigurePrototype、FigureVersion、SystemSetting 或正式主图。
-3. 每个采集客户端使用独立、可撤销、可归因的凭据；服务端只保存凭据哈希，并强制校验 active 状态和 owner。不得以 loopback、客户端 UI 或隐藏按钮代替授权。
-4. 所有正式数据变化必须经过领域 service、原子事务和不可绕过的 OperationLog；通用 Admin/CRUD 只能只读或调用同一受控服务。
-5. 审核必须绑定 ReviewWorkItem、allowed targets、审核人和乐观版本。越界目标只能通过显式“新建正式原型”动作原子创建；完成、reopen 和冲突都必须审计。
-6. merge、split 与 undo 必须使用稳定 operation ID、作用域、版本和依赖；只能指定撤销安全操作，禁止“全局最近一次”语义和静默覆盖。
-7. 媒体身份使用内容哈希与稳定 storage key，不把公开 URL 当业务主键。来源失效或候选删除不得自动删除已经人工确认的正式主图；主图永不由采集器自动替换。
-8. 正式数据层采用 PostgreSQL，正式媒体层采用可迁移的 S3 兼容对象存储；本地/对象适配器切换不得改变业务关系 ID 或 storage key 语义。
-9. JSON、关系化 CSV 和图片 manifest 必须覆盖 ReviewWorkItem、OperationLog、SystemSetting、关系 ID、storage key、SHA-256 和 aHash，排除图片二进制、明文 token 及不必要的 token digest。
-10. 生产形态必须从干净环境执行 migration 后启动，具有 health endpoint、正式 server、静态/媒体/Admin 验证、可重复备份恢复和无硬编码 secret；所有服务最初只绑定 loopback 验证。
-11. 真实浏览器回归必须继续覆盖搜索、同名消歧、分页、4/3/2、原比例图片、灯箱边界、成人设置、无下载按钮和无详情面板。
-12. Hpoi 或其他外部来源的网络访问必须继续遵守仓库治理：公开、有限、低频、只读，不使用 Cookie/私人 Token，不绕过访问控制；任何来源内容都只能进入候选池。
+1. 正式项目由后续独立任务从官方脚手架干净初始化，不复制、移动或重命名任何 `spikes/` 原型。
+2. 候选区与正式区保持独立写边界。采集客户端只能 candidate upsert 和候选媒体上传，不能写 Work、Character、Manufacturer、FigurePrototype、FigureVersion、SystemSetting 或正式主图。
+3. 每个采集客户端使用独立、可撤销、可归因凭据；服务端只存凭据哈希并强制 active 状态和 owner；不得以 loopback、UI 隐藏或客户端约定代替授权。
+4. 所有正式变化必须经过领域 service、数据库原子事务、乐观锁和 OperationLog；generic Admin/REST/GraphQL/Local API 只能只读或调用同一受控 service。
+5. 审核必须绑定 ReviewWorkItem、allowed targets、审核人和 lock version；完成、reopen、冲突和越界新建都必须审计。
+6. Merge、split、undo 使用稳定 operation ID、作用域、版本和依赖；只允许指定撤销安全操作，不允许“全局最近一次”或静默覆盖。
+7. 正式主图只能人工选择，采集器永不自动替换；来源失效、候选删除或重新采集不得删除或改写既有正式主图。
+8. 媒体内容身份使用 SHA-256，感知哈希只作相似性辅助；业务关系使用稳定 storage key，公开 URL、endpoint 和签名 URL 不得成为主键。
+9. PostgreSQL 为正式数据层；S3 兼容对象存储为正式媒体层。迁移 provider 时保持关系 ID 和 storage-key 语义，并执行对象清单、逐项哈希和孤儿/缺失审计。
+10. 数据导出至少覆盖 JSON、关系化 CSV 和图片 manifest，包括 ReviewWorkItem、OperationLog、SystemSetting、关系 ID、storage key、SHA-256 和 aHash；排除图片二进制与凭据。
+11. 备份必须联合数据库 snapshot 和对象 manifest；恢复到空环境后重跑 schema、关系、权限、主图、来源状态、成人设置、对象缺失/孤儿和 standalone 合同。
+12. 生产形态使用锁文件、migration、正式 server、health/readiness、静态/Admin/媒体 smoke、可重复重启和无硬编码 secret；初次环境验证仅绑定 loopback，公开部署另行授权。
+13. Hpoi 或其他外部数据源继续遵守公开、有限、低频、只读、不使用 Cookie/私人 Token、不绕过访问控制；来源数据只能进入候选池。
 
 ## 重新评估触发条件
 
-满足以下条件后重新执行 Payload 生产门禁并评估是否可以正式接受：
+- Payload、Next.js、`@payloadcms/db-postgres`、`@payloadcms/storage-s3`、Sharp、PostgreSQL、MinIO/S3 provider 或 runner 镜像升级；
+- 正式 schema、migration、候选 endpoint、认证、owner、领域 service、ReviewWorkItem、merge/split/undo、主图或 storage-key 语义变化；
+- `.next/standalone` 不再是目标部署形态，或需要 serverless/edge/其他 runtime；
+- 任何 hard gate 回归：候选可写正式数据/主图、跨 owner 失败、关系断裂、恢复不一致、来源删除丢主图、clean start 失败或 Admin/CRUD 绕过审计；
+- 真实云 S3、云 PostgreSQL、公开域名或跨区灾备准备启用；
+- 项目规模、审核吞吐或维护成本证明当前技术底座不可接受；
+- 项目所有者明确要求重新比较 Wagtail 或其他候选。
 
-1. 本地已有可用 PostgreSQL 和 S3 兼容服务，或已有可运行 Docker/Compose，且无需安装 Docker、修改 Windows 服务或使用真实云资源；
-2. Payload 在干净、loopback 的 PostgreSQL + MinIO 环境中完成 PG-01—PG-14，并生成、校验机器可读证据；
-3. PG-01—PG-14 全部取得真实 `pass`，没有硬 `fail`，也没有关键 `environment_blocked`；
-4. 备份、空库恢复、恢复后共享合同、对象生命周期、联合恢复和完整生产启动证据均可复现；
-5. Payload standalone、PostgreSQL/S3 adapter、generic CRUD/Admin/候选身份边界在目标依赖版本上重新验证；
-6. 重新统计依赖、进程、导入耗时、冷启动、热响应、备份/恢复时间和部署步骤，确认实际维护成本可接受；
-7. 若全部条件满足，可提议把 ADR 更新为 `Accepted — Payload CMS + Next.js`；若出现硬失败，则停止接受 Payload，并重新评估修复路径、Wagtail 备用方案或其他经授权方向。
-
-本 ADR 将 Payload CMS + Next.js 记录为当前首选提案，但尚未完成最终正式技术选型；没有建立正式项目，没有部署云服务器，也没有开始原画图库或 VAL-03。既有 VAL-02B 证据中的 Hpoi 请求为 0，未使用真实手办图片。
+本 ADR 到此只完成技术决策。未初始化正式项目，未部署云服务器，未访问 Hpoi，未使用真实手办图片，未开始原画图库或 VAL-03。

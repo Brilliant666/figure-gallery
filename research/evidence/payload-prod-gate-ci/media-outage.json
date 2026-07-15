@@ -1,0 +1,17 @@
+{
+  "component": "payload-postgres-minio-media",
+  "details": {
+    "database_media_delta": 0,
+    "formal_read_error_class": "connection_refused",
+    "formal_read_failed_explicitly": true,
+    "formal_read_false_success": false,
+    "main_image_unchanged": true,
+    "operation_log_delta": 0,
+    "retryable": true,
+    "stable_error_code": "candidate_media_storage_unavailable",
+    "upload_http_status": 503
+  },
+  "mode": "outage",
+  "schema_version": 1,
+  "status": "pass"
+}

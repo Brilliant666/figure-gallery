@@ -1,0 +1,212 @@
+{
+  "attacks": {
+    "case_count": 12,
+    "cases": [
+      {
+        "actual_outcome": "rejected",
+        "evidence": "ci-security:SEC-01-NO-TOKEN:http",
+        "expected_outcome": "rejected",
+        "invariants": {
+          "formal_state_unchanged": true,
+          "main_image_unchanged": true,
+          "operation_log_unchanged": true
+        },
+        "name": "no_token",
+        "status": "pass",
+        "surface": "candidate endpoint handler"
+      },
+      {
+        "actual_outcome": "rejected",
+        "evidence": "ci-security:SEC-02-WRONG-TOKEN:http",
+        "expected_outcome": "rejected",
+        "invariants": {
+          "formal_state_unchanged": true,
+          "main_image_unchanged": true,
+          "operation_log_unchanged": true
+        },
+        "name": "wrong_token",
+        "status": "pass",
+        "surface": "candidate endpoint handler"
+      },
+      {
+        "actual_outcome": "rejected",
+        "evidence": "ci-security:SEC-03-REVOKED-TOKEN:http",
+        "expected_outcome": "rejected",
+        "invariants": {
+          "formal_state_unchanged": true,
+          "main_image_unchanged": true,
+          "operation_log_unchanged": true
+        },
+        "name": "revoked_token",
+        "status": "pass",
+        "surface": "candidate endpoint handler"
+      },
+      {
+        "actual_outcome": "rejected",
+        "evidence": "ci-security:SEC-04-CROSS-CLIENT-OWNER:http",
+        "expected_outcome": "rejected",
+        "invariants": {
+          "formal_state_unchanged": true,
+          "main_image_unchanged": true,
+          "operation_log_unchanged": true
+        },
+        "name": "client_a_modifies_client_b",
+        "status": "pass",
+        "surface": "candidate endpoint handler"
+      },
+      {
+        "actual_outcome": "rejected",
+        "evidence": "ci-security:SEC-05-CANDIDATE-WRITES-FIGURE-PROTOTYPE:exception",
+        "expected_outcome": "rejected",
+        "invariants": {
+          "formal_state_unchanged": true,
+          "main_image_unchanged": true,
+          "operation_log_unchanged": true
+        },
+        "name": "write_figure_prototype",
+        "status": "pass",
+        "surface": "Payload Local API"
+      },
+      {
+        "actual_outcome": "rejected",
+        "evidence": "ci-security:SEC-06-CANDIDATE-WRITES-FIGURE-VERSION:exception",
+        "expected_outcome": "rejected",
+        "invariants": {
+          "formal_state_unchanged": true,
+          "main_image_unchanged": true,
+          "operation_log_unchanged": true
+        },
+        "name": "write_figure_version",
+        "status": "pass",
+        "surface": "Payload Local API"
+      },
+      {
+        "actual_outcome": "rejected",
+        "evidence": "ci-security:SEC-07-CANDIDATE-WRITES-MAIN-IMAGE:http",
+        "expected_outcome": "rejected",
+        "invariants": {
+          "formal_state_unchanged": true,
+          "main_image_unchanged": true,
+          "operation_log_unchanged": true
+        },
+        "name": "replace_formal_main_image",
+        "status": "pass",
+        "surface": "candidate review endpoint handler"
+      },
+      {
+        "actual_outcome": "rejected",
+        "evidence": "ci-security:SEC-08-GENERIC-CANDIDATE-CRUD:exception",
+        "expected_outcome": "rejected",
+        "invariants": {
+          "formal_state_unchanged": true,
+          "main_image_unchanged": true,
+          "operation_log_unchanged": true
+        },
+        "name": "generic_rest_crud_bypass",
+        "status": "pass",
+        "surface": "generic collection access pipeline"
+      },
+      {
+        "actual_outcome": "rejected",
+        "evidence": "ci-security:SEC-09-LOCAL-API-OVERRIDE-SERVICE:exception",
+        "expected_outcome": "rejected",
+        "invariants": {
+          "formal_state_unchanged": true,
+          "main_image_unchanged": true,
+          "operation_log_unchanged": true
+        },
+        "name": "local_api_bypass",
+        "status": "pass",
+        "surface": "privileged domain service"
+      },
+      {
+        "actual_outcome": "rejected",
+        "evidence": "ci-security:SEC-10-ADMIN-GENERIC-SAVE:exception",
+        "expected_outcome": "rejected",
+        "invariants": {
+          "formal_state_unchanged": true,
+          "main_image_unchanged": true,
+          "operation_log_unchanged": true
+        },
+        "name": "admin_generic_save_bypass",
+        "status": "pass",
+        "surface": "generic Admin Local API save"
+      },
+      {
+        "actual_outcome": "rejected",
+        "evidence": "ci-security:SEC-11-OUT-OF-SCOPE-REVIEW-TARGET:exception",
+        "expected_outcome": "rejected",
+        "invariants": {
+          "formal_state_unchanged": true,
+          "main_image_unchanged": true,
+          "operation_log_unchanged": true
+        },
+        "name": "out_of_scope_review_target",
+        "status": "pass",
+        "surface": "review domain service"
+      },
+      {
+        "actual_outcome": "rejected",
+        "evidence": "ci-security:SEC-12-COMPLETED-WORK-ITEM-MODIFICATION:exception",
+        "expected_outcome": "rejected",
+        "invariants": {
+          "formal_state_unchanged": true,
+          "main_image_unchanged": true,
+          "operation_log_unchanged": true
+        },
+        "name": "completed_work_item_mutation",
+        "status": "pass",
+        "surface": "review domain service"
+      }
+    ],
+    "failed": 0,
+    "passed": 12,
+    "schema_version": 1,
+    "status": "pass"
+  },
+  "execution": {
+    "database_adapter": "postgres",
+    "object_store": "s3",
+    "payload_contract_evidence": "restored-joint-smoke.json",
+    "payload_contract_status": "pass",
+    "phase": "post_restore",
+    "s3_endpoint_scope": "loopback",
+    "service_endpoint_count": 10,
+    "service_endpoints_all_200": true,
+    "snapshot_id": "29354756205-1-d204767803b9c629ab262bc5ad5ccfc89751162e"
+  },
+  "fixture_sha256": "3ff832622a8b9d4244ec39fc70668c270cb78204ca975004941761ddb9df9529",
+  "schema_version": 1,
+  "shared_contract": {
+    "failed": 0,
+    "network_guard_test_ids": [
+      "test_network_guard.NetworkGuardTests.test_dns_guard_intercepts_before_real_resolution",
+      "test_network_guard.NetworkGuardTests.test_forbidden_url_is_rejected_before_transport",
+      "test_network_guard.NetworkGuardTests.test_lookalike_and_synthetic_hosts_are_not_misclassified",
+      "test_network_guard.NetworkGuardTests.test_malformed_endpoint_is_rejected",
+      "test_network_guard.NetworkGuardTests.test_root_and_every_subdomain_are_forbidden"
+    ],
+    "passed": 78,
+    "schema_version": 1,
+    "skipped": 0,
+    "test_id_digest_sha256": "fc238a20d5861b71506cd797e3c0fc38af2dfe9ce2eef80ef4b6d76ba75fad63",
+    "total": 78,
+    "underlying_transport_calls": 0
+  },
+  "status": "pass",
+  "synthetic_fixture_check": "pass",
+  "verified_features": [
+    "admin_generic_save_bypass",
+    "client_a_modifies_client_b",
+    "completed_work_item_mutation",
+    "generic_rest_crud_bypass",
+    "local_api_bypass",
+    "no_token",
+    "out_of_scope_review_target",
+    "replace_formal_main_image",
+    "revoked_token",
+    "write_figure_prototype",
+    "write_figure_version",
+    "wrong_token"
+  ]
+}

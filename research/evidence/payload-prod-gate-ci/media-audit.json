@@ -1,0 +1,111 @@
+{
+  "component": "payload-postgres-minio-media",
+  "details": {
+    "media": [
+      {
+        "media_id": 33,
+        "original": {
+          "byte_size": 30294,
+          "format": "png",
+          "height": 900,
+          "key": "ci/d204767803b9c629ab262bc5ad5ccfc89751162e/1/candidate/ci-media-client-02d87498-bc7a-403b-9724-4530cc8bf23d/8e/8e8df13a21cc0ce254c087af694a141b281d47c97346a4bf64c797026e1ffa41.png",
+          "perceptual_hash": "ffffffffffffffff",
+          "sha256": "8e8df13a21cc0ce254c087af694a141b281d47c97346a4bf64c797026e1ffa41",
+          "width": 1600
+        },
+        "sizes": {
+          "preview": {
+            "byte_size": 19650,
+            "format": "png",
+            "height": 720,
+            "key": "ci/d204767803b9c629ab262bc5ad5ccfc89751162e/1/candidate/ci-media-client-02d87498-bc7a-403b-9724-4530cc8bf23d/8e/8e8df13a21cc0ce254c087af694a141b281d47c97346a4bf64c797026e1ffa41-1280x720.png",
+            "sha256": "9c421c4e0fc7c0195a663c540137a049e9e74f4fe709d45705f09169828d41c4",
+            "width": 1280
+          },
+          "thumbnail": {
+            "byte_size": 1551,
+            "format": "png",
+            "height": 180,
+            "key": "ci/d204767803b9c629ab262bc5ad5ccfc89751162e/1/candidate/ci-media-client-02d87498-bc7a-403b-9724-4530cc8bf23d/8e/8e8df13a21cc0ce254c087af694a141b281d47c97346a4bf64c797026e1ffa41-320x180.png",
+            "sha256": "32780472c61beb4548ff967c5ab3e693186adac4371b3005703d2b18beec7bac",
+            "width": 320
+          }
+        },
+        "storage_key": "candidate/ci-media-client-02d87498-bc7a-403b-9724-4530cc8bf23d/8e/8e8df13a21cc0ce254c087af694a141b281d47c97346a4bf64c797026e1ffa41.png"
+      },
+      {
+        "media_id": 34,
+        "original": {
+          "byte_size": 8369,
+          "format": "jpeg",
+          "height": 960,
+          "key": "ci/d204767803b9c629ab262bc5ad5ccfc89751162e/1/candidate/ci-media-client-02d87498-bc7a-403b-9724-4530cc8bf23d/8b/8b9a37df1d7559d93e1c8163c2bd051ab81011a79bf60fbb425bfaaedad3a658.jpg",
+          "perceptual_hash": "ffffffffffffffff",
+          "sha256": "8b9a37df1d7559d93e1c8163c2bd051ab81011a79bf60fbb425bfaaedad3a658",
+          "width": 1440
+        },
+        "sizes": {
+          "preview": {
+            "byte_size": 6749,
+            "format": "jpeg",
+            "height": 853,
+            "key": "ci/d204767803b9c629ab262bc5ad5ccfc89751162e/1/candidate/ci-media-client-02d87498-bc7a-403b-9724-4530cc8bf23d/8b/8b9a37df1d7559d93e1c8163c2bd051ab81011a79bf60fbb425bfaaedad3a658-1280x853.jpg",
+            "sha256": "be9a3c7d11d1f1798f313d514b251df5fc05ff0265311911d357ffc6220b128d",
+            "width": 1280
+          },
+          "thumbnail": {
+            "byte_size": 689,
+            "format": "jpeg",
+            "height": 213,
+            "key": "ci/d204767803b9c629ab262bc5ad5ccfc89751162e/1/candidate/ci-media-client-02d87498-bc7a-403b-9724-4530cc8bf23d/8b/8b9a37df1d7559d93e1c8163c2bd051ab81011a79bf60fbb425bfaaedad3a658-320x213.jpg",
+            "sha256": "64530e75ffda73b0b9fed744ff42d0b89da5695e8417c99652b9360a30661c0b",
+            "width": 320
+          }
+        },
+        "storage_key": "candidate/ci-media-client-02d87498-bc7a-403b-9724-4530cc8bf23d/8b/8b9a37df1d7559d93e1c8163c2bd051ab81011a79bf60fbb425bfaaedad3a658.jpg"
+      },
+      {
+        "media_id": 37,
+        "original": {
+          "byte_size": 23193,
+          "format": "png",
+          "height": 768,
+          "key": "ci/d204767803b9c629ab262bc5ad5ccfc89751162e/1/candidate/ci-media-client-02d87498-bc7a-403b-9724-4530cc8bf23d/87/8713700c9cf87940f9edea06237b3df7631760a50ebe16866c3016c9ae5cf05a.png",
+          "perceptual_hash": "ffffffffffffffff",
+          "sha256": "8713700c9cf87940f9edea06237b3df7631760a50ebe16866c3016c9ae5cf05a",
+          "width": 1366
+        },
+        "sizes": {
+          "preview": {
+            "byte_size": 19650,
+            "format": "png",
+            "height": 720,
+            "key": "ci/d204767803b9c629ab262bc5ad5ccfc89751162e/1/candidate/ci-media-client-02d87498-bc7a-403b-9724-4530cc8bf23d/87/8713700c9cf87940f9edea06237b3df7631760a50ebe16866c3016c9ae5cf05a-1280x720.png",
+            "sha256": "94207e83766303dc5260f7600c70d824a9130fdd604492259ed922086a8fe123",
+            "width": 1280
+          },
+          "thumbnail": {
+            "byte_size": 1551,
+            "format": "png",
+            "height": 180,
+            "key": "ci/d204767803b9c629ab262bc5ad5ccfc89751162e/1/candidate/ci-media-client-02d87498-bc7a-403b-9724-4530cc8bf23d/87/8713700c9cf87940f9edea06237b3df7631760a50ebe16866c3016c9ae5cf05a-320x180.png",
+            "sha256": "4f415061a3b8dfc30abab8e6ac6d0c3d2e35de575f0c2a2a0f6d34232965fab5",
+            "width": 320
+          }
+        },
+        "storage_key": "candidate/ci-media-client-02d87498-bc7a-403b-9724-4530cc8bf23d/87/8713700c9cf87940f9edea06237b3df7631760a50ebe16866c3016c9ae5cf05a.png"
+      }
+    ],
+    "object_audit": {
+      "actual_count": 67,
+      "expected_count": 67,
+      "missing": [],
+      "orphaned": []
+    },
+    "repeated_reads_stable": true,
+    "storage_key_excludes_endpoint_and_public_url": true
+  },
+  "mode": "audit",
+  "schema_version": 1,
+  "status": "pass"
+}

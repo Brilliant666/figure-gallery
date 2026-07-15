@@ -1,0 +1,25 @@
+{
+  "component": "payload-postgres-minio-media",
+  "details": {
+    "candidate_soft_deleted": true,
+    "derivative_rebuild": {
+      "byte_size": 1551,
+      "key": "ci/d204767803b9c629ab262bc5ad5ccfc89751162e/1/candidate/ci-media-client-02d87498-bc7a-403b-9724-4530cc8bf23d/8e/8e8df13a21cc0ce254c087af694a141b281d47c97346a4bf64c797026e1ffa41-320x180.png",
+      "sha256": "32780472c61beb4548ff967c5ab3e693186adac4371b3005703d2b18beec7bac"
+    },
+    "final_object_audit": {
+      "actual_count": 67,
+      "expected_count": 67,
+      "missing": [],
+      "orphaned": []
+    },
+    "formal_main_image_id": 33,
+    "main_image_object_retained": true,
+    "missing_original_rebuild_refused": true,
+    "orphan_detection_probe": true,
+    "source_invalidated_and_soft_deleted": true
+  },
+  "mode": "lifecycle",
+  "schema_version": 1,
+  "status": "pass"
+}

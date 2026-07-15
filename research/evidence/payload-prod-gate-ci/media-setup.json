@@ -1,0 +1,19 @@
+{
+  "component": "payload-postgres-minio-media",
+  "details": {
+    "candidates_created": 3,
+    "client_identity_created": true,
+    "different_content_same_source_url_distinct": true,
+    "jpeg_media_id": 34,
+    "png_media_id": 33,
+    "same_content_deduplicated": true,
+    "seed_completed": true,
+    "synthetic_images": [
+      "PNG",
+      "JPEG"
+    ]
+  },
+  "mode": "setup",
+  "schema_version": 1,
+  "status": "pass"
+}

@@ -1,0 +1,118 @@
+name: Payload production gates
+
+on:
+  push:
+    branches:
+      - research/payload-production-gates-ci
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: payload-production-gates-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  payload-production-gates:
+    if: github.ref == 'refs/heads/research/payload-production-gates-ci'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    defaults:
+      run:
+        shell: bash
+    env:
+      CI: "true"
+      NEXT_TELEMETRY_DISABLED: "1"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22.23.1
+          cache: npm
+          cache-dependency-path: spikes/val02_payload/package-lock.json
+
+      - name: Set up Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        with:
+          python-version: "3.10.x"
+
+      - name: Fail-fast static validation
+        run: |
+          command -v timeout >/dev/null
+          bash -n spikes/payload_prod_gate/scripts/run-ci-production-gates.sh
+          if command -v shellcheck >/dev/null 2>&1; then
+            shellcheck spikes/payload_prod_gate/scripts/run-ci-production-gates.sh
+          else
+            echo "shellcheck is not available on this runner; bash -n completed."
+          fi
+          python -m py_compile spikes/payload_prod_gate/scripts/assemble-ci-evidence.py
+          python -m py_compile spikes/payload_prod_gate/scripts/validate-repository-files.py
+          python -m py_compile spikes/val02_payload/scripts/live_python_client_smoke.py
+          python spikes/payload_prod_gate/scripts/validate-repository-files.py
+
+      - name: Install locked Payload dependencies
+        working-directory: spikes/val02_payload
+        run: timeout --signal=TERM --kill-after=30s 10m npm ci --no-audit --no-fund
+
+      - name: Run PostgreSQL, S3, restore, standalone, and security gates
+        run: >-
+          timeout --signal=TERM --kill-after=30s 42m
+          bash spikes/payload_prod_gate/scripts/run-ci-production-gates.sh run
+
+      - name: Stop and erase disposable runtime state
+        if: ${{ always() }}
+        run: >-
+          timeout --signal=TERM --kill-after=15s 4m
+          bash spikes/payload_prod_gate/scripts/run-ci-production-gates.sh cleanup
+
+      - name: Validate and assemble sanitized evidence
+        id: sanitize
+        if: ${{ always() }}
+        run: >-
+          python spikes/payload_prod_gate/scripts/assemble-ci-evidence.py
+          --source "$RUNNER_TEMP/payload-prod-gate-results"
+          --destination "$RUNNER_TEMP/payload-prod-gate-upload"
+
+      - name: Upload sanitized gate evidence
+        id: artifact
+        if: ${{ always() && steps.sanitize.outcome == 'success' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: payload-prod-gate-${{ github.sha }}
+          path: ${{ runner.temp }}/payload-prod-gate-upload/
+          if-no-files-found: error
+          retention-days: 5
+          compression-level: 6
+          include-hidden-files: false
+          overwrite: false
+
+      - name: Record artifact provenance
+        if: ${{ always() && steps.artifact.outcome == 'success' }}
+        env:
+          ARTIFACT_DIGEST: ${{ steps.artifact.outputs['artifact-digest'] }}
+          ARTIFACT_ID: ${{ steps.artifact.outputs['artifact-id'] }}
+          ARTIFACT_URL: ${{ steps.artifact.outputs['artifact-url'] }}
+        run: |
+          {
+            printf 'Artifact ID: `%s`\n\n' "$ARTIFACT_ID"
+            printf 'Artifact digest: `%s`\n\n' "$ARTIFACT_DIGEST"
+            printf 'Artifact URL: %s\n' "$ARTIFACT_URL"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Enforce production-gate outcome
+        if: ${{ always() && steps.sanitize.outcome == 'success' }}
+        run: |
+          python - "$RUNNER_TEMP/payload-prod-gate-upload/production-gates.json" <<'PY'
+          import json, pathlib, sys
+          result = json.loads(pathlib.Path(sys.argv[1]).read_text(encoding="utf-8"))
+          if result.get("overall_status") != "pass":
+              raise SystemExit(f"Production gates did not pass: {result.get('overall_status')}")
+          PY

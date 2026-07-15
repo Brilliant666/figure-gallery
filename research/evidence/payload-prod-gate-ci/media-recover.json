@@ -1,0 +1,40 @@
+{
+  "component": "payload-postgres-minio-media",
+  "details": {
+    "compensated_post_upload_fault": {
+      "business_prefix_key_count_after": 64,
+      "business_prefix_key_count_before": 64,
+      "business_prefix_key_set_after_sha256": "0fe5be1d194067e53315b0ab770b603f1085bf1ccf866b96cebff5415c928027",
+      "business_prefix_key_set_before_sha256": "0fe5be1d194067e53315b0ab770b603f1085bf1ccf866b96cebff5415c928027",
+      "business_prefix_key_sets_equal": true,
+      "candidate_images_unchanged": true,
+      "compensated": true,
+      "database_media_delta": 0,
+      "fault_stage": "after-operation-log-before-commit",
+      "formal_prototype_delta": 0,
+      "formal_version_delta": 0,
+      "main_image_unchanged": true,
+      "missing_count_after": 0,
+      "operation_log_delta": 0,
+      "orphan_count_after": 0,
+      "retryable": true,
+      "stable_error_code": "candidate_media_commit_failed",
+      "upload_http_status": 503
+    },
+    "final_object_audit": {
+      "actual_count": 67,
+      "expected_count": 67,
+      "missing": [],
+      "orphaned": []
+    },
+    "formal_read_recovered": true,
+    "idempotent_retry": true,
+    "media_id": 37,
+    "object_count_for_media": 3,
+    "original_sha256": "8713700c9cf87940f9edea06237b3df7631760a50ebe16866c3016c9ae5cf05a",
+    "service_recovered": true
+  },
+  "mode": "recover",
+  "schema_version": 1,
+  "status": "pass"
+}

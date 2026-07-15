@@ -1,0 +1,29 @@
+{
+  "hosted_image": {
+    "os": "ubuntu24",
+    "version": "20260705.232.1"
+  },
+  "linux_checks": {
+    "case_sensitive_filesystem": true,
+    "line_endings": "LF",
+    "path_separator": "/",
+    "script_executable": true,
+    "temporary_directory": "/home/runner/work/_temp",
+    "timezone": "UTC +0000"
+  },
+  "runner": "ubuntu-24.04",
+  "schema_version": 1,
+  "versions": {
+    "available_disk_bytes": "18675126272",
+    "cpu": "Intel(R) Xeon(R) Platinum 8370C CPU @ 2.80GHz",
+    "cpu_cores": "4",
+    "docker_client": "28.0.4",
+    "docker_compose": "2.38.2",
+    "docker_server": "28.0.4",
+    "memory_bytes": "16765382656",
+    "node": "v22.23.1",
+    "npm": "10.9.8",
+    "python": "Python 3.10.20",
+    "ubuntu": "Ubuntu 24.04"
+  }
+}

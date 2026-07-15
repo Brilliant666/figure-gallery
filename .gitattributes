@@ -1,0 +1,2 @@
+# The committed CI evidence is covered by byte-exact SHA-256 manifests.
+research/evidence/payload-prod-gate-ci/*.json text eol=lf

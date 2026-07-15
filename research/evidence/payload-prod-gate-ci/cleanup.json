@@ -1,0 +1,14 @@
+{
+  "backup_removed": true,
+  "checkout_media_absent": true,
+  "containers_remaining": 0,
+  "listening_ports": [],
+  "restored_next_removed": true,
+  "runtime_env_removed": true,
+  "schema_version": 1,
+  "stage": "cleanup",
+  "status": "pass",
+  "temporary_objects_removed": true,
+  "volumes_remaining": 0,
+  "work_dir_removed": true
+}

@@ -62,13 +62,15 @@ npm run seed
 
 ### PostgreSQL migration fail-closed 门禁
 
-配置已接入官方 `@payloadcms/db-postgres@3.86.0`，但本轮没有可安全使用的
-PostgreSQL 运行环境，因此 `src/migrations-postgres/` 尚未生成迁移，PostgreSQL
-验证保持 `environment_blocked`。当 `DATABASE_ADAPTER=postgres` 且迁移数组为空时，
-普通启动和 `payload migrate` 会直接失败，不能产生“空迁移成功”的假阳性。
+配置已接入官方 `@payloadcms/db-postgres@3.86.0`。本分支已经在
+`src/migrations-postgres/` 中加入首个 PostgreSQL migration，并保留 SQLite 与
+PostgreSQL migration 严格分离、生产 `push: false` 和缺少 migration 时 fail closed
+的约束。该 migration 尚未在本分支对应的 GitHub Actions Ubuntu/PostgreSQL 环境中
+完成 fresh/repeat migration，因此这里不把它描述为已经通过生产门禁。
 
-未来只有在一次性、可丢弃的 PostgreSQL 环境已经可用时，才允许通过双重门禁生成
-迁移：显式打开 generation-only 开关，并且实际命令必须是 `migrate:create`：
+后续重新生成或新增 PostgreSQL migration 时，仍只允许在一次性、可丢弃的
+PostgreSQL 环境中通过双重门禁执行：显式打开 generation-only 开关，并且实际
+命令必须是 `migrate:create`：
 
 ```powershell
 $env:DATABASE_ADAPTER = 'postgres'
@@ -155,13 +157,13 @@ npm run acceptance:val02b -- --browser-results "$env:TEMP/payload-browser.json" 
 
 `npm run export` 生成一个关系明确的 JSON 和 10 个 CSV（包括 `ReviewWorkItems`）；包含内部 ID、关系 ID、`storageKey`、来源 URL、SHA-256/pHash 元数据，不嵌入图片 bytes/base64，也不导出框架私有备份。
 
-本地存储是本轮实际验证路径。`storageKey` 是不含 endpoint/public URL 的稳定业务标识；仅在 `S3_ENABLED=true` 时才写 document-level 内容前缀，并与运行时 `S3_PREFIX` 组合。S3 只验证官方 plugin 的配置边界和 SQLite 回归兼容，未连接真实 bucket，因此实际对象 key、读写和恢复仍为 `environment_blocked`；切换需要运行时 `S3_*` 环境变量，不能把 access key 提交到仓库。
+本地存储仍是默认回归路径。`storageKey` 是不含 endpoint/public URL 的稳定业务标识；仅在 `S3_ENABLED=true` 时才写 document-level 内容前缀，并与运行时 `S3_PREFIX` 组合。本分支已增加只用于受限 GitHub Actions 的 MinIO/S3 上传、派生图、故障恢复、对象备份恢复、prefix 迁移和 standalone 验证脚本；这些门禁尚待对应 commit 的真实 CI 运行和脱敏 Artifact 验证，不能提前写成通过。切换只读取运行时 `S3_*` 环境变量，不能把 access key 提交到仓库。
 
 ## 已知限制与未运行项
 
 - `publicReadEnabled` 同时约束前台查询和匿名 Works/Characters/Manufacturers/FigurePrototypes/Media collection read；FigureVersions、候选、来源与审计日志始终不对匿名访问开放。
-- 本轮当前执行环境没有可安全使用的 PostgreSQL 或 MinIO；`src/migrations-postgres/` 仍为空，因此 PostgreSQL migration/backup/restore、S3 闭环和含 PostgreSQL+S3 的完整非生产启动必须记为 `environment_blocked`，不能用 SQLite/本地媒体结果替代。
-- `next build` 与 standalone 只验证本地、合成、非生产形态；没有云部署、生产凭据、生产数据或真实邮件 adapter。
+- 本分支不重试或修改已阻塞的本机 Docker；PostgreSQL migration 和 CI 门禁代码已经实现，但 PostgreSQL migration/backup/restore、S3 闭环及 PostgreSQL + S3 standalone 只有在 GitHub-hosted runner 实际运行并通过机器证据校验后才能形成结论。
+- 既有 `next build` 与本地 standalone 结果不能替代本分支尚待执行的 PostgreSQL + S3 clean-start/restart；没有云部署、生产凭据、生产数据或真实邮件 adapter。
 - 真实浏览器结果和共享 Python loopback 结果由外部 harness 以机器 JSON 注入；未传入时生成器明确写 `not_run`，不会以静态检查冒充浏览器或传输通过。
 
 这些限制必须进入技术底座比较；不得据此选择最终栈或开始正式开发。
