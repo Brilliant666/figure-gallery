@@ -3,85 +3,123 @@
   "validationDate": "2026-07-15",
   "branch": "feat/pr-00-formal-initialization",
   "scaffoldCommit": "00f5f5675b968832cd4cb14a9ef6648b0d1886f8",
-  "overallStatus": "not_run",
+  "validatedSourceHead": "f91b97a627618d24b7bd45e9b1e9b3f9d6278410",
+  "testedPullRequestMergeSha": "6004380647c4fcff1c221fa81c48bc4f5e298c6e",
+  "evidenceRun": {
+    "id": 29415343636,
+    "url": "https://github.com/Brilliant666/figure-gallery/actions/runs/29415343636",
+    "workflow": "Formal web CI",
+    "conclusion": "success",
+    "artifact": {
+      "id": 8342894294,
+      "name": "pr00-initialization-summary-29415343636-1",
+      "digest": "sha256:86623f62dec47f4c22cb6654b6de08cb3ae3ade8775336ae6e77981b35a7e751",
+      "sizeInBytes": 3898
+    },
+    "note": "This is the first complete green predecessor used to populate committed evidence; the current pull request head must independently keep the same workflow green."
+  },
+  "overallStatus": "pass",
   "summary": {
-    "pass": 0,
+    "pass": 12,
     "fail": 0,
-    "not_run": 12,
+    "not_run": 0,
     "environment_blocked": 0
+  },
+  "validatedOutputs": {
+    "postgres": {
+      "freshMigration": "pass",
+      "repeatMigration": "pass",
+      "driftCheck": "pass",
+      "migration": "20260715_114831_pr00_baseline",
+      "batch": 1,
+      "schemaSignature": "76b8c733200d5fb388e7e4e780392ad7"
+    },
+    "s3AndHealth": {
+      "healthyReadyStatus": 200,
+      "outageLiveStatus": 200,
+      "outageReadyStatus": 503,
+      "recoveredReadyStatus": 200
+    },
+    "standalone": {
+      "cleanStarts": 2,
+      "restarts": 1,
+      "sharpSyntheticMemoryPng": "pass",
+      "adminAndStaticSmoke": "pass",
+      "nftTracingWarnings": 0
+    },
+    "browser": {
+      "playwright": "pass",
+      "externalRequests": 0,
+      "unauthenticatedAdminBoundary": "pass"
+    },
+    "dependencies": {
+      "exactDirectDependencies": 23,
+      "allowedLicenses": ["Apache-2.0", "MIT"],
+      "productionAuditHigh": 0,
+      "productionAuditCritical": 0
+    }
   },
   "gates": [
     {
       "id": "INIT-01",
-      "status": "not_run",
-      "evidence": ["docs/PR00_SCAFFOLD_PROVENANCE.md"],
-      "note": "Pending final Git-history and no-spike-copy audit."
+      "status": "pass",
+      "evidence": "Fixed create-payload-app scaffold commit, provenance, and no-spike boundary verified."
     },
     {
       "id": "INIT-02",
-      "status": "not_run",
-      "evidence": [],
-      "note": "Pending exact-pin, clean npm ci, dependency and lockfile evidence."
+      "status": "pass",
+      "evidence": "Exact pins, package-lock v3, and clean npm ci passed."
     },
     {
       "id": "INIT-03",
-      "status": "not_run",
-      "evidence": [],
-      "note": "Pending formal repository-boundary check evidence."
+      "status": "pass",
+      "evidence": "Formal directory and dependency boundaries verified."
     },
     {
       "id": "INIT-04",
-      "status": "not_run",
-      "evidence": [],
-      "note": "Pending environment-schema unit and redaction evidence."
+      "status": "pass",
+      "evidence": "Environment schema, secret redaction, and production rejection tests passed."
     },
     {
       "id": "INIT-05",
-      "status": "not_run",
-      "evidence": [],
-      "note": "Pending PostgreSQL 16 fresh/repeat migration and drift evidence."
+      "status": "pass",
+      "evidence": "PostgreSQL fresh/repeat migration, status, and generated-file drift check passed."
     },
     {
       "id": "INIT-06",
-      "status": "not_run",
-      "evidence": [],
-      "note": "Pending S3 configuration-boundary and readiness evidence."
+      "status": "pass",
+      "evidence": "S3 configuration plus ready 503 failure and ready 200 recovery passed."
     },
     {
       "id": "INIT-07",
-      "status": "not_run",
-      "evidence": [],
-      "note": "Pending liveness/readiness success and failure-path evidence."
+      "status": "pass",
+      "evidence": "Liveness, readiness dependency, and build-version semantics passed."
     },
     {
       "id": "INIT-08",
-      "status": "not_run",
-      "evidence": [],
-      "note": "Pending typecheck, ESLint and Vitest evidence."
+      "status": "pass",
+      "evidence": "TypeScript typecheck, ESLint, and 30 Vitest tests passed."
     },
     {
       "id": "INIT-09",
-      "status": "not_run",
-      "evidence": [],
-      "note": "Pending production build and clean standalone start evidence."
+      "status": "pass",
+      "evidence": "Clean standalone start, static/Admin smoke, Sharp trace, and restart passed."
     },
     {
       "id": "INIT-10",
-      "status": "not_run",
-      "evidence": [],
-      "note": "Pending Playwright health, placeholder root and Admin-boundary evidence."
+      "status": "pass",
+      "evidence": "Playwright health, technical root, and unauthenticated Admin boundary passed."
     },
     {
       "id": "INIT-11",
-      "status": "not_run",
-      "evidence": [],
-      "note": "Pending final credential, large-file, binary and generated-artifact scan."
+      "status": "pass",
+      "evidence": "Credential, large-file, binary, database, media, build-output, and diff scans passed."
     },
     {
       "id": "INIT-12",
-      "status": "not_run",
-      "evidence": [],
-      "note": "Pending final scope and zero-Hpoi-request audit."
+      "status": "pass",
+      "evidence": "Business Collections, APIs, and pages are zero; forbidden-source request count is zero."
     }
-  ]
+  ],
+  "hpoiRequests": 0
 }
