@@ -665,6 +665,7 @@ try {
   const eligiblePrototype = secondSeed.results.prototypeSolarArcA
   const prototypeBeforeRollback = await payload.find({
     collection: 'figure-prototypes',
+    depth: 0,
     limit: 1,
     overrideAccess: true,
     where: { stableId: { equals: eligiblePrototype.stableId } },
@@ -691,6 +692,7 @@ try {
   )
   const prototypeAfterRollback = await payload.find({
     collection: 'figure-prototypes',
+    depth: 0,
     limit: 1,
     overrideAccess: true,
     where: { stableId: { equals: eligiblePrototype.stableId } },
