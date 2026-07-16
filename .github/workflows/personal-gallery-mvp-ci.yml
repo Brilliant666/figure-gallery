@@ -1,0 +1,110 @@
+name: Personal gallery MVP CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - feat/mvp-01-personal-auto-gallery
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: personal-gallery-mvp-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  offline-mvp:
+    name: Offline parser, collector, storage, and gallery gates
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      CI: "true"
+      HPOI_LIVE_FETCH_ENABLED: "false"
+      HPOI_WRITTEN_PERMISSION_CONFIRMED: "false"
+      PERSONAL_GALLERY_HOST: 127.0.0.1
+      PERSONAL_GALLERY_PORT: 4317
+
+    steps:
+      - name: Check out the exact source revision
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set isolated runtime and summary paths
+        shell: bash
+        run: |
+          set -euo pipefail
+          {
+            echo "PERSONAL_GALLERY_ROOT=${RUNNER_TEMP}/personal-gallery-runtime"
+            echo "MVP_BROWSER_RESULT=${RUNNER_TEMP}/personal-gallery-summary/browser-results.json"
+            echo "MVP_CI_SUMMARY=${RUNNER_TEMP}/personal-gallery-summary/ci-results.json"
+            echo "MVP_NETWORK_RESULT_DIR=${RUNNER_TEMP}/personal-gallery-summary/network"
+          } >> "$GITHUB_ENV"
+
+      - name: Configure Node 22.23.1 and independent npm lock cache
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22.23.1
+          cache: npm
+          cache-dependency-path: tools/personal-gallery-mvp/package-lock.json
+
+      - name: Verify toolchain and official npm registry
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(node --version)" = 'v22.23.1'
+          test "$(npm --version)" = '10.9.8'
+          npm config set registry https://registry.npmjs.org/ --location=user
+          test "$(npm config get registry)" = 'https://registry.npmjs.org/'
+
+      - name: Install only from the MVP lockfile
+        working-directory: tools/personal-gallery-mvp
+        run: npm ci
+
+      - name: Check dependency tree and high-severity production audit
+        shell: bash
+        working-directory: tools/personal-gallery-mvp
+        run: |
+          set -euo pipefail
+          mkdir -p "$(dirname "$MVP_CI_SUMMARY")"
+          npm ls --depth=0
+          npm audit --omit=dev --audit-level=high --json > "${RUNNER_TEMP}/personal-gallery-summary/npm-audit.json"
+
+      - name: Enforce isolation, exact pins, fixtures, and artifact safety
+        working-directory: tools/personal-gallery-mvp
+        run: npm run check
+
+      - name: Run offline unit and integration tests behind the network guard
+        working-directory: tools/personal-gallery-mvp
+        run: npm test
+
+      - name: Install project-local Playwright Chromium
+        working-directory: tools/personal-gallery-mvp
+        run: npx playwright install --with-deps chromium
+
+      - name: Run loopback-only gallery browser tests
+        working-directory: tools/personal-gallery-mvp
+        run: npm run test:e2e
+
+      - name: Write a small machine-readable CI summary
+        working-directory: tools/personal-gallery-mvp
+        run: npm run ci:summary
+
+      - name: Confirm zero source runtime and no generated repository files
+        shell: bash
+        run: |
+          set -euo pipefail
+          node -e 'const fs=require("fs"); const p=process.env.MVP_CI_SUMMARY; const x=JSON.parse(fs.readFileSync(p,"utf8")); if(x.network.hpoiRequests!==0||x.network.firecrawlRequests!==0||x.liveFetchEnabled!==false) process.exit(1)'
+          test ! -e .local
+          test -z "$(git status --short)"
+
+      - name: Upload only the small test summaries
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: personal-gallery-mvp-summary
+          path: ${{ runner.temp }}/personal-gallery-summary/*.json
+          if-no-files-found: error
+          retention-days: 7

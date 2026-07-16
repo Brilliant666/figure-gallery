@@ -4,7 +4,7 @@
 
 本路线把正式产品拆成九个可独立审核、验证和回滚的 PR。顺序是依赖顺序，不是自动执行许可；每个 PR 都必须由单独任务明确授权、从最新 `main` 创建独立分支，并默认以 Draft PR 交付。达到当前 PR 的停止条件后立即停止。
 
-当前状态：PR-00 已合并；PR-01 在 `feat/pr-01-core-catalog` 作为 Draft 候选实现，等待最终 Formal web CI 与人工审查；PR-02—PR-08 均未开始。此状态不改变任何后续 PR 的原定范围。
+当前状态：PR-00 与 PR-01 已合并，PR-01 的 CAT-01—CAT-21 和最新 `main` Formal web CI 已通过。为优先验证第一个个人可用图库，正式 PR-02—PR-08 暂停但不取消；独立 MVP 的范围和隔离边界见 [MVP-01 个人自动手办图库](MVP01_PERSONAL_AUTO_GALLERY.md)。恢复 PR-02 仍需新的明确授权，此状态不改变任何后续 PR 的原定范围。
 
 共同规则：
 
@@ -20,14 +20,14 @@
 | PR | 状态 | 主题 | 主要交付 | 依赖 |
 | --- | --- | --- | --- | --- |
 | PR-00 | 已合并 | 正式项目初始化 | 官方脚手架、目录边界、CI、health、空 migration | 本蓝图获批 |
-| PR-01 | Draft 候选实现，验证中 | 核心目录数据模型 | Work、Character/Alias、Manufacturer、Prototype/Character relation/Version、OperationLog 骨架 | PR-00 |
-| PR-02 | 未开始 | 来源和候选池 | CandidateClient、SourceRecord、CandidateRecord、CandidateImage | PR-01 |
-| PR-03 | 未开始 | 审核工作流 | ReviewWorkItem、字段决定、允许目标、OperationLog | PR-02 |
-| PR-04 | 未开始 | 媒体和正式主图 | 内容寻址媒体、S3、派生图、提升与主图保护 | PR-03 |
-| PR-05 | 未开始 | Merge/Split/Undo | operation dependency、事务、乐观锁、管理操作 UI | PR-04 |
-| PR-06 | 未开始 | 公开搜索和图库 | 搜索、消歧、图库、分页、成人过滤、灯箱 | PR-05 |
-| PR-07 | 未开始 | 导出、备份和恢复 | JSON/CSV、对象 manifest、恢复与完整性审计 | PR-06 |
-| PR-08 | 未开始 | 部署准备 | standalone、readiness、可观测性、runbook、非生产验证 | PR-07 |
+| PR-01 | 已合并 | 核心目录数据模型 | Work、Character/Alias、Manufacturer、Prototype/Character relation/Version、OperationLog 骨架 | PR-00 |
+| PR-02 | 未开始（暂缓） | 来源和候选池 | CandidateClient、SourceRecord、CandidateRecord、CandidateImage | PR-01 |
+| PR-03 | 未开始（暂缓） | 审核工作流 | ReviewWorkItem、字段决定、允许目标、OperationLog | PR-02 |
+| PR-04 | 未开始（暂缓） | 媒体和正式主图 | 内容寻址媒体、S3、派生图、提升与主图保护 | PR-03 |
+| PR-05 | 未开始（暂缓） | Merge/Split/Undo | operation dependency、事务、乐观锁、管理操作 UI | PR-04 |
+| PR-06 | 未开始（暂缓） | 公开搜索和图库 | 搜索、消歧、图库、分页、成人过滤、灯箱 | PR-05 |
+| PR-07 | 未开始（暂缓） | 导出、备份和恢复 | JSON/CSV、对象 manifest、恢复与完整性审计 | PR-06 |
+| PR-08 | 未开始（暂缓） | 部署准备 | standalone、readiness、可观测性、runbook、非生产验证 | PR-07 |
 
 ## 3. PR-00：正式项目初始化
 
@@ -70,7 +70,7 @@
 
 ## 4. PR-01：核心目录数据模型
 
-**状态：Draft 候选实现，最终门禁待 CI。** 具体实现见 [PR-01 核心目录实现](PR01_CORE_CATALOG_IMPLEMENTATION.md) 和 [业务身份实现](PR01_IDENTITY_IMPLEMENTATION.md)；只有最终 `CAT-01`—`CAT-21` 全部 pass 才可进入人工审查。
+**状态：已合并。** 具体实现见 [PR-01 核心目录实现](PR01_CORE_CATALOG_IMPLEMENTATION.md) 和 [业务身份实现](PR01_IDENTITY_IMPLEMENTATION.md)；最终 `CAT-01`—`CAT-21` 与合并后 `main` Formal web CI 已通过。
 
 ### 目标
 
