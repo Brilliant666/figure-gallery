@@ -1,10 +1,11 @@
-name: Personal gallery MVP CI
+name: Personal gallery MVP offline CI
 
 on:
   pull_request:
   push:
     branches:
       - feat/mvp-01-personal-auto-gallery
+      - feat/mvp-02-cheshire-official-gallery
   workflow_dispatch:
 
 permissions:
@@ -16,13 +17,14 @@ concurrency:
 
 jobs:
   offline-mvp:
-    name: Offline parser, collector, storage, and gallery gates
+    name: MVP-02 offline parser, collector, storage, and gallery gates
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     env:
       CI: "true"
       HPOI_LIVE_FETCH_ENABLED: "false"
       HPOI_WRITTEN_PERMISSION_CONFIRMED: "false"
+      OFFICIAL_SOURCE_LIVE_FETCH_ENABLED: "false"
       PERSONAL_GALLERY_HOST: 127.0.0.1
       PERSONAL_GALLERY_PORT: 4317
 
@@ -93,11 +95,11 @@ jobs:
         working-directory: tools/personal-gallery-mvp
         run: npm run ci:summary
 
-      - name: Confirm zero source runtime and no generated repository files
+      - name: Confirm zero external runtime and no generated repository files
         shell: bash
         run: |
           set -euo pipefail
-          node -e 'const fs=require("fs"); const p=process.env.MVP_CI_SUMMARY; const x=JSON.parse(fs.readFileSync(p,"utf8")); if(x.network.hpoiRequests!==0||x.network.firecrawlRequests!==0||x.liveFetchEnabled!==false) process.exit(1)'
+          node -e 'const fs=require("fs"); const p=process.env.MVP_CI_SUMMARY; const x=JSON.parse(fs.readFileSync(p,"utf8")); if(x.task!=="MVP-02"||x.scope!=="offline_ci_only"||x.mvp02OverallStatus!=="not_run"||x.realRunStatus!=="not_run"||x.liveFetchEnabled!==false||x.officialLiveFetchEnabled!==false||x.network.hpoiRequests!==0||x.network.firecrawlRequests!==0||x.network.officialExternalRequests!==0||x.network.externalRequests!==0) process.exit(1)'
           test ! -e .local
           test -z "$(git status --short)"
 

@@ -1,73 +1,91 @@
 # Personal Gallery MVP
 
-一个可删除、仅本机使用的角色手办图片收集与浏览工具。它与 `apps/web`、Payload、PostgreSQL、S3 及正式领域模型完全隔离；运行结果只进入 `.local/personal-gallery/`。
+这是一个可删除、仅在项目所有者本机运行的角色手办图片收集与浏览工具。它与 `apps/web`、Payload、PostgreSQL、S3 以及正式领域模型完全隔离；运行结果只进入 `.local/personal-gallery/`。
 
-完整产品与来源边界见 [`docs/MVP01_PERSONAL_AUTO_GALLERY.md`](../../docs/MVP01_PERSONAL_AUTO_GALLERY.md)。
+MVP-02 的权威说明见 [`docs/MVP02_CHESHIRE_OFFICIAL_GALLERY.md`](../../docs/MVP02_CHESHIRE_OFFICIAL_GALLERY.md)。MVP-01 的历史边界仍保留在 [`docs/MVP01_PERSONAL_AUTO_GALLERY.md`](../../docs/MVP01_PERSONAL_AUTO_GALLERY.md)。
 
-## 安全边界
+## 当前来源策略
 
-- 服务只接受 `127.0.0.1`，非 loopback host 会拒绝启动。
-- HTTP Host 必须是 `127.0.0.1`；跨站或非 JSON 的状态变更请求会被拒绝。
-- 实时访问默认关闭；打开开关不等于取得来源授权。
-- 真实请求要求书面许可确认、实时开关、Firecrawl API Key 和每次交互确认同时成立。
-- Firecrawl Cloud 地址严格固定为 `https://api.firecrawl.dev`；HTTP、凭据、额外路径、查询参数或其他 host 会在 SDK 构造前被拒绝。
-- Firecrawl 只使用 v2 `scrape`，以及角色页发现所需的有限 Search；不使用 crawl、Agent、浏览器动作、代理、Cookie 或登录。
-- 401、403、429、captcha、登录/机器人验证、robots 拒绝、非 allowlist 跳转会停止当前运行。
-- CI 和测试只使用完全合成 fixture，Hpoi 与 Firecrawl 请求数固定为 0。
+- Hpoi 实时访问已冻结为 `blocked_by_source`。历史 Hpoi parser 只用于合成 fixture 的离线回归，不得触发网络请求，也不得自动重试。
+- MVP-02 仅发现公开的官方厂商或官方发行方商品页。Firecrawl 只使用 Search v2 的 `web` source 和 v2 `scrape`；不使用 crawl、Agent、浏览器动作、增强代理、位置伪装、Cookie、登录或验证码处理。
+- Search 明确排除 `hpoi.net` 与 `www.hpoi.net`，并使用柴郡的中、日、英五条固定检索词。搜索结果只有落入代码内 allowlist 的官方商品页才会进入下载流程。
+- 当前 allowlist 为 `goodsmile.com`、`www.goodsmile.com`、`goodsmilearts.com`、`www.goodsmilearts.com`、`alter-web.jp`、`www.alter-web.jp`。其他域名只记入 `unreviewed-domains.json`，不会自动访问。
+- 401、403、429、captcha、登录/机器人验证、robots 拒绝或非 allowlist 跳转会停止当前运行；不会更换代理、伪装身份或绕过访问控制。
 
-## 开始
+打开实时开关不等于获得来源授权。启用者必须自行确认对公开官方商品页的访问权限，并在每次真实运行时作主动确认。
+
+## 安装与离线验证
 
 ```powershell
 cd tools/personal-gallery-mvp
 npm ci
 Copy-Item .env.example .env
+npm run check
 npm run test
 npm run serve
 ```
 
-浏览器打开 `http://127.0.0.1:4317/`。
+浏览器打开 `http://127.0.0.1:4317/`。服务只绑定 `127.0.0.1`，非 loopback host 会被拒绝。
 
-确认已经取得并仍持有明确书面许可后，设置 `.env` 的四项运行门禁，再执行：
+CI 和普通测试只使用完全合成的官方风格 HTML 与 PNG fixture。Hpoi、Firecrawl 和其他外网请求必须全部为 0；离线测试通过不代表真实柴郡收集已通过。
 
-```powershell
-npm run collect -- -- --query "柴郡" --confirm-source-permission
+## 真实运行门禁
+
+在本机 `.env` 中设置（不要提交）：
+
+```dotenv
+FIRECRAWL_API_KEY=<runtime-only>
+OFFICIAL_SOURCE_LIVE_FETCH_ENABLED=true
+HPOI_LIVE_FETCH_ENABLED=false
 ```
 
-缺少门禁时命令返回 `environment_blocked`，不会访问网络。
+然后运行：
 
-同一个运行目录具有跨进程独占采集锁：浏览器服务与 CLI、或两个 CLI 不能同时创建 Firecrawl Provider。正常结束会释放锁；若进程异常退出并遗留 `.personal-gallery-collector.lock.json`，系统会安全地保持拒绝状态。只有在人工确认所有 `serve`/`collect` 进程均已停止后，才可删除这一个明确的锁文件；工具不会自动猜测或回收它。
+```powershell
+npm run collect -- --query "柴郡" --confirm-official-source-access
+```
+
+也可以从本机首页勾选官方来源确认后启动。缺少 API Key、官方实时开关或本轮交互确认时，命令返回 `environment_blocked`，不会请求外网。可使用 `--seed-official-url <allowlisted-product-url>` 补充已人工确认的 allowlist 商品页；seed 不会扩大域名边界。
+
+同一个运行目录具有跨进程独占采集锁。正常结束会释放锁；若进程异常退出并遗留 `.personal-gallery-collector.lock.json`，工具会保持安全拒绝。只有在人工确认所有 `serve`/`collect` 进程均已停止后，才可删除该锁文件。
 
 ## 命令
 
 | 命令 | 用途 |
 | --- | --- |
-| `npm run test` | 带外网 guard 的离线 Node 测试 |
-| `npm run test:e2e` | loopback-only Playwright 图库测试 |
-| `npm run check` | 依赖、隔离、fixture 与仓库安全检查 |
+| `npm run check` | 检查依赖、隔离、官方来源策略、合成 fixture 与仓库安全 |
+| `npm run test` | 运行带外网 guard 的离线 Node 测试 |
+| `npm run test:e2e` | 运行 loopback-only Playwright 图库测试 |
 | `npm run serve` | 启动本机首页与私有图库 |
-| `npm run collect -- -- --query "柴郡" --confirm-source-permission` | 通过全部门禁后执行一次有限收集；第二个 `--` 用于 PowerShell/npm 参数透传 |
+| `npm run collect -- --query "柴郡" --confirm-official-source-access` | 通过门禁后执行一次有限官方来源收集 |
 | `npm run status` | 查看本地运行摘要 |
-| `npm run clean:runtime` | 显示目标绑定确认短语；仅在 marker 与绝对路径一致并再次确认后删除个人运行目录 |
+| `npm run clean:runtime` | 显示绑定目标的确认短语；再次明确确认后才删除个人运行目录 |
 
-## 目录
+稳定柴郡图库地址为 `http://127.0.0.1:4317/gallery/characters/cheshire`。图库提供厂商、造型、比例筛选，4/3/2 响应式布局，灯箱、缩放、跨商品左右切换，以及商品/图片排除与恢复。它不提供下载按钮、公共账号或公网部署。
+
+## 目录和隔离
 
 ```text
 src/
 ├── server/       # loopback HTTP 与本地 API
-├── collectors/   # 顺序发现、详情与图片编排
-├── providers/    # 受限 Firecrawl v2 provider
-├── parsers/      # 确定性 Hpoi HTML parser
+├── collectors/   # 官方搜索、详情与图片顺序编排
+├── providers/    # 受限 Firecrawl Search v2 + scrape provider
+├── parsers/      # 官方商品页确定性 parser；历史 Hpoi parser 仅供离线回归
 ├── storage/      # 原子 JSON 与 SHA-256 对象存储
 ├── gallery/      # 本地图册数据投影
 └── cli/          # collect/serve/status/clean-runtime
-static/           # 无外部依赖的浏览器 UI
+static/           # 无外部运行时依赖的浏览器 UI
 tests/            # 合成 fixtures 与离线测试
 ```
 
-工具不得导入 `research/`、`spikes/` 或 `apps/web`。正式应用也不得导入本工具。
+工具不得导入 `research/`、`spikes/` 或 `apps/web`。正式应用也不得导入本工具。MVP manifest 未来只能通过单独、受审计的正式 PR-02 导入候选池；本工具本身不是 Candidate、Review 或正式媒体实现。
 
-## 数据和隐私
+## 数据、幂等与隐私
 
-运行目录不会保存 API Key、Authorization header、Cookie、登录数据或完整浏览器 profile。默认不长期保存 raw HTML。图片以 SHA-256 内容寻址，写入使用临时文件加原子替换；偏好只影响展示，不删除原始对象。
+- 运行数据位于 `.local/personal-gallery/`，商品优先按官方稳定 ID、否则按规范化官方 URL 识别。
+- 图片以 SHA-256 内容寻址；同内容不同 URL 只保存一次，写入采用临时文件和原子替换。
+- 第二次运行更新 `lastSeenAt` 并记录 `unchanged` 或字段变化，不覆盖历史运行摘要。
+- 排除、封面与备注偏好只影响展示，不删除原始对象，也不会被重新收集恢复。
+- 运行目录不保存 API Key、Authorization header、Cookie、登录数据或完整浏览器 profile；默认不长期保存 raw HTML。
 
-不要把 `.env`、`.local/`、真实页面、图片、截图、视频或运行日志提交到 Git。
+不要把 `.env`、`.local/`、真实页面、真实图片、截图、视频、完整日志或 API 凭据提交到 Git。

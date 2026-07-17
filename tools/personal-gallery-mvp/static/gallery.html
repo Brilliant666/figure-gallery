@@ -13,8 +13,14 @@
         <p class="eyebrow">PRIVATE LOCAL GALLERY</p>
         <h1 id="gallery-title">正在读取图库…</h1>
         <p id="gallery-meta" class="muted"></p>
-        <a id="recollect-link" class="button-link" href="/">重新收集</a>
+        <a id="recollect-link" class="button-link" href="/">重新运行官方来源收集</a>
       </header>
+
+      <aside id="source-status" class="source-status panel" aria-label="来源状态">
+        <strong>来源模式：<span id="source-mode">Official sources</span></strong>
+        <span id="official-source-badge" class="source-badge">公开官方商品页</span>
+        <p id="hpoi-source-status">Hpoi 状态：Blocked by captcha · 实时来源已停用，不会自动重试。</p>
+      </aside>
 
       <section class="panel filter-panel" aria-label="图库过滤">
         <label>
@@ -33,8 +39,12 @@
           <select id="manufacturer-filter"><option value="all">全部厂商</option></select>
         </label>
         <label>
-          分类/比例搜索
-          <input id="detail-filter" type="search" placeholder="分类或比例" />
+          造型
+          <select id="design-filter"><option value="all">全部造型</option></select>
+        </label>
+        <label>
+          比例
+          <select id="scale-filter"><option value="all">全部比例</option></select>
         </label>
         <label class="inline-check">
           <input id="show-excluded" type="checkbox" />

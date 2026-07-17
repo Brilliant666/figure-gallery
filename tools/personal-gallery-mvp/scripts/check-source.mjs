@@ -48,6 +48,93 @@ if (lock.lockfileVersion !== 3 || lock.packages?.['']?.name !== packageJson.name
   fail('The independent npm lockfile is missing or invalid.')
 }
 
+const officialProviderText = readFileSync(
+  path.join(toolRoot, 'src', 'providers', 'official-web-search-provider.js'),
+  'utf8',
+)
+const officialUrlsText = readFileSync(
+  path.join(toolRoot, 'src', 'parsers', 'official-urls.js'),
+  'utf8',
+)
+const configText = readFileSync(path.join(toolRoot, 'src', 'config.js'), 'utf8')
+const envExampleText = readFileSync(path.join(toolRoot, '.env.example'), 'utf8')
+const workflowText = readFileSync(
+  path.join(repositoryRoot, '.github', 'workflows', 'personal-gallery-mvp-ci.yml'),
+  'utf8',
+)
+
+const expectedOfficialQueries = [
+  '"Azur Lane" Cheshire figure',
+  '"Azur Lane" Cheshire scale figure',
+  'アズールレーン チェシャー フィギュア',
+  '碧蓝航线 柴郡 手办',
+  '碧蓝航线 柴郡 比例手办',
+]
+const officialQueriesBlock = officialProviderText.match(
+  /export const OFFICIAL_DISCOVERY_QUERIES = Object\.freeze\(\[([\s\S]*?)\]\)/,
+)
+const actualOfficialQueries = officialQueriesBlock
+  ? [...officialQueriesBlock[1].matchAll(/'([^']+)'/g)].map((match) => match[1])
+  : []
+if (JSON.stringify(actualOfficialQueries) !== JSON.stringify(expectedOfficialQueries)) {
+  fail('The ordered MVP-02 multilingual discovery query set changed.')
+}
+
+if (
+  !officialProviderText.includes("sources: ['web']") ||
+  !officialProviderText.includes("excludeDomains: ['hpoi.net', 'www.hpoi.net']")
+) {
+  fail('Official discovery must use Firecrawl Search v2 web results and explicitly exclude Hpoi.')
+}
+
+const officialClientMethods = [
+  ...officialProviderText.matchAll(/this\.client\.([A-Za-z][A-Za-z0-9]*)\s*\(/g),
+].map((match) => match[1])
+if (
+  !officialClientMethods.includes('search') ||
+  !officialClientMethods.includes('scrape') ||
+  officialClientMethods.some((method) => !['search', 'scrape'].includes(method))
+) {
+  fail(`Official Firecrawl methods must be exactly search and scrape: ${officialClientMethods.join(', ')}`)
+}
+
+const expectedOfficialHosts = [
+  'goodsmile.com',
+  'www.goodsmile.com',
+  'goodsmilearts.com',
+  'www.goodsmilearts.com',
+  'alter-web.jp',
+  'www.alter-web.jp',
+]
+const officialHostsBlock = officialUrlsText.match(/const OFFICIAL_HOSTS = new Set\(\[([\s\S]*?)\]\)/)
+const actualOfficialHosts = officialHostsBlock
+  ? [...officialHostsBlock[1].matchAll(/'([^']+)'/g)].map((match) => match[1])
+  : []
+if (JSON.stringify(actualOfficialHosts) !== JSON.stringify(expectedOfficialHosts)) {
+  fail('The MVP-02 official product-page allowlist changed.')
+}
+
+const hpoiGateStart = configText.indexOf('export function liveGate(')
+const officialGateStart = configText.indexOf('export function officialLiveGate(')
+const hpoiGateText = configText.slice(hpoiGateStart, officialGateStart)
+if (
+  hpoiGateStart < 0 ||
+  officialGateStart < 0 ||
+  !hpoiGateText.includes('allowed: false') ||
+  !hpoiGateText.includes('permanently disabled')
+) {
+  fail('The Hpoi live gate must remain permanently closed after the source block.')
+}
+if (!/^OFFICIAL_SOURCE_LIVE_FETCH_ENABLED=false$/m.test(envExampleText)) {
+  fail('Official-source live fetch must remain disabled in .env.example.')
+}
+if (
+  !/^\s*HPOI_LIVE_FETCH_ENABLED:\s*"false"$/m.test(workflowText) ||
+  !/^\s*OFFICIAL_SOURCE_LIVE_FETCH_ENABLED:\s*"false"$/m.test(workflowText)
+) {
+  fail('Offline CI must explicitly disable both Hpoi and official-source live fetch.')
+}
+
 const tracked = trackedFiles()
 const forbiddenTracked = tracked.filter((name) =>
   /(^|\/)(?:\.local|node_modules|test-results|playwright-report|\.next|dist|coverage)(\/|$)|\.(?:env|sqlite3?|db|dump|bak|png|jpe?g|gif|webp|avif|mp4|webm|zip|tar|gz)$/i.test(name),
@@ -98,6 +185,14 @@ console.log(
         independentLockfile: true,
         formalImportBoundary: true,
         noForbiddenFirecrawlModes: true,
+        officialSearchV2WebOnly: true,
+        officialSearchExcludesHpoi: true,
+        officialFirecrawlMethods: ['search', 'scrape'],
+        officialAllowlistPinned: true,
+        multilingualQueries: expectedOfficialQueries.length,
+        hpoiLiveFrozen: true,
+        officialLiveDefaultOff: true,
+        ciLiveGatesOff: true,
         noTrackedRuntimeOrMedia: true,
         syntheticFixtureSize: true,
       },

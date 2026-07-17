@@ -25,6 +25,13 @@ function config(root, overrides = {}) {
     requestDelayMs: 1_500,
     root,
     writtenPermissionConfirmed: false,
+    officialLiveFetchEnabled: false,
+    officialMaxSearchResultsPerQuery: 10,
+    officialMaxCandidates: 20,
+    officialMaxProducts: 20,
+    officialMaxImagesPerProduct: 10,
+    officialRequestDelayMs: 1_000,
+    officialMaxRetries: 2,
     ...overrides,
   }
 }
@@ -68,7 +75,7 @@ test('default runtime rejects a closed gate before constructing a provider or co
   const localConfig = config('unused')
   await assert.rejects(
     createDefaultRuntime(localConfig).runCollector({ gate: { allowed: false }, query: '柴郡' }),
-    /Live gate must pass before the provider is constructed/,
+    /Official live gate must pass before the provider is constructed/,
   )
 })
 
@@ -78,7 +85,7 @@ test('Firecrawl accounting counts every physical retry attempt', () => {
       { retries: 2, creditUsage: 3 },
       { retries: 0, creditUsage: 1 },
     ]),
-    { requests: 4, credits: 4 },
+    { requests: 4, searchRequests: 0, scrapeRequests: 0, credits: 4 },
   )
 })
 
@@ -120,32 +127,34 @@ test('two independent runtimes cannot overlap provider-backed collection', async
   assert.equal(providerConstructions, 2)
 })
 
-test('default runtime passes an ASCII requested run ID through the real collector and store', async (t) => {
+test('default runtime passes an ASCII requested run ID through the official collector and store', async (t) => {
   const root = await mkdtemp(path.join(os.tmpdir(), 'personal-gallery-runtime-integration-'))
   t.after(() => rm(root, { recursive: true, force: true }))
   const localConfig = config(root)
   const syntheticProvider = {
-    scrape() {
-      throw new Error('scrape marker must not be called directly by this synthetic provider')
-    },
-    async fetchCharacterPage({ url }) {
+    async searchOfficialProducts() {
       return {
-        status: 200,
-        finalUrl: url,
-        rawHtml:
-          '<!doctype html><html data-fixture="synthetic"><body><h1>柴郡</h1><a href="/hobby/990005">Synthetic product</a></body></html>',
-        links: ['https://www.hpoi.net/hobby/990005'],
-        images: [],
+        candidates: [{
+          title: 'Cheshire Synthetic Dress',
+          url: 'https://www.goodsmile.com/en/product/990005',
+          sourceUrl: 'https://www.goodsmile.com/en/product/990005',
+          sourceDomain: 'www.goodsmile.com',
+          discoveryMethod: 'firecrawl_search',
+          discoveryQuery: 'synthetic query',
+        }],
+        unreviewedDomains: [],
+        requestRecord: { requestType: 'official_search', retries: 0, creditUsage: 1 },
       }
     },
-    async fetchProductPage({ url }) {
+    async fetchOfficialProductPage({ url }) {
       return {
         status: 200,
         finalUrl: url,
         rawHtml:
-          '<!doctype html><html data-fixture="synthetic"><body><div class="hpoi-infoList-item"><span>名称</span><p>Synthetic product</p></div><div class="hpoi-infoList-item"><span>制作</span><p>Synthetic maker</p></div></body></html>',
+          '<!doctype html><html data-fixture="synthetic"><body><main><h1>Cheshire Synthetic Dress</h1><dl><dt>Series</dt><dd>Azur Lane</dd><dt>Manufacturer</dt><dd>GOOD SMILE COMPANY</dd><dt>Scale</dt><dd>1/7</dd></dl><p class="product-description">An official synthetic product description for deterministic offline testing only.</p></main></body></html>',
         links: [],
         images: [],
+        requestRecord: { requestType: 'official_product', retries: 0, creditUsage: 1 },
       }
     },
   }
@@ -156,45 +165,40 @@ test('default runtime passes an ASCII requested run ID through the real collecto
   const result = await runtime.runCollector({
     gate: { allowed: true, missing: [] },
     query: '柴郡',
-    characterUrl: 'https://www.hpoi.net/charactar/990005',
+    sourceMode: 'official_sources',
     requestedRunId,
     limits: {
-      maxImagesPerProduct: 1,
-      maxListPages: 1,
       maxProducts: 1,
-      maxRetries: 0,
-      requestDelayMs: 0,
+      maxCandidates: 1,
+      maxImagesPerProduct: 1,
+      searchLimit: 1,
+      requestDelayMs: 1_000,
+      imageMaxBytes: 1_000_000,
     },
   })
   assert.equal(result.runId, requestedRunId)
   assert.equal(result.status, 'completed')
-  assert.equal((await runtime.loadRunGallery(requestedRunId)).products[0].title, 'Synthetic product')
+  assert.equal((await runtime.loadRunGallery(requestedRunId)).products[0].title, 'Cheshire Synthetic Dress')
+  assert.equal(result.hpoiRequests, 0)
 })
 
-test('job status exposes deterministic disambiguation candidates for owner selection', async () => {
+test('job manager rejects every attempt to restore a Hpoi live input', async () => {
   const manager = createJobManager(
     config('unused', {
       firecrawlApiKey: 'synthetic-test-key',
-      liveFetchEnabled: true,
-      writtenPermissionConfirmed: true,
+      officialLiveFetchEnabled: true,
     }),
-    {
-      async runCollector() {
-        return {
-          status: 'needs_disambiguation',
-          disambiguationCandidates: [
-            { title: 'Synthetic Cheshire', work: 'Synthetic Work', url: 'https://www.hpoi.net/charactar/990001' },
-          ],
-        }
-      },
-    },
+    { async runCollector() { throw new Error('must not run') } },
   )
-  const started = await manager.start({ query: '柴郡', confirmSourcePermission: true })
-  assert.equal(started.accepted, true)
-  await new Promise((resolve) => setImmediate(resolve))
-  const status = manager.status()
-  assert.equal(status.status, 'needs_disambiguation')
-  assert.equal(status.disambiguationCandidates[0].work, 'Synthetic Work')
+  const started = await manager.start({
+    query: '柴郡',
+    sourceMode: 'hpoi',
+    characterUrl: 'https://www.hpoi.net/charactar/1',
+    confirmOfficialSourceAccess: true,
+  })
+  assert.equal(started.accepted, false)
+  assert.equal(started.statusCode, 410)
+  assert.equal(started.error, 'hpoi_live_source_disabled')
 })
 
 test('job exposes a stable gallery URL immediately and reserves it through stopping', async () => {
@@ -203,8 +207,7 @@ test('job exposes a stable gallery URL immediately and reserves it through stopp
   const manager = createJobManager(
     config('unused', {
       firecrawlApiKey: 'synthetic-test-key',
-      liveFetchEnabled: true,
-      writtenPermissionConfirmed: true,
+      officialLiveFetchEnabled: true,
     }),
     {
       async runCollector({ requestedRunId, signal }) {
@@ -222,20 +225,20 @@ test('job exposes a stable gallery URL immediately and reserves it through stopp
     },
   )
 
-  const started = await manager.start({ query: '柴郡', confirmSourcePermission: true })
+  const started = await manager.start({ query: '柴郡', sourceMode: 'official_sources', confirmOfficialSourceAccess: true })
   assert.equal(started.accepted, true)
   assert.equal(started.job.runId, firstRequestedRunId)
   assert.match(firstRequestedRunId, /^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/)
-  assert.equal(started.job.galleryUrl, `/gallery/${encodeURIComponent(firstRequestedRunId)}`)
+  assert.equal(started.job.galleryUrl, '/gallery/characters/cheshire')
   assert.equal(manager.stop().stopped, true)
 
-  const immediateRestart = await manager.start({ query: '柴郡', confirmSourcePermission: true })
+  const immediateRestart = await manager.start({ query: '柴郡', sourceMode: 'official_sources', confirmOfficialSourceAccess: true })
   assert.equal(immediateRestart.statusCode, 409)
   assert.equal(immediateRestart.job.status, 'stopping')
 
   await new Promise((resolve) => setImmediate(resolve))
   await new Promise((resolve) => setImmediate(resolve))
-  const afterCompletion = await manager.start({ query: '柴郡', confirmSourcePermission: true })
+  const afterCompletion = await manager.start({ query: '柴郡', sourceMode: 'official_sources', confirmOfficialSourceAccess: true })
   assert.equal(afterCompletion.accepted, true)
 })
 
@@ -252,7 +255,7 @@ test('serves the local UI and blocks collection before constructing network work
 
   const home = await fetch(`${base}/`)
   assert.equal(home.status, 200)
-  assert.match(await home.text(), /明确书面许可/)
+  assert.match(await home.text(), /Official sources/)
   assert.match(home.headers.get('content-security-policy'), /connect-src 'self'/)
 
   const reboundStatus = await new Promise((resolve, reject) => {
@@ -272,7 +275,7 @@ test('serves the local UI and blocks collection before constructing network work
       Origin: 'https://attacker.example',
       'Sec-Fetch-Site': 'cross-site',
     },
-    body: JSON.stringify({ query: 'synthetic', confirmSourcePermission: true }),
+    body: JSON.stringify({ query: 'synthetic', sourceMode: 'official_sources', confirmOfficialSourceAccess: true }),
   })
   assert.equal(crossOriginMutation.status, 403)
   assert.equal(calls.collector, 0)
@@ -280,7 +283,7 @@ test('serves the local UI and blocks collection before constructing network work
   const noJsonMutation = await fetch(`${base}/api/runs`, {
     method: 'POST',
     headers: { 'Content-Type': 'text/plain' },
-    body: JSON.stringify({ query: 'synthetic', confirmSourcePermission: true }),
+    body: JSON.stringify({ query: 'synthetic', sourceMode: 'official_sources', confirmOfficialSourceAccess: true }),
   })
   assert.equal(noJsonMutation.status, 415)
   assert.equal(calls.collector, 0)
@@ -288,7 +291,7 @@ test('serves the local UI and blocks collection before constructing network work
   const start = await fetch(`${base}/api/runs`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ query: '柴郡', confirmSourcePermission: false }),
+    body: JSON.stringify({ query: '柴郡', sourceMode: 'official_sources', confirmOfficialSourceAccess: false }),
   })
   assert.equal(start.status, 412)
   assert.equal((await start.json()).job.status, 'environment_blocked')
@@ -308,8 +311,7 @@ test('same-origin JSON stop request stops an active HTTP job', async (t) => {
   const application = createPersonalGalleryServer({
     config: config(root, {
       firecrawlApiKey: 'synthetic-test-key',
-      liveFetchEnabled: true,
-      writtenPermissionConfirmed: true,
+      officialLiveFetchEnabled: true,
     }),
     runtime: {
       async runCollector({ requestedRunId, signal }) {
@@ -336,7 +338,7 @@ test('same-origin JSON stop request stops an active HTTP job', async (t) => {
   const start = await fetch(`${base}/api/runs`, {
     method: 'POST',
     headers,
-    body: JSON.stringify({ query: '柴郡', confirmSourcePermission: true }),
+    body: JSON.stringify({ query: '柴郡', sourceMode: 'official_sources', confirmOfficialSourceAccess: true }),
   })
   assert.equal(start.status, 202)
   const stop = await fetch(`${base}/api/runs/stop`, { method: 'POST', headers, body: '{}' })

@@ -4,11 +4,40 @@ import test from 'node:test'
 
 import {
   DEFAULT_RUNTIME_ROOT,
+  liveGate,
+  officialLiveGate,
   REPOSITORY_ROOT,
   TOOL_ROOT,
   validateFirecrawlBaseUrl,
   validateRuntimeRoot,
 } from '../src/config.js'
+
+test('Hpoi gate is permanently closed while official live access requires all local prerequisites', () => {
+  const hpoi = liveGate({
+    liveFetchEnabled: true,
+    writtenPermissionConfirmed: true,
+    firecrawlApiKey: 'synthetic',
+  }, { interactiveConfirmation: true })
+  assert.equal(hpoi.allowed, false)
+  assert.match(hpoi.notice, /disabled/i)
+
+  const closedOfficial = officialLiveGate(
+    { officialLiveFetchEnabled: false, firecrawlApiKey: null },
+    { interactiveConfirmation: false },
+  )
+  assert.equal(closedOfficial.allowed, false)
+  assert.deepEqual(closedOfficial.missing, [
+    'OFFICIAL_SOURCE_LIVE_FETCH_ENABLED=true',
+    'interactive official-source confirmation',
+    'FIRECRAWL_API_KEY',
+  ])
+
+  const openOfficial = officialLiveGate(
+    { officialLiveFetchEnabled: true, firecrawlApiKey: 'synthetic' },
+    { interactiveConfirmation: true },
+  )
+  assert.equal(openOfficial.allowed, true)
+})
 
 test('Firecrawl base URL is pinned to the official HTTPS Cloud origin', () => {
   assert.equal(validateFirecrawlBaseUrl('https://api.firecrawl.dev'), 'https://api.firecrawl.dev')

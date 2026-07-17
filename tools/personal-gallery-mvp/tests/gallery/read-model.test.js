@@ -7,11 +7,13 @@ import test from 'node:test'
 import {
   loadGalleryByQuery,
   loadRunGallery,
+  listRecentRuns,
   normalizePreferences,
   normalizeQuery,
   resolveMediaObject,
   savePreferences,
 } from '../../src/gallery/read-model.js'
+import { HPOI_FROZEN_STATUS } from '../../src/storage/source-status.js'
 
 const SHA = 'a'.repeat(64)
 
@@ -157,4 +159,108 @@ test('prefers immutable per-run product snapshots so historical galleries do not
   assert.equal(gallery.products[0].title, 'Historical synthetic title')
   assert.equal(gallery.products[0].classification, 'unknown')
   assert.equal(gallery.products[0].images[0].sha256, SHA)
+})
+
+test('projects official-source fields and resolves the stable Cheshire gallery to the latest usable run', async (t) => {
+  const root = await mkdtemp(path.join(os.tmpdir(), 'personal-gallery-official-read-model-'))
+  t.after(() => rm(root, { recursive: true, force: true }))
+  const successfulRunId = '20260718T010000Z-official-cheshire'
+  const failedRunId = '20260718T020000Z-official-cheshire-failed'
+  const successfulDirectory = path.join(root, 'runs', successfulRunId)
+  const failedDirectory = path.join(root, 'runs', failedRunId)
+  await mkdir(successfulDirectory, { recursive: true })
+  await mkdir(failedDirectory, { recursive: true })
+  await writeFile(
+    path.join(successfulDirectory, 'run.json'),
+    JSON.stringify({
+      runId: successfulRunId,
+      query: '柴郡',
+      characterSlug: 'cheshire',
+      sourceMode: 'official_sources',
+      status: 'completed',
+      startedAt: '2026-07-18T01:00:00Z',
+      completedAt: '2026-07-18T01:00:10Z',
+      sourceStatus: {
+        hpoi: {
+          hpoiLiveStatus: 'blocked_by_source',
+          stopReason: 'captcha',
+          retryAllowed: false,
+          blockedAt: '2026-07-17T18:12:58Z',
+          consecutiveBlockedRuns: 3,
+        },
+      },
+    }),
+  )
+  await writeFile(
+    path.join(successfulDirectory, 'products.json'),
+    JSON.stringify([
+      {
+        productKey: 'official-goodsmile-com-id-cheshire-001',
+        fieldDigest: 'b'.repeat(64),
+        lastSeenAt: '2026-07-18T01:00:08Z',
+        fields: {
+          sourceKind: 'official_manufacturer',
+          sourceDomain: 'www.goodsmile.com',
+          discoveryQuery: '"Azur Lane" Cheshire figure',
+          discoveryMethod: 'firecrawl_search',
+          officialProductId: 'cheshire-001',
+          title: 'Cheshire: Summery Date!',
+          character: 'Cheshire',
+          series: 'Azur Lane',
+          manufacturer: 'Good Smile Arts Shanghai',
+          distributor: 'Good Smile Company',
+          classification: 'likely_scale',
+          category: 'scale figure',
+          scale: '1/7',
+          height: '260 mm',
+          releaseDate: '2026-08',
+          price: '¥24,800',
+          sculptor: 'Synthetic Sculptor',
+          paintwork: 'Synthetic Paintwork',
+          description: 'Synthetic official-style fixture content.',
+          sourceUrl: 'https://www.goodsmile.com/en/product/cheshire-001',
+          parserVersion: 'official-product-v1',
+        },
+        imageSha256: [SHA],
+      },
+    ]),
+  )
+  await writeFile(path.join(successfulDirectory, 'failures.json'), '[]')
+  await writeFile(
+    path.join(failedDirectory, 'run.json'),
+    JSON.stringify({
+      runId: failedRunId,
+      query: '柴郡',
+      characterSlug: 'cheshire',
+      sourceMode: 'official_sources',
+      status: 'failed',
+      stopReason: 'synthetic failure',
+    }),
+  )
+  await writeFile(path.join(failedDirectory, 'products.json'), '[]')
+  await writeFile(path.join(failedDirectory, 'failures.json'), JSON.stringify([{ reason: 'synthetic failure' }]))
+  await writeFile(
+    path.join(root, 'image-index.json'),
+    JSON.stringify({ objects: { [SHA]: { sha256: SHA, mime: 'image/png', width: 240, height: 360 } } }),
+  )
+
+  const gallery = await loadGalleryByQuery(root, 'cheshire')
+  assert.equal(gallery.runId, successfulRunId)
+  assert.equal(gallery.characterSlug, 'cheshire')
+  assert.equal(gallery.sourceMode, 'official_sources')
+  assert.deepEqual(gallery.sourceStatus.hpoi, HPOI_FROZEN_STATUS)
+  assert.equal(gallery.summary.officialProducts, 1)
+  assert.equal(gallery.summary.officialImages, 1)
+  assert.equal(gallery.products[0].sourceKind, 'official_manufacturer')
+  assert.equal(gallery.products[0].sourceDomain, 'www.goodsmile.com')
+  assert.equal(gallery.products[0].discoveryMethod, 'firecrawl_search')
+  assert.equal(gallery.products[0].officialProductId, 'cheshire-001')
+  assert.equal(gallery.products[0].series, 'Azur Lane')
+  assert.equal(gallery.products[0].releaseDate, '2026-08')
+  assert.equal(gallery.products[0].fieldDigest, 'b'.repeat(64))
+  assert.equal(gallery.products[0].lastSeenAt, '2026-07-18T01:00:08Z')
+
+  const recent = await listRecentRuns(root, 2)
+  assert.equal(recent[0].characterSlug, 'cheshire')
+  assert.equal(recent[0].sourceMode, 'official_sources')
 })

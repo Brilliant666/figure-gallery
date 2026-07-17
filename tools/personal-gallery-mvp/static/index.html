@@ -15,10 +15,10 @@
       </header>
 
       <aside class="source-notice" role="alert">
-        <strong>来源规则</strong>
+        <strong>来源模式：Official sources</strong>
         <p>
-          实时开关不等于取得 Hpoi 自动访问许可。只有在你已确认当前规则并取得明确书面许可后，才可启用实时任务。
-          本工具不使用 Cookie、登录、验证码绕过、代理轮换或反检测能力；遇到拒绝会停止。
+          Hpoi 实时来源已停用（Blocked by captcha），不会自动重试。本工具只在你主动启动后搜索允许的厂商官方域名，
+          不使用 Cookie、登录、验证码绕过、代理轮换、增强代理或反检测能力。
         </p>
       </aside>
 
@@ -27,30 +27,26 @@
           角色名称
           <input id="query" name="query" value="柴郡" required autocomplete="off" />
         </label>
-        <label>
-          可选 Hpoi 角色页 URL
-          <input id="character-url" name="characterUrl" type="url" placeholder="https://www.hpoi.net/…" />
-        </label>
         <div class="limit-grid">
           <label>
-            最大分页
-            <input name="maxListPages" type="number" value="20" min="1" max="20" />
+            每查询搜索结果
+            <input name="maxSearchResults" type="number" value="10" min="1" max="10" />
           </label>
           <label>
-            最大商品
-            <input name="maxProducts" type="number" value="200" min="1" max="200" />
+            最大官方商品
+            <input name="maxProducts" type="number" value="20" min="1" max="20" />
           </label>
           <label>
             每商品图片
-            <input name="maxImagesPerProduct" type="number" value="5" min="1" max="5" />
+            <input name="maxImagesPerProduct" type="number" value="10" min="1" max="10" />
           </label>
         </div>
         <label class="permission-confirmation">
-          <input name="confirmSourcePermission" type="checkbox" />
-          我确认已取得适用于本次自动访问的明确书面许可，并理解实时开关本身不构成许可。
+          <input name="confirmOfficialSourceAccess" type="checkbox" required />
+          我确认本次只访问公开厂商官方商品页，并主动启动有限、低频、只读的官方来源收集。
         </label>
         <div class="actions">
-          <button id="start-button" type="submit">开始收集</button>
+          <button id="start-button" type="submit">开始官方来源收集</button>
           <button id="stop-button" type="button" class="secondary" disabled>停止当前任务</button>
         </div>
       </form>
@@ -62,13 +58,12 @@
         </div>
         <p id="status-message" class="muted">暂无运行。</p>
         <dl class="metrics">
-          <div><dt>页数</dt><dd id="pages-count">0</dd></div>
+          <div><dt>搜索/页面</dt><dd id="pages-count">0</dd></div>
           <div><dt>商品</dt><dd id="products-count">0</dd></div>
           <div><dt>图片</dt><dd id="images-count">0</dd></div>
           <div><dt>失败</dt><dd id="failures-count">0</dd></div>
         </dl>
         <a id="active-gallery-link" class="button-link hidden" href="#">打开图库</a>
-        <div id="disambiguation" class="disambiguation hidden" aria-live="polite"></div>
       </section>
 
       <section class="panel" aria-labelledby="recent-heading">

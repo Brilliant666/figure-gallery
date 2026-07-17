@@ -1,6 +1,8 @@
 import { promises as fs } from 'node:fs'
 import path from 'node:path'
 
+import { HPOI_FROZEN_STATUS, readSourceStatus } from '../storage/source-status.js'
+
 const DEFAULT_PREFERENCES = Object.freeze({
   excludedProductIds: [],
   excludedImageSha256: [],
@@ -25,6 +27,31 @@ function asArray(value) {
 
 function cleanText(value, fallback = '') {
   return typeof value === 'string' && value.trim() ? value.trim() : fallback
+}
+
+function sourceDomainFrom(fields) {
+  const explicit = cleanText(fields.sourceDomain).toLowerCase()
+  if (explicit) return explicit
+  try {
+    return new URL(fields.sourceUrl || fields.url || fields.canonicalUrl).hostname.toLowerCase()
+  } catch {
+    return ''
+  }
+}
+
+function normalizeHpoiSourceStatus(sourceStatus = {}) {
+  const raw = sourceStatus?.hpoi && typeof sourceStatus.hpoi === 'object'
+    ? sourceStatus.hpoi
+    : {}
+  return {
+    ...HPOI_FROZEN_STATUS,
+    ...raw,
+    hpoiLiveStatus: 'blocked_by_source',
+    stopReason: 'captcha',
+    retryAllowed: false,
+    blockedAt: raw.blockedAt || HPOI_FROZEN_STATUS.blockedAt,
+    consecutiveBlockedRuns: Math.max(3, Number(raw.consecutiveBlockedRuns) || 0),
+  }
 }
 
 export function normalizeQuery(value) {
@@ -101,17 +128,41 @@ function normalizeProduct(product, preferences, imageObjects = {}) {
     images.sort((left, right) => Number(right.sha256 === preferredCoverImage) - Number(left.sha256 === preferredCoverImage))
   }
 
+  const sourceDomain = sourceDomainFrom(fields)
+  const sourceKind = cleanText(
+    fields.sourceKind,
+    sourceDomain === 'hpoi.net' || sourceDomain === 'www.hpoi.net' ? 'legacy_hpoi' : 'unknown',
+  )
+
   return {
     id,
     title: cleanText(fields.title || fields.rawTitle, `Product ${id}`),
+    design: cleanText(fields.design || fields.variant || fields.title || fields.rawTitle, `Product ${id}`),
+    sourceKind,
+    sourceDomain,
+    discoveryQuery: cleanText(fields.discoveryQuery),
+    discoveryMethod: cleanText(fields.discoveryMethod),
+    officialProductId: cleanText(fields.officialProductId || product.identity?.sourceItemId),
+    character: cleanText(fields.character || fields.rawCharacterNames),
+    series: cleanText(fields.series || fields.work || fields.rawWorkName),
     manufacturer: cleanText(fields.manufacturer || fields.rawManufacturer, 'unknown'),
+    distributor: cleanText(fields.distributor),
     classification: ['likely_scale', 'likely_prize', 'other', 'unknown'].includes(classification)
       ? classification
       : 'unknown',
     category: cleanText(fields.category || fields.rawCategory, 'unknown'),
     scale: cleanText(fields.scale || fields.rawScale, 'unknown'),
+    height: cleanText(fields.height),
+    releaseDate: cleanText(fields.releaseDate || fields.rawReleaseDate, 'unknown'),
+    price: cleanText(fields.price),
+    sculptor: cleanText(fields.sculptor),
+    paintwork: cleanText(fields.paintwork),
+    description: cleanText(fields.description),
     sourceUrl: cleanText(fields.sourceUrl || fields.url || fields.canonicalUrl),
     status: cleanText(fields.status || fields.releaseStatus || fields.rawReleaseStatus, 'unknown'),
+    parserVersion: cleanText(fields.parserVersion),
+    lastSeenAt: fields.lastSeenAt || product.lastSeenAt || null,
+    fieldDigest: cleanText(fields.fieldDigest || product.fieldDigest),
     images,
     excluded: preferences.excludedProductIds.includes(id),
     note: cleanText(preferences.manualNote[id]),
@@ -122,11 +173,25 @@ function normalizeProduct(product, preferences, imageObjects = {}) {
 function summarize(products, failures) {
   const buckets = { likely_scale: 0, likely_prize: 0, unknown: 0, other: 0 }
   let images = 0
+  let officialImages = 0
   for (const product of products) {
     buckets[product.classification] += 1
     images += product.images.length
+    if (['official_manufacturer', 'official_distributor'].includes(product.sourceKind)) {
+      officialImages += product.images.length
+    }
   }
-  return { products: products.length, images, failures: failures.length, ...buckets }
+  const officialProducts = products.filter((product) =>
+    ['official_manufacturer', 'official_distributor'].includes(product.sourceKind),
+  ).length
+  return {
+    products: products.length,
+    images,
+    officialProducts,
+    officialImages,
+    failures: failures.length,
+    ...buckets,
+  }
 }
 
 async function listRunIds(root) {
@@ -174,11 +239,19 @@ export async function loadRunGallery(root, requestedRunId = null) {
     .filter(Boolean)
   const failureDocument = await readJson(path.join(runDirectory, 'failures.json'), [])
   const failures = asArray(failureDocument?.failures ?? failureDocument)
+  const sourceStatus = await readSourceStatus(root)
+
+  const query = cleanText(run.query || run.characterName || run.input?.query, 'Unknown character')
+  const querySlug = normalizeQuery(query)
+  const characterSlug = normalizeQuery(run.characterSlug || query)
 
   return {
     runId,
-    query: cleanText(run.query || run.characterName || run.input?.query, 'Unknown character'),
-    querySlug: normalizeQuery(run.query || run.characterName || run.input?.query),
+    query,
+    querySlug,
+    characterSlug,
+    sourceMode: cleanText(run.sourceMode, 'legacy_hpoi'),
+    sourceStatus: { hpoi: normalizeHpoiSourceStatus(sourceStatus) },
     status: cleanText(run.status, 'unknown'),
     startedAt: run.startedAt || null,
     completedAt: run.completedAt || run.updatedAt || null,
@@ -192,11 +265,14 @@ export async function loadRunGallery(root, requestedRunId = null) {
 
 export async function loadGalleryByQuery(root, query) {
   const normalized = normalizeQuery(query)
+  const matches = []
   for (const runId of await listRunIds(root)) {
     const gallery = await loadRunGallery(root, runId)
-    if (gallery && gallery.querySlug === normalized) return gallery
+    if (gallery && (gallery.characterSlug === normalized || gallery.querySlug === normalized)) matches.push(gallery)
   }
-  return null
+  return matches.find((gallery) =>
+    ['running', 'stopping'].includes(gallery.status) && gallery.products.length > 0,
+  ) || matches.find((gallery) => gallery.status === 'completed' && gallery.products.length > 0) || matches[0] || null
 }
 
 export async function listRecentRuns(root, limit = 10) {
@@ -206,6 +282,8 @@ export async function listRecentRuns(root, limit = 10) {
     output.push({
       runId,
       query: cleanText(run?.query || run?.characterName || run?.input?.query, 'Unknown character'),
+      characterSlug: normalizeQuery(run?.characterSlug || run?.query || run?.characterName || run?.input?.query),
+      sourceMode: cleanText(run?.sourceMode, 'legacy_hpoi'),
       status: cleanText(run?.status, 'unknown'),
       startedAt: run?.startedAt || null,
       completedAt: run?.completedAt || run?.updatedAt || null,
