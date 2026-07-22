@@ -188,6 +188,12 @@ node src/cli/collect.js --query "柴郡" --confirm-official-source-access
 
 真实首轮通过标准：至少发现并解析 2 个柴郡官方商品、至少两个不同造型、至少 6 张公开官方样品图、至少 2 个商品卡片，并完成真实 Chrome loopback-only 验收。若官方页面实际图片较少，必须按真实结果报告，不能用合成图补数。
 
+MVP02-11 的权威定义是：**系统安装的 Google Chrome Stable 使用临时、独立、干净的 profile 加载真实本地柴郡图库；真实商品、真实本地对象、交互、偏好持久性、响应式布局和 loopback-only 网络全部通过。** 本机验收器位于 `scripts/validate-real-system-chrome.mjs`，从两个标准 Windows 安装路径定位 Google Chrome，并拒绝 bundled Chromium、Edge 和用户 profile。它不安装或加载扩展，不读取 Cookie、历史记录、密码或登录状态；结束时必须按原始字节恢复 `preferences.json` 并删除临时 profile。
+
+ChatGPT Chrome Extension、Chrome Profile 8、Chrome Profile 5、任何用户日常 profile 和 Codex 扩展控制通道都不是此门禁的要求。合成 Playwright fixture 只能作为离线回归，不能代替真实 `.local/personal-gallery/` 数据或系统 Chrome。真实验收只允许访问 `127.0.0.1:4317`；context 观察到任何外网 HTTP/HTTPS/WebSocket 请求、热链图片、损坏对象或偏好未恢复时，MVP02-11 必须失败。
+
+2026-07-22 的本机验收使用系统 Google Chrome `150.0.7871.129` headed 模式和一次性空白 profile：2 个商品卡片、19 个本地对象均成功显示，19/19 媒体路由返回 HTTP 200，外网请求为 0；4/3/2、灯箱、fit/actual、缩放、左右及跨商品切换、首尾边界、Esc、图片排除/恢复、封面和备注持久化全部通过。验收后原偏好字节一致，扩展、截图、视频和 trace 均为 0，临时 profile 已删除。
+
 ## 11. 离线 CI
 
 CI 永远设置 Hpoi 和官方来源实时开关为 `false`，不使用 Repository Secrets，也不执行真实 Search、scrape 或图片下载。它只使用明确标注 synthetic 的小型 fixture：Good Smile 风格、ALTER 风格、错误的相关商品、Nendoroid/other 和缺失字段页面，以及运行时动态生成的合成图片。
@@ -220,13 +226,15 @@ CI 永远设置 Hpoi 和官方来源实时开关为 `false`，不使用 Reposito
 | MVP02-08 | 商品身份、SHA-256 内容去重和历史 run 隔离通过 |
 | MVP02-09 | 真实首轮达到官方商品、不同造型、图片与卡片标准 |
 | MVP02-10 | 相同配置第二轮新增商品/对象为 0，unchanged/changed 正确，偏好保持 |
-| MVP02-11 | 真实 Chrome 稳定图库与 loopback-only 网络验收通过 |
+| MVP02-11 | 系统 Google Chrome Stable 以临时干净 profile 对真实 `.local` 柴郡图库完成交互、偏好恢复、19 个本地对象和 loopback-only 网络验收；不依赖扩展、用户 profile 或 bundled Chromium |
 | MVP02-12 | `.local/`、Key、真实页面/图片/manifest 与正式 Payload 完全隔离 |
 
 全部 12 项通过后，MVP-02 才能声明 `pass`。当前状态必须以 [`research/evidence/mvp02/personal-gallery-results.json`](../research/evidence/mvp02/personal-gallery-results.json) 为准；未执行项写 `not_run`，不得用离线 fixture 冒充真实结果。
 
 ## 13. 停止和后续边界
 
-达到真实首轮、第二轮幂等、真实浏览器、Draft PR 与干净工作区停止条件后立即停止。不得继续第二角色、正式 Candidate/Review/Media、正式 PR-02、原画图库、公开部署或 Hpoi 绕过。
+MVP-02 第一版通过后立即冻结，先供项目所有者在拍摄准备中实际使用。当前只收录 2 个官方商品和 19 个字节不同的图片对象，其中有 9 组 JPEG/WebP 视觉对应项；48 个最终搜索候选中仅 2 个命中当前官方 allowlist，只做了 SHA-256 精确去重，没有感知去重，因此不代表柴郡全部手办的完整收录。Hpoi 继续因 captcha 停用。
+
+达到真实首轮、第二轮幂等、真实浏览器、PR 合并与干净工作区停止条件后立即停止。不得继续增加 allowlist、搜索 query、第二角色、感知哈希、正式 Candidate/Review/Media、正式 PR-02、Payload 导入、原画图库、公开部署或 Hpoi 绕过。
 
 未来恢复正式 PR-02 时，个人工具 manifest 仍是不可信外部输入；必须通过受限 CandidateClient 和人工审核进入候选池，不能直接写 Work、Character、Manufacturer、FigurePrototype、FigureVersion、正式媒体或主图。不得把本工具源码或 `.local/` 变成正式 Payload 运行时依赖。

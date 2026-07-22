@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "task": "MVP-02",
-  "overallStatus": "environment_blocked",
-  "generatedAt": "2026-07-18T02:38:54+08:00",
+  "overallStatus": "pass",
+  "generatedAt": "2026-07-22T21:26:50+08:00",
   "baseline": {
     "pr11MergeSha": "65231c0187cf49c7a2f4ea1c722bf16dc1d11133",
     "branch": "feat/mvp-02-cheshire-official-gallery"
@@ -98,15 +98,16 @@
   },
   "offlineValidation": {
     "status": "pass",
-    "githubCiStatus": "not_run",
-    "ciRunUrl": null,
+    "githubCiStatus": "pass_on_pre_correction_head_final_head_required_before_merge",
+    "ciRunId": 29605608880,
+    "ciHeadSha": "ffbe0e12f51236835dd4fa89dd5a9f9a2c55571c",
     "hpoiRequests": 0,
     "firecrawlRequests": 0,
     "officialExternalRequests": 0,
     "syntheticFixturesOnly": true,
     "tests": {
-      "total": 145,
-      "passed": 145,
+      "total": 150,
+      "passed": 150,
       "failed": 0
     },
     "browser": {
@@ -268,23 +269,100 @@
     "hpoiStatusVisible": "blocked_by_source"
   },
   "realBrowserValidation": {
-    "status": "environment_blocked",
-    "browser": "Google Chrome 150 installed and running",
-    "blocker": "The selected Chrome profile does not have the ChatGPT Chrome Extension enabled, so the existing Chrome window could not be controlled for the required manual acceptance.",
+    "status": "pass",
+    "definition": "System-installed Google Chrome Stable uses a temporary clean profile to validate the real local Cheshire gallery, interactions, preference persistence, responsive layout, and loopback-only network boundary.",
+    "validatedAt": "2026-07-22T21:26:50+08:00",
+    "runner": "tools/personal-gallery-mvp/scripts/validate-real-system-chrome.mjs",
+    "browser": {
+      "product": "Google Chrome",
+      "executable": "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+      "version": "150.0.7871.129",
+      "headed": true,
+      "systemChrome": true,
+      "bundledChromiumUsed": false,
+      "temporaryCleanProfile": true,
+      "temporaryProfileDeleted": true,
+      "extensionsLoaded": 0,
+      "userProfileRead": false
+    },
     "galleryUrl": "http://127.0.0.1:4317/gallery/characters/cheshire",
-    "loopbackOnly": null,
-    "externalRequests": null,
-    "officialProductCards": null,
-    "localImages": null,
-    "responsiveColumns": null,
-    "lightbox": null,
-    "crossProductNavigation": null,
-    "zoom": null,
-    "excludeRestore": null,
-    "preferredCover": null,
-    "manualNote": null,
-    "screenshotsCommitted": false,
-    "videosCommitted": false
+    "gallery": {
+      "productCards": 2,
+      "localObjects": 19,
+      "localImages": 19,
+      "mediaHttp": {
+        "checked": 19,
+        "http200": 19,
+        "failures": 0
+      },
+      "manufacturers": {
+        "alter": true,
+        "goodSmile": true,
+        "separateCards": true
+      }
+    },
+    "network": {
+      "loopbackRequests": 176,
+      "loopbackWebSockets": 0,
+      "externalRequests": 0,
+      "externalHttpRequests": 0,
+      "externalWebSocketRequests": 0,
+      "hpoiRequests": 0,
+      "firecrawlRequests": 0,
+      "officialSourceRequests": 0,
+      "otherExternalRequests": 0,
+      "applicationNavigationGuarded": true
+    },
+    "responsive": [
+      {
+        "viewport": {
+          "width": 1280,
+          "height": 900
+        },
+        "expected": 4,
+        "actual": 4,
+        "status": "pass"
+      },
+      {
+        "viewport": {
+          "width": 900,
+          "height": 900
+        },
+        "expected": 3,
+        "actual": 3,
+        "status": "pass"
+      },
+      {
+        "viewport": {
+          "width": 600,
+          "height": 900
+        },
+        "expected": 2,
+        "actual": 2,
+        "status": "pass"
+      }
+    ],
+    "interactions": {
+      "open": true,
+      "fit": true,
+      "actualSize": true,
+      "zoomIn": true,
+      "zoomOut": true,
+      "rightAndLeft": true,
+      "crossProductNavigation": true,
+      "firstAndLastBoundaries": true,
+      "escapeClose": true,
+      "excludeRestore": true,
+      "preferredCoverPersisted": true,
+      "manualNotePersisted": true,
+      "originalBytesRestored": true
+    },
+    "artifacts": {
+      "screenshots": 0,
+      "videos": 0,
+      "traces": 0
+    },
+    "resultDigest": "5ad69ff6cdfe56d7b7248f9118e193c1dc5d4ff1aaa85b7df16df83928e36a5d"
   },
   "repositorySafety": {
     "status": "pass",
@@ -330,7 +408,7 @@
       "status": "pass",
       "evidence": [
         "Only Good Smile and ALTER allowlist pages were scraped",
-        "47 non-allowlisted result records were retained only as unreviewed metadata"
+        "The final accepted run had 48 candidates: 2 allowlist hits and 46 non-allowlisted records retained only as unreviewed metadata; the earlier 49/2/47 run remains in history"
       ]
     },
     {
@@ -395,11 +473,14 @@
     },
     {
       "id": "MVP02-11",
-      "name": "real Chrome gallery acceptance",
-      "status": "environment_blocked",
+      "name": "system Chrome real local gallery acceptance",
+      "status": "pass",
       "evidence": [
-        "Chrome is installed and running, but browser control is unavailable in the selected profile",
-        "Offline Playwright interaction coverage passed but is not substituted for real Chrome acceptance"
+        "System Google Chrome 150 used a temporary clean profile; no extension or user profile was required",
+        "2 real product cards and 19 real local objects returned 19/19 HTTP 200 responses",
+        "4/3/2 layout, lightbox, fit/actual, zoom, cross-product navigation, boundaries, Esc, exclusion restore, cover and note persistence passed",
+        "Browser external requests were 0; original preferences were byte-restored and the temporary profile was deleted",
+        "Offline Playwright interaction coverage remains synthetic and is not substituted for this real acceptance"
       ]
     },
     {

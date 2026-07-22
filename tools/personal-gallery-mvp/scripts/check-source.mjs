@@ -1,4 +1,5 @@
 import { execFileSync } from 'node:child_process'
+import { createHash } from 'node:crypto'
 import { readFileSync, readdirSync, statSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -8,6 +9,19 @@ const repositoryRoot = path.resolve(toolRoot, '..', '..')
 
 function fail(message) {
   throw new Error(message)
+}
+
+function acceptanceDigest(value) {
+  const canonical = {
+    status: value.status,
+    browser: value.browser,
+    gallery: value.gallery,
+    network: value.network,
+    responsive: value.responsive,
+    interactions: value.interactions,
+    artifacts: value.artifacts,
+  }
+  return createHash('sha256').update(JSON.stringify(canonical)).digest('hex')
 }
 
 function trackedFiles() {
@@ -42,6 +56,9 @@ if (JSON.stringify(packageJson.dependencies) !== JSON.stringify(expectedDependen
 if (JSON.stringify(packageJson.devDependencies) !== JSON.stringify(expectedDevDependencies)) {
   fail('The MVP direct development dependencies or exact pins changed.')
 }
+if (packageJson.scripts?.['validate:chrome:real'] !== 'node scripts/validate-real-system-chrome.mjs') {
+  fail('The local-only system Chrome acceptance command is missing or changed.')
+}
 
 const lock = JSON.parse(readFileSync(path.join(toolRoot, 'package-lock.json'), 'utf8'))
 if (lock.lockfileVersion !== 3 || lock.packages?.['']?.name !== packageJson.name) {
@@ -62,6 +79,116 @@ const workflowText = readFileSync(
   path.join(repositoryRoot, '.github', 'workflows', 'personal-gallery-mvp-ci.yml'),
   'utf8',
 )
+const realChromeRunnerText = readFileSync(
+  path.join(toolRoot, 'scripts', 'validate-real-system-chrome.mjs'),
+  'utf8',
+)
+const mvp02Evidence = JSON.parse(readFileSync(
+  path.join(repositoryRoot, 'research', 'evidence', 'mvp02', 'personal-gallery-results.json'),
+  'utf8',
+))
+
+if (
+  !realChromeRunnerText.includes('chromium.launchPersistentContext(') ||
+  !realChromeRunnerText.includes('C:\\\\Program Files\\\\Google\\\\Chrome\\\\Application\\\\chrome.exe') ||
+  !realChromeRunnerText.includes("mkdtemp(path.join(os.tmpdir(), 'figure-gallery-mvp02-chrome-'))") ||
+  !realChromeRunnerText.includes('context.routeWebSocket(') ||
+  !realChromeRunnerText.includes('--host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE 127.0.0.1') ||
+  !realChromeRunnerText.includes("code: 'runtime_data_missing'") ||
+  !realChromeRunnerText.includes("code: 'runtime_data_corrupt'")
+) {
+  fail('MVP02-11 system Chrome, runtime-state, profile, or network guard logic is incomplete.')
+}
+if (
+  /--load-extension|--disable-extensions-except|User Data|Profile \d+/i.test(realChromeRunnerText) ||
+  /screenshot\s*:|recordVideo\s*:|trace\s*:/i.test(realChromeRunnerText) ||
+  /chromium\.launch\s*\(/.test(realChromeRunnerText)
+) {
+  fail('MVP02-11 must not use an extension, user profile, screenshot, video, or trace.')
+}
+const browserEvidence = mvp02Evidence.realBrowserValidation || {}
+const evidenceGates = Array.isArray(mvp02Evidence.gates) ? mvp02Evidence.gates : []
+const expectedGateIds = Array.from({ length: 12 }, (_, index) => `MVP02-${String(index + 1).padStart(2, '0')}`)
+const requiredInteractions = [
+  'open',
+  'fit',
+  'actualSize',
+  'zoomIn',
+  'zoomOut',
+  'rightAndLeft',
+  'crossProductNavigation',
+  'firstAndLastBoundaries',
+  'escapeClose',
+  'excludeRestore',
+  'preferredCoverPersisted',
+  'manualNotePersisted',
+  'originalBytesRestored',
+]
+const expectedResponsive = [[1280, 4], [900, 3], [600, 2]]
+if (
+  mvp02Evidence.overallStatus !== 'pass' ||
+  browserEvidence.status !== 'pass' ||
+  evidenceGates.length !== 12 ||
+  JSON.stringify(evidenceGates.map((gate) => gate.id)) !== JSON.stringify(expectedGateIds) ||
+  evidenceGates.some((gate) => gate.status !== 'pass') ||
+  browserEvidence.runner !== 'tools/personal-gallery-mvp/scripts/validate-real-system-chrome.mjs' ||
+  browserEvidence.browser?.product !== 'Google Chrome' ||
+  !systemChromeCandidatesForEvidence().includes(browserEvidence.browser?.executable) ||
+  !/^\d+(?:\.\d+){3}$/.test(browserEvidence.browser?.version || '') ||
+  typeof browserEvidence.browser?.headed !== 'boolean' ||
+  browserEvidence.browser?.systemChrome !== true ||
+  browserEvidence.browser?.bundledChromiumUsed !== false ||
+  browserEvidence.browser?.temporaryCleanProfile !== true ||
+  browserEvidence.browser?.temporaryProfileDeleted !== true ||
+  browserEvidence.browser?.extensionsLoaded !== 0 ||
+  browserEvidence.browser?.userProfileRead !== false ||
+  Number(browserEvidence.gallery?.productCards) !== 2 ||
+  Number(browserEvidence.gallery?.localObjects) < 19 ||
+  Number(browserEvidence.gallery?.localImages) < 19 ||
+  Number(browserEvidence.gallery?.mediaHttp?.checked) < 19 ||
+  Number(browserEvidence.gallery?.mediaHttp?.http200) < 19 ||
+  Number(browserEvidence.gallery?.mediaHttp?.failures) !== 0 ||
+  browserEvidence.gallery?.manufacturers?.alter !== true ||
+  browserEvidence.gallery?.manufacturers?.goodSmile !== true ||
+  browserEvidence.gallery?.manufacturers?.separateCards !== true ||
+  !Array.isArray(browserEvidence.responsive) ||
+  browserEvidence.responsive.length !== 3 ||
+  browserEvidence.responsive.some((item, index) =>
+    item?.viewport?.width !== expectedResponsive[index][0] ||
+    item?.viewport?.height !== 900 ||
+    item?.expected !== expectedResponsive[index][1] ||
+    item?.actual !== expectedResponsive[index][1] ||
+    item?.status !== 'pass'
+  ) ||
+  requiredInteractions.some((name) => browserEvidence.interactions?.[name] !== true) ||
+  Number(browserEvidence.network?.externalRequests) !== 0 ||
+  Number(browserEvidence.network?.externalHttpRequests) !== 0 ||
+  Number(browserEvidence.network?.externalWebSocketRequests) !== 0 ||
+  Number(browserEvidence.network?.hpoiRequests) !== 0 ||
+  Number(browserEvidence.network?.firecrawlRequests) !== 0 ||
+  Number(browserEvidence.network?.officialSourceRequests) !== 0 ||
+  Number(browserEvidence.network?.otherExternalRequests) !== 0 ||
+  Number(browserEvidence.network?.loopbackRequests) <= 0 ||
+  browserEvidence.network?.applicationNavigationGuarded !== true ||
+  Number(browserEvidence.artifacts?.screenshots) !== 0 ||
+  Number(browserEvidence.artifacts?.videos) !== 0 ||
+  Number(browserEvidence.artifacts?.traces) !== 0 ||
+  browserEvidence.resultDigest !== acceptanceDigest(browserEvidence) ||
+  Number(mvp02Evidence.taskNetworkTotals?.hpoiRequests) !== 0 ||
+  Number(mvp02Evidence.realRuns?.finalPinnedTransportIdempotencyRun?.productsNew) !== 0 ||
+  Number(mvp02Evidence.realRuns?.finalPinnedTransportIdempotencyRun?.newSha256Objects) !== 0 ||
+  Number(mvp02Evidence.realGallery?.officialProductCards) !== 2 ||
+  Number(mvp02Evidence.realGallery?.localImages) < 19
+) {
+  fail('The committed MVP-02 result does not satisfy the corrected MVP02-11 and all-pass gate contract.')
+}
+
+function systemChromeCandidatesForEvidence() {
+  return [
+    'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+    'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
+  ]
+}
 
 const expectedOfficialQueries = [
   '"Azur Lane" Cheshire figure',
@@ -193,6 +320,8 @@ console.log(
         hpoiLiveFrozen: true,
         officialLiveDefaultOff: true,
         ciLiveGatesOff: true,
+        systemChromeAcceptanceContract: true,
+        mvp02AllTwelveGatesPass: true,
         noTrackedRuntimeOrMedia: true,
         syntheticFixtureSize: true,
       },

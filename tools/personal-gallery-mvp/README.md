@@ -56,12 +56,15 @@ npm run collect -- --query "柴郡" --confirm-official-source-access
 | `npm run check` | 检查依赖、隔离、官方来源策略、合成 fixture 与仓库安全 |
 | `npm run test` | 运行带外网 guard 的离线 Node 测试 |
 | `npm run test:e2e` | 运行 loopback-only Playwright 图库测试 |
+| `npm run validate:chrome:real` | 使用系统 Google Chrome、临时干净 profile 和真实 `.local` 柴郡图库执行本机-only 验收 |
 | `npm run serve` | 启动本机首页与私有图库 |
 | `npm run collect -- --query "柴郡" --confirm-official-source-access` | 通过门禁后执行一次有限官方来源收集 |
 | `npm run status` | 查看本地运行摘要 |
 | `npm run clean:runtime` | 显示绑定目标的确认短语；再次明确确认后才删除个人运行目录 |
 
 稳定柴郡图库地址为 `http://127.0.0.1:4317/gallery/characters/cheshire`。图库提供厂商、造型、比例筛选，4/3/2 响应式布局，灯箱、缩放、跨商品左右切换，以及商品/图片排除与恢复。它不提供下载按钮、公共账号或公网部署。
+
+`validate:chrome:real` 不属于 CI：运行前必须已有完整真实图库并启动 loopback 服务。它只接受 Windows 标准路径中的系统 Google Chrome Stable，优先 headed、无法显示窗口时才使用同一 Chrome binary 的 headless 模式；它不使用 bundled Chromium、Edge、ChatGPT Chrome Extension 或用户 profile。验收器在 browser context 层阻断所有非 `127.0.0.1:4317` 请求，临时修改偏好以验证持久性，随后按原始字节恢复偏好并删除临时 profile。默认脱敏结果只写入系统临时目录，不提交 Git。
 
 ## 目录和隔离
 
