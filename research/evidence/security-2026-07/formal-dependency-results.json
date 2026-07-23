@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-07-23",
+  "generatedAt": "2026-07-23T10:55:30Z",
   "commit": {
     "base": "65231c0187cf49c7a2f4ea1c722bf16dc1d11133",
-    "implementation": null,
-    "evidence": null
+    "implementation": "1d7228a4ddb585062c01deb8f1b880db4deac4ed",
+    "ciCheckoutMerge": "147d2b51b75cb871ba75c6ebbb79777b0285830a"
   },
   "toolchain": {
     "node": "22.23.1",
@@ -94,18 +94,24 @@
   },
   "ci": {
     "formalWeb": {
-      "runId": null,
-      "headSha": null,
-      "status": "pending"
+      "runId": 30000981818,
+      "headSha": "1d7228a4ddb585062c01deb8f1b880db4deac4ed",
+      "status": "pass",
+      "initializationGates": "pass:12",
+      "catalogGates": "pass:21",
+      "standalone": "pass",
+      "artifactSafety": "pass"
     },
     "personalGalleryOffline": {
-      "runId": null,
-      "headSha": null,
-      "status": "pending"
+      "runId": 30000981907,
+      "headSha": "1d7228a4ddb585062c01deb8f1b880db4deac4ed",
+      "status": "pass",
+      "hpoiRequests": 0,
+      "firecrawlRequests": 0
     }
   },
   "cleanup": {
     "localEarlyFailureSmoke": "pass",
-    "formalCi": "pending"
+    "formalCi": "pass"
   }
 }

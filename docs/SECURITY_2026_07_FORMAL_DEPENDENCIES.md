@@ -64,7 +64,12 @@
 - TypeScript、ESLint、Vitest、仓库安全和正式边界；
 - audit 早期失败时未启动 Compose 的 cleanup smoke，以及真实残留资源的失败检测。
 
-GitHub Actions 还必须完整验证 PostgreSQL migration/cycle、Catalog 合同、MinIO/S3、production build、Playwright、clean standalone、restart、Sharp standalone runtime、artifact safety 和最终 cleanup。对应运行及机器摘要在 CI 全绿后写入 `research/evidence/security-2026-07/formal-dependency-results.json`。
+GitHub Actions 首轮已完整验证 PostgreSQL migration/cycle、Catalog 合同、MinIO/S3、production build、Playwright、clean standalone、restart、Sharp standalone runtime、artifact safety 和最终 cleanup：
+
+- Formal web CI run `30000981818`：success，INIT 12/12、CAT 21/21；
+- Personal Gallery MVP offline CI run `30000981907`：success，Hpoi/Firecrawl 请求均为 0。
+
+对应机器摘要已写入 `research/evidence/security-2026-07/formal-dependency-results.json`。证据回填提交仍须再次运行两套 CI，最终只接受当前 Head 的成功结论。
 
 ## 剩余 moderate
 
