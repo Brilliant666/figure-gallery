@@ -28,24 +28,47 @@ const unitNetwork = networkFiles.reduce(
   { blockedExternal: 0, firecrawl: 0, hpoi: 0, loopback: 0 },
 )
 const browserNetwork = browser.network || {}
+const hpoiRequests = unitNetwork.hpoi + Number(browserNetwork.hpoiRequests || 0)
+const firecrawlRequests = unitNetwork.firecrawl + Number(browserNetwork.firecrawlRequests || 0)
+const blockedExternalAttempts =
+  unitNetwork.blockedExternal + Number(browserNetwork.blockedExternalAttempts || 0)
+const browserExternalRequests = Number(browserNetwork.externalRequests || 0)
+const externalRequests = blockedExternalAttempts + browserExternalRequests
 const summary = {
-  schemaVersion: 1,
+  schemaVersion: 2,
+  task: 'MVP-02',
+  scope: 'offline_ci_only',
   status: browser.status === 'pass' ? 'pass' : 'fail',
+  mvp02OverallStatus: 'not_run',
+  realRunStatus: 'not_run',
   liveFetchEnabled: false,
+  officialLiveFetchEnabled: false,
+  hpoi: {
+    status: 'blocked_by_source',
+    stopReason: 'captcha',
+    retryAllowed: false,
+  },
   network: {
-    hpoiRequests: unitNetwork.hpoi + Number(browserNetwork.hpoiRequests || 0),
-    firecrawlRequests: unitNetwork.firecrawl + Number(browserNetwork.firecrawlRequests || 0),
-    blockedExternalAttempts:
-      unitNetwork.blockedExternal + Number(browserNetwork.blockedExternalAttempts || 0),
+    hpoiRequests,
+    firecrawlRequests,
+    officialExternalRequests: externalRequests,
+    externalRequests,
+    blockedExternalAttempts,
     loopbackRequests: unitNetwork.loopback + Number(browserNetwork.loopbackRequests || 0),
   },
   browser,
+  fixture: 'synthetic_official_style_html_json_and_png_only',
   runtimeStoredOutsideRepository: true,
   realPagesOrImagesStored: false,
 }
 
-if (summary.network.hpoiRequests !== 0 || summary.network.firecrawlRequests !== 0) {
-  throw new Error('A forbidden Hpoi or Firecrawl request was attempted during CI.')
+if (
+  summary.network.hpoiRequests !== 0 ||
+  summary.network.firecrawlRequests !== 0 ||
+  summary.network.officialExternalRequests !== 0 ||
+  summary.network.externalRequests !== 0
+) {
+  throw new Error('An external Hpoi, Firecrawl, or official-source request was attempted during offline CI.')
 }
 mkdirSync(path.dirname(output), { recursive: true })
 writeFileSync(output, `${JSON.stringify(summary, null, 2)}\n`, 'utf8')

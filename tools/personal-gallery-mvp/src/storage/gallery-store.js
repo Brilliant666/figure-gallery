@@ -4,6 +4,7 @@ import { randomUUID } from 'node:crypto'
 import { atomicWriteJson, readJson, updateJson } from './json-files.js'
 import { businessFields, changedFields, fieldDigest, productIdentity } from './identity.js'
 import { ensureRuntimeMarker } from './runtime-root.js'
+import { ensureSourceStatus } from './source-status.js'
 import { isCharacterUrl, normalizePageUrl, sanitizeUrlForRecord } from '../parsers/urls.js'
 
 const EMPTY_INDEX = Object.freeze({ schemaVersion: 1, runs: [], queries: {} })
@@ -64,6 +65,7 @@ export class GalleryStore {
       mkdir(path.join(this.root, 'objects', 'sha256'), { recursive: true }),
     ])
     await ensureRuntimeMarker(this.root)
+    await ensureSourceStatus(this.root)
     if ((await readJson(this.indexPath)) === null) await atomicWriteJson(this.indexPath, EMPTY_INDEX)
     if ((await readJson(this.imageIndexPath)) === null) await atomicWriteJson(this.imageIndexPath, EMPTY_IMAGE_INDEX)
     if ((await readJson(this.preferencesPath)) === null) await atomicWriteJson(this.preferencesPath, EMPTY_PREFERENCES)
@@ -86,7 +88,15 @@ export class GalleryStore {
     return path.join(this.root, 'objects', 'sha256', sha.slice(0, 2), `${sha}.${extension}`)
   }
 
-  async createRun({ query, characterUrl = null, limits = {}, requestedRunId = null }) {
+  async createRun({
+    query,
+    characterUrl = null,
+    characterSlug = null,
+    discoveryQueries = [],
+    limits = {},
+    requestedRunId = null,
+    sourceMode = 'hpoi',
+  }) {
     if (characterUrl !== null) {
       const normalizedCharacterUrl = normalizePageUrl(characterUrl)
       if (!normalizedCharacterUrl || !isCharacterUrl(normalizedCharacterUrl)) {
@@ -105,6 +115,9 @@ export class GalleryStore {
       runId,
       query,
       characterUrl,
+      characterSlug,
+      discoveryQueries: [...new Set(discoveryQueries.filter((value) => typeof value === 'string' && value.trim()))],
+      sourceMode,
       status: 'running',
       startedAt: timestamp,
       completedAt: null,
@@ -139,7 +152,15 @@ export class GalleryStore {
       atomicWriteJson(this.runFile(runId, 'requests.json'), []),
     ])
     await updateJson(this.indexPath, EMPTY_INDEX, (index) => {
-      index.runs.unshift({ runId, query, status: run.status, startedAt: timestamp, completedAt: null })
+      index.runs.unshift({
+        runId,
+        query,
+        characterSlug,
+        sourceMode,
+        status: run.status,
+        startedAt: timestamp,
+        completedAt: null,
+      })
       index.queries[query] = { latestRunId: runId, lastCollectedAt: timestamp }
       return index
     })

@@ -1,11 +1,18 @@
 import assert from 'node:assert/strict'
+import { EventEmitter } from 'node:events'
 import { mkdtemp, readdir, rm, stat } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
+import { Readable } from 'node:stream'
 import test from 'node:test'
 import sharp from 'sharp'
 import { GalleryStore } from '../../src/storage/gallery-store.js'
-import { downloadAndStoreImage, ImageDownloadError, isPublicAddress } from '../../src/storage/image-store.js'
+import {
+  createPinnedLookup,
+  downloadAndStoreImage,
+  ImageDownloadError,
+  isPublicAddress,
+} from '../../src/storage/image-store.js'
 
 async function setup(t) {
   const root = await mkdtemp(path.join(os.tmpdir(), 'figure-gallery-images-'))
@@ -36,6 +43,81 @@ async function png(red = 20) {
     .png()
     .toBuffer()
 }
+
+async function webp() {
+  return sharp({ create: { width: 8, height: 6, channels: 3, background: { r: 30, g: 80, b: 120 } } })
+    .webp()
+    .toBuffer()
+}
+
+test('public WebP samples pass magic, MIME, dimensions, and content-addressed storage', async (t) => {
+  const { store, productKey } = await setup(t)
+  const body = await webp()
+  const result = await downloadAndStoreImage({
+    url: 'https://img.example.test/sample.webp',
+    sourceProductUrl: 'https://goodsmile.com/en/product/cheshire',
+    productKey,
+    store,
+    fetchImpl: async () => response(body, { contentType: 'image/webp' }),
+    allowImageUrl,
+    dnsLookup: publicDnsLookup,
+    maxBytes: 1_000_000,
+  })
+  assert.equal(result.extension, 'webp')
+  assert.equal(result.mime, 'image/webp')
+  assert.equal(result.width, 8)
+  assert.equal(result.height, 6)
+})
+
+test('production HTTPS transport pins the validated public address into the actual connection lookup', async (t) => {
+  const { store, productKey } = await setup(t)
+  const body = await png()
+  const mutableDnsRecords = [{ address: '93.184.216.34', family: 4 }]
+  let dnsCalls = 0
+  let connectedAddress = null
+  const httpsRequest = (_url, options, callback) => {
+    const request = new EventEmitter()
+    request.end = () => {
+      mutableDnsRecords[0].address = '127.0.0.1'
+      options.lookup('img.example.test', { family: 4 }, (error, address) => {
+        if (error) return request.emit('error', error)
+        connectedAddress = address
+        const incoming = Readable.from([body])
+        incoming.statusCode = 200
+        incoming.headers = {
+          'content-type': 'image/png',
+          'content-length': String(body.length),
+        }
+        callback(incoming)
+      })
+    }
+    return request
+  }
+
+  const result = await downloadAndStoreImage({
+    url: 'https://img.example.test/pinned.png',
+    sourceProductUrl: 'https://goodsmile.com/en/product/cheshire',
+    productKey,
+    store,
+    allowImageUrl,
+    dnsLookup: async () => {
+      dnsCalls += 1
+      return mutableDnsRecords
+    },
+    httpsRequest,
+    maxBytes: 1_000_000,
+  })
+  assert.equal(result.mime, 'image/png')
+  assert.equal(dnsCalls, 1)
+  assert.equal(connectedAddress, '93.184.216.34')
+})
+
+test('pinned lookup never accepts private or unvalidated addresses', () => {
+  assert.throws(
+    () => createPinnedLookup([{ address: '127.0.0.1', family: 4 }]),
+    (error) => error instanceof ImageDownloadError && error.code === 'image_host_not_public' && error.blocked,
+  )
+})
 
 test('images are validated, content-addressed, linked many-to-many, and deduplicated across URLs', async (t) => {
   const { root, store, productKey } = await setup(t)
@@ -153,6 +235,59 @@ test('image download rejects invalid magic, MIME mismatch, oversized content, de
     (error) => error instanceof ImageDownloadError && error.code === 'login_required' && error.blocked,
   )
   assert.equal(loginRedirectCalls, 2)
+})
+
+test('Hpoi and known mirror image hosts are denied before DNS or fetch, including redirects', async (t) => {
+  const { store, productKey } = await setup(t)
+  let dnsCalls = 0
+  let fetchCalls = 0
+  const base = {
+    sourceProductUrl: 'https://goodsmile.com/en/product/cheshire',
+    productKey,
+    store,
+    allowImageUrl: () => true,
+    dnsLookup: async () => {
+      dnsCalls += 1
+      return [{ address: '93.184.216.34', family: 4 }]
+    },
+    maxBytes: 1_000_000,
+  }
+
+  for (const url of [
+    'https://img.hpoi.net/sample.png',
+    'https://cdn.hpoi.net.cn/sample.png',
+  ]) {
+    await assert.rejects(
+      downloadAndStoreImage({
+        ...base,
+        url,
+        fetchImpl: async () => {
+          fetchCalls += 1
+          return response(await png())
+        },
+      }),
+      (error) => error instanceof ImageDownloadError && error.code === 'hpoi_image_host_denied' && error.blocked,
+    )
+  }
+  assert.equal(dnsCalls, 0)
+  assert.equal(fetchCalls, 0)
+
+  await assert.rejects(
+    downloadAndStoreImage({
+      ...base,
+      url: 'https://img.example.test/start.png',
+      fetchImpl: async () => {
+        fetchCalls += 1
+        return new Response(null, {
+          status: 302,
+          headers: { location: 'https://static.hpoi.net/redirected.png' },
+        })
+      },
+    }),
+    (error) => error instanceof ImageDownloadError && error.code === 'hpoi_image_host_denied' && error.blocked,
+  )
+  assert.equal(fetchCalls, 1)
+  assert.equal(dnsCalls, 1)
 })
 
 test('interrupted response leaves no object or temporary file', async (t) => {

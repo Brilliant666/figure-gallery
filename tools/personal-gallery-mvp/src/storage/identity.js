@@ -16,8 +16,12 @@ const TRACKING_PARAMETERS = new Set([
 
 const VOLATILE_PRODUCT_FIELDS = new Set([
   'collectedAt',
+  'discoveryMethod',
+  'discoveryQuery',
   'fetchMetadata',
   'fetchedAt',
+  'fieldDigest',
+  'lastSeenAt',
   'observedAt',
   'parsedAt',
   'requestRecord',
@@ -48,15 +52,27 @@ export function normalizeCanonicalUrl(input) {
 }
 
 export function productIdentity(product) {
-  const sourceType = product.sourceType || 'hpoi'
-  const sourceItemId = product.sourceItemId ?? product.hpoiProductId ?? product.id ?? null
+  const sourceType = product.sourceType || product.sourceKind || 'hpoi'
+  let sourceScope = sourceType
+  if (product.sourceDomain) {
+    const normalizedDomain = String(product.sourceDomain)
+      .trim()
+      .toLowerCase()
+      .replace(/^www\./, '')
+    if (normalizedDomain) sourceScope = `${sourceType}:${normalizedDomain}`
+  }
+  const sourceItemId = product.officialProductId
+    ?? product.sourceItemId
+    ?? product.hpoiProductId
+    ?? product.id
+    ?? null
   if (sourceItemId !== null && String(sourceItemId).trim() !== '') {
     const normalizedId = String(sourceItemId).trim()
     return {
-      key: `${sourceType}-id-${normalizedId.replace(/[^a-zA-Z0-9._-]/g, '_')}`,
+      key: `${sourceScope}-id-${normalizedId}`.replace(/[^a-zA-Z0-9._-]/g, '_'),
       kind: 'source_id',
       sourceItemId: normalizedId,
-      sourceType,
+      sourceType: sourceScope,
     }
   }
 
@@ -64,11 +80,11 @@ export function productIdentity(product) {
   if (!rawUrl) throw new Error('A product requires a stable source item ID or source URL.')
   const normalizedUrl = normalizeCanonicalUrl(rawUrl)
   return {
-    key: `${sourceType}-url-${sha256(normalizedUrl)}`,
+    key: `${sourceScope}-url-${sha256(normalizedUrl)}`.replace(/[^a-zA-Z0-9._-]/g, '_'),
     kind: 'normalized_url',
     normalizedUrl,
     sourceItemId: null,
-    sourceType,
+    sourceType: sourceScope,
   }
 }
 

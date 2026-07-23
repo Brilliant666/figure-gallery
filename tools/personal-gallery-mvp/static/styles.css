@@ -62,12 +62,16 @@ input:focus-visible, select:focus-visible, button:focus-visible, a:focus-visible
 .top-nav { margin-bottom: 2rem; }
 .gallery-header { padding-bottom: 1rem; }
 .gallery-header h1 { font-size: clamp(2.5rem, 6vw, 4.5rem); }
-.filter-panel { display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: .8rem; align-items: end; position: sticky; top: .5rem; z-index: 5; box-shadow: 0 8px 30px rgba(35, 30, 25, .08); }
-.gallery-metrics { margin: 1.2rem 0; }
+.source-status { align-items: center; border-left: 5px solid #c47c24; display: flex; flex-wrap: wrap; gap: .65rem 1rem; }
+.source-status p { flex-basis: 100%; margin: 0; }
+.source-badge { background: #e6f2ed; border: 1px solid #b9d9cd; border-radius: 999px; color: #245c4b; display: inline-flex; font-size: .68rem; font-weight: 800; padding: .24rem .55rem; }
+.filter-panel { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)) auto; gap: .8rem; align-items: end; position: sticky; top: .5rem; z-index: 5; box-shadow: 0 8px 30px rgba(35, 30, 25, .08); }
+.gallery-metrics { grid-template-columns: repeat(5, 1fr); margin: 1.2rem 0; }
 .product-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1rem; align-items: start; }
 .product-card { background: var(--paper); border: 1px solid var(--line); border-radius: 15px; overflow: hidden; min-width: 0; }
 .product-card.is-excluded { opacity: .58; }
 .product-card-header { padding: .9rem; }
+.product-heading { align-items: start; display: flex; gap: .5rem; justify-content: space-between; }
 .product-card h2 { font-size: 1rem; margin: 0 0 .5rem; line-height: 1.3; }
 .product-meta { color: var(--ink-soft); font-size: .78rem; margin: .15rem 0; }
 .image-tile { border-top: 1px solid var(--line); position: relative; background: #ece9e2; }
@@ -100,13 +104,15 @@ body.lightbox-open { overflow: hidden; }
 
 @media (max-width: 1199px) {
   .product-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-  .filter-panel { grid-template-columns: 1fr 1fr; }
+  .filter-panel { grid-template-columns: 1fr 1fr 1fr; }
+  .gallery-metrics { grid-template-columns: repeat(3, 1fr); }
 }
 
 @media (max-width: 719px) {
   .shell { width: min(100% - 1rem, 1480px); padding-top: 1rem; }
   .limit-grid { grid-template-columns: 1fr; }
   .metrics { grid-template-columns: repeat(2, 1fr); }
+  .gallery-metrics { grid-template-columns: repeat(2, 1fr); }
   .product-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .5rem; }
   .filter-panel { position: static; grid-template-columns: 1fr; }
   .product-card-header { padding: .65rem; }

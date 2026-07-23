@@ -1,3 +1,5 @@
 export * from './character-parser.js'
+export * from './official-product-parser.js'
+export * from './official-urls.js'
 export * from './product-parser.js'
 export * from './urls.js'

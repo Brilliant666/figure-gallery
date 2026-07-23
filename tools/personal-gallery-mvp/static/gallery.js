@@ -5,11 +5,14 @@ const empty = document.querySelector('#empty-state')
 const errorMessage = document.querySelector('#gallery-error')
 const classificationFilter = document.querySelector('#classification-filter')
 const manufacturerFilter = document.querySelector('#manufacturer-filter')
-const detailFilter = document.querySelector('#detail-filter')
+const designFilter = document.querySelector('#design-filter')
+const scaleFilter = document.querySelector('#scale-filter')
 const showExcluded = document.querySelector('#show-excluded')
 const metricList = document.querySelector('#gallery-metrics')
 const failureCount = document.querySelector('#failure-count')
 const failureList = document.querySelector('#failure-list')
+const sourceMode = document.querySelector('#source-mode')
+const hpoiSourceStatus = document.querySelector('#hpoi-source-status')
 
 const lightbox = document.querySelector('#lightbox')
 const lightboxStage = document.querySelector('#lightbox-stage')
@@ -27,6 +30,14 @@ let currentImageIndex = -1
 let zoom = 1
 let pollTimer = null
 const POLL_INTERVAL_MS = 800
+const OFFICIAL_SOURCE_DOMAINS = new Set([
+  'goodsmile.com',
+  'www.goodsmile.com',
+  'goodsmilearts.com',
+  'www.goodsmilearts.com',
+  'alter-web.jp',
+  'www.alter-web.jp',
+])
 
 function apiUrlFromPath() {
   const path = window.location.pathname
@@ -45,14 +56,22 @@ function element(tag, className, text) {
   return node
 }
 
-function isSafeSourceUrl(value) {
+function isSafeSourceUrl(value, expectedDomain) {
   try {
     const url = new URL(value)
+    const actualDomain = OFFICIAL_SOURCE_DOMAINS.has(url.hostname)
+      ? url.hostname.replace(/^www\./, '')
+      : null
+    const expectedHost = String(expectedDomain || '').trim().toLowerCase()
+    const normalizedExpectedDomain = OFFICIAL_SOURCE_DOMAINS.has(expectedHost)
+      ? expectedHost.replace(/^www\./, '')
+      : null
     const sensitiveQuery = [...url.searchParams.keys()].some((key) =>
       /^(?:access_?token|api_?key|apikey|auth|authorization|cookie|session|session_?id|sid|token)$/i.test(key),
     )
     return url.protocol === 'https:'
-      && ['hpoi.net', 'www.hpoi.net'].includes(url.hostname)
+      && actualDomain !== null
+      && (!expectedHost || (normalizedExpectedDomain !== null && actualDomain === normalizedExpectedDomain))
       && !url.username
       && !url.password
       && !sensitiveQuery
@@ -65,13 +84,15 @@ function currentProducts() {
   if (!gallery) return []
   const classification = classificationFilter.value
   const manufacturer = manufacturerFilter.value
-  const term = detailFilter.value.trim().toLocaleLowerCase('zh-CN')
+  const design = designFilter.value
+  const scale = scaleFilter.value
   return gallery.products.filter((product) => {
     if (!showExcluded.checked && product.excluded) return false
     if (classification === 'default' && product.classification === 'other') return false
     if (classification !== 'default' && classification !== 'all' && product.classification !== classification) return false
     if (manufacturer !== 'all' && product.manufacturer !== manufacturer) return false
-    if (term && !`${product.category} ${product.scale}`.toLocaleLowerCase('zh-CN').includes(term)) return false
+    if (design !== 'all' && product.design !== design) return false
+    if (scale !== 'all' && product.scale !== scale) return false
     return true
   })
 }
@@ -226,11 +247,13 @@ function createProductCard(product) {
   const card = element('article', `product-card${product.excluded ? ' is-excluded' : ''}`)
   card.dataset.productId = product.id
   const header = element('header', 'product-card-header')
-  header.append(element('h2', null, product.title))
+  const heading = element('div', 'product-heading')
+  heading.append(element('h2', null, product.title), element('span', 'source-badge', '官方商品页'))
+  header.append(heading)
   header.append(
-    element('p', 'product-meta', `${product.manufacturer} · ${product.classification} · ${product.scale}`),
+    element('p', 'product-meta', `${product.manufacturer} · ${product.scale} · ${product.releaseDate}`),
   )
-  header.append(element('p', 'product-meta', `${product.category} · ${product.status}`))
+  header.append(element('p', 'product-meta source-domain', `${product.sourceDomain} · ${product.classification}`))
   if (product.note) header.append(element('p', 'product-note', product.note))
   card.append(header)
 
@@ -246,8 +269,8 @@ function createProductCard(product) {
   note.type = 'button'
   note.addEventListener('click', () => editManualNote(product))
   actions.append(note)
-  if (isSafeSourceUrl(product.sourceUrl)) {
-    const source = element('a', 'source-link', '来源页 ↗')
+  if (isSafeSourceUrl(product.sourceUrl, product.sourceDomain)) {
+    const source = element('a', 'source-link', '打开官方商品页 ↗')
     source.href = product.sourceUrl
     source.target = '_blank'
     source.rel = 'noreferrer noopener'
@@ -263,8 +286,9 @@ function renderMetrics(products) {
     0,
   )
   const entries = [
-    ['发现商品', gallery.summary.products],
+    ['官方商品', gallery.summary.officialProducts ?? gallery.summary.products],
     ['当前商品', products.length],
+    ['官方图片', gallery.summary.officialImages ?? imageCount],
     ['当前图片', imageCount],
     ['失败', gallery.failures.length],
   ]
@@ -287,6 +311,30 @@ function renderFailures() {
         : `${failure.type || failure.stage || 'failure'}：${failure.reason || failure.message || failure.url || 'unknown'}`
     failureList.append(element('li', null, text))
   }
+}
+
+function replaceFilterOptions(select, values, allLabel) {
+  const selected = select.value
+  const all = document.createElement('option')
+  all.value = 'all'
+  all.textContent = allLabel
+  select.replaceChildren(all)
+  for (const value of [...new Set(values.filter(Boolean))].sort()) {
+    const option = document.createElement('option')
+    option.value = value
+    option.textContent = value
+    select.append(option)
+  }
+  if ([...select.options].some((option) => option.value === selected)) select.value = selected
+}
+
+function renderSourceStatus() {
+  sourceMode.textContent = gallery.sourceMode === 'official_sources' ? 'Official sources' : gallery.sourceMode
+  const hpoi = gallery.sourceStatus?.hpoi || {}
+  const blockedAt = hpoi.blockedAt ? ` · 记录时间：${hpoi.blockedAt}` : ''
+  hpoiSourceStatus.textContent = hpoi.hpoiLiveStatus === 'blocked_by_source'
+    ? `Hpoi 状态：Blocked by captcha · 实时来源已停用，不会自动重试。${blockedAt}`
+    : 'Hpoi 实时来源已停用，不会自动重试。'
 }
 
 function render() {
@@ -370,20 +418,10 @@ async function load() {
     title.textContent = gallery.query
     document.title = `${gallery.query} · Private Gallery`
     meta.textContent = `最近收集：${gallery.completedAt || gallery.startedAt || 'unknown'} · 状态：${gallery.status}`
-    const selectedManufacturer = manufacturerFilter.value
-    manufacturerFilter.replaceChildren()
-    const allManufacturers = document.createElement('option')
-    allManufacturers.value = 'all'
-    allManufacturers.textContent = '全部厂商'
-    manufacturerFilter.append(allManufacturers)
-    const manufacturers = [...new Set(gallery.products.map((product) => product.manufacturer))].sort()
-    for (const manufacturer of manufacturers) {
-      const option = document.createElement('option')
-      option.value = manufacturer
-      option.textContent = manufacturer
-      manufacturerFilter.append(option)
-    }
-    if (manufacturers.includes(selectedManufacturer)) manufacturerFilter.value = selectedManufacturer
+    renderSourceStatus()
+    replaceFilterOptions(manufacturerFilter, gallery.products.map((product) => product.manufacturer), '全部厂商')
+    replaceFilterOptions(designFilter, gallery.products.map((product) => product.design), '全部造型')
+    replaceFilterOptions(scaleFilter, gallery.products.map((product) => product.scale), '全部比例')
     render()
     if (gallery.status === 'running' || gallery.status === 'stopping') schedulePolling()
     else stopPolling()
@@ -394,8 +432,8 @@ async function load() {
   }
 }
 
-for (const control of [classificationFilter, manufacturerFilter, detailFilter, showExcluded]) {
-  control.addEventListener(control === detailFilter ? 'input' : 'change', render)
+for (const control of [classificationFilter, manufacturerFilter, designFilter, scaleFilter, showExcluded]) {
+  control.addEventListener('change', render)
 }
 document.querySelector('#lightbox-close').addEventListener('click', closeLightbox)
 previousButton.addEventListener('click', () => moveLightbox(-1))

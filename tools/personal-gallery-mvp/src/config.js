@@ -104,19 +104,35 @@ export function loadConfig({ loadEnv = true } = {}) {
     requestDelayMs: integer('HPOI_REQUEST_DELAY_MS', 1_500, { min: 1_500, max: 60_000 }),
     root: validateRuntimeRoot(rootValue || DEFAULT_RUNTIME_ROOT),
     writtenPermissionConfirmed: boolean('HPOI_WRITTEN_PERMISSION_CONFIRMED'),
+    officialLiveFetchEnabled: boolean('OFFICIAL_SOURCE_LIVE_FETCH_ENABLED'),
+    officialMaxSearchResultsPerQuery: integer('OFFICIAL_MAX_SEARCH_RESULTS_PER_QUERY', 10, { min: 1, max: 10 }),
+    officialMaxCandidates: integer('OFFICIAL_MAX_CANDIDATES', 20, { min: 2, max: 20 }),
+    officialMaxProducts: integer('OFFICIAL_MAX_PRODUCTS', 20, { min: 2, max: 20 }),
+    officialMaxImagesPerProduct: integer('OFFICIAL_MAX_IMAGES_PER_PRODUCT', 10, { min: 1, max: 10 }),
+    officialRequestDelayMs: integer('OFFICIAL_REQUEST_DELAY_MS', 1_000, { min: 1_000, max: 60_000 }),
+    officialMaxRetries: integer('OFFICIAL_MAX_RETRIES', 2, { min: 0, max: 2 }),
   })
 }
 
 export function liveGate(config, { interactiveConfirmation = false } = {}) {
+  const missing = ['Hpoi live source is permanently disabled after repeated captcha blocks']
+  return {
+    allowed: false,
+    missing,
+    notice:
+      'Hpoi live access is disabled. Historical parsers remain available only for offline regression tests.',
+  }
+}
+
+export function officialLiveGate(config, { interactiveConfirmation = false } = {}) {
   const missing = []
-  if (!config.liveFetchEnabled) missing.push('HPOI_LIVE_FETCH_ENABLED=true')
-  if (!config.writtenPermissionConfirmed) missing.push('HPOI_WRITTEN_PERMISSION_CONFIRMED=true')
-  if (!interactiveConfirmation) missing.push('interactive written-permission confirmation')
+  if (!config.officialLiveFetchEnabled) missing.push('OFFICIAL_SOURCE_LIVE_FETCH_ENABLED=true')
+  if (!interactiveConfirmation) missing.push('interactive official-source confirmation')
   if (!config.firecrawlApiKey) missing.push('FIRECRAWL_API_KEY')
   return {
     allowed: missing.length === 0,
     missing,
     notice:
-      'The live switch does not grant source permission. Confirm current Hpoi rules and obtain explicit written permission before any automated request.',
+      'Only public official manufacturer product pages may be searched and scraped. Hpoi, user content, login, crawl, browser actions, and access-control bypass remain disabled.',
   }
 }

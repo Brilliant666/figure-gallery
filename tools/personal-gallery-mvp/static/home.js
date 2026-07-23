@@ -5,7 +5,6 @@ const statusPill = document.querySelector('#status-pill')
 const statusMessage = document.querySelector('#status-message')
 const activeGalleryLink = document.querySelector('#active-gallery-link')
 const recentRuns = document.querySelector('#recent-runs')
-const disambiguation = document.querySelector('#disambiguation')
 const counters = {
   pages: document.querySelector('#pages-count'),
   products: document.querySelector('#products-count'),
@@ -14,6 +13,8 @@ const counters = {
 }
 
 function galleryUrl(run) {
+  if (run?.characterSlug) return `/gallery/characters/${encodeURIComponent(run.characterSlug)}`
+  if (run?.query === '柴郡') return '/gallery/characters/cheshire'
   return run?.runId ? `/gallery/${encodeURIComponent(run.runId)}` : null
 }
 
@@ -30,31 +31,6 @@ function renderStatus(run) {
   const running = status === 'running' || status === 'stopping'
   startButton.disabled = running
   stopButton.disabled = !running
-  renderDisambiguation(run?.disambiguationCandidates || [])
-}
-
-function renderDisambiguation(candidates) {
-  disambiguation.replaceChildren()
-  disambiguation.classList.toggle('hidden', candidates.length === 0)
-  if (!candidates.length) return
-  const heading = document.createElement('strong')
-  heading.textContent = '请选择明确角色（不会自动猜测同名角色）'
-  disambiguation.append(heading)
-  for (const candidate of candidates) {
-    const button = document.createElement('button')
-    button.type = 'button'
-    button.className = 'candidate-button'
-    const name = document.createElement('span')
-    name.textContent = candidate.title || '未命名角色'
-    const detail = document.createElement('small')
-    detail.textContent = `${candidate.work || '作品未知'} · ${candidate.url}`
-    button.append(name, detail)
-    button.addEventListener('click', () => {
-      document.querySelector('#character-url').value = candidate.url
-      form.requestSubmit()
-    })
-    disambiguation.append(button)
-  }
 }
 
 function renderRecent(items) {
@@ -96,11 +72,11 @@ form.addEventListener('submit', async (event) => {
   const data = new FormData(form)
   const payload = {
     query: data.get('query'),
-    characterUrl: data.get('characterUrl'),
-    maxListPages: Number(data.get('maxListPages')),
+    sourceMode: 'official_sources',
+    maxSearchResults: Number(data.get('maxSearchResults')),
     maxProducts: Number(data.get('maxProducts')),
     maxImagesPerProduct: Number(data.get('maxImagesPerProduct')),
-    confirmSourcePermission: data.get('confirmSourcePermission') === 'on',
+    confirmOfficialSourceAccess: data.get('confirmOfficialSourceAccess') === 'on',
   }
   startButton.disabled = true
   try {

@@ -33,6 +33,57 @@ test('product identity prefers a stable source ID and normalizes URL only as fal
   assert.match(fallback.key, /^hpoi-url-[a-f0-9]{64}$/)
 })
 
+test('official product identity is namespaced by canonical source domain', () => {
+  const goodSmile = productIdentity({
+    sourceKind: 'official_manufacturer',
+    sourceDomain: 'www.goodsmile.com',
+    officialProductId: 'CHESHIRE-001',
+    sourceUrl: 'https://www.goodsmile.com/en/product/cheshire-001',
+  })
+  const alter = productIdentity({
+    sourceKind: 'official_manufacturer',
+    sourceDomain: 'alter-web.jp',
+    officialProductId: 'CHESHIRE-001',
+    sourceUrl: 'https://alter-web.jp/products/cheshire-001',
+  })
+  assert.equal(goodSmile.kind, 'source_id')
+  assert.match(goodSmile.key, /^official_manufacturer_goodsmile\.com-id-CHESHIRE-001$/)
+  assert.notEqual(goodSmile.key, alter.key)
+
+  const fallback = productIdentity({
+    sourceKind: 'official_manufacturer',
+    sourceDomain: 'goodsmile.com',
+    sourceUrl: 'https://goodsmile.com/en/product/cheshire?utm_source=search',
+  })
+  assert.equal(fallback.kind, 'normalized_url')
+  assert.match(fallback.key, /^official_manufacturer_goodsmile\.com-url-[a-f0-9]{64}$/)
+})
+
+test('official discovery provenance and observation timestamps do not create false changes', async (t) => {
+  const { store } = await temporaryStore(t)
+  const base = {
+    sourceKind: 'official_manufacturer',
+    sourceDomain: 'goodsmile.com',
+    officialProductId: 'GSC-CHESHIRE-1',
+    sourceUrl: 'https://goodsmile.com/en/product/cheshire',
+    title: 'Cheshire: Synthetic Outfit',
+    manufacturer: 'Good Smile Company',
+    discoveryQuery: 'first query',
+    discoveryMethod: 'firecrawl_search',
+    lastSeenAt: '2026-07-16T00:00:00.000Z',
+  }
+  const firstRun = await store.createRun({ query: '柴郡', sourceMode: 'official_sources', characterSlug: 'cheshire' })
+  assert.equal((await store.upsertProduct(firstRun.runId, base)).state, 'new')
+  const secondRun = await store.createRun({ query: '柴郡', sourceMode: 'official_sources', characterSlug: 'cheshire' })
+  const result = await store.upsertProduct(secondRun.runId, {
+    ...base,
+    discoveryQuery: 'second query',
+    discoveryMethod: 'seed_official_url',
+    lastSeenAt: '2026-07-17T00:00:00.000Z',
+  })
+  assert.equal(result.state, 'unchanged')
+})
+
 test('product snapshots are new, unchanged, then changed without erasing run history', async (t) => {
   const { root, store } = await temporaryStore(t)
   const run1 = await store.createRun({ query: 'synthetic-character' })

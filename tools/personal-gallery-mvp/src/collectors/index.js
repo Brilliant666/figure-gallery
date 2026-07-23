@@ -2,6 +2,7 @@ import { GalleryStore } from '../storage/gallery-store.js'
 import { SequentialCollector } from './sequential-collector.js'
 
 export { CollectionBlockedError, detectBlockingResult, errorFingerprint, toCollectionError } from './access-policy.js'
+export { OfficialSearchCollector, collectOfficialGallery } from './official-search-collector.js'
 export { SequentialCollector } from './sequential-collector.js'
 
 export async function collectGallery(options = {}) {

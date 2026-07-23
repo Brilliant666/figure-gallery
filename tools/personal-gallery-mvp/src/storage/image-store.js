@@ -1,13 +1,16 @@
 import { mkdir, open, rename, rm, stat } from 'node:fs/promises'
 import { randomUUID } from 'node:crypto'
 import { lookup as defaultDnsLookup } from 'node:dns/promises'
+import https from 'node:https'
 import { isIP } from 'node:net'
 import path from 'node:path'
+import { Readable } from 'node:stream'
 import sharp from 'sharp'
+import { isHpoiHost } from '../parsers/official-urls.js'
 import { sha256 } from './identity.js'
 
 const BLOCKING_STATUS = new Set([401, 403, 429])
-const MIME_BY_KIND = Object.freeze({ jpeg: 'image/jpeg', png: 'image/png' })
+const MIME_BY_KIND = Object.freeze({ jpeg: 'image/jpeg', png: 'image/png', webp: 'image/webp' })
 const BLOCKING_BODY_PATTERNS = [
   ['captcha', /(?:captcha|hcaptcha|recaptcha|验证码)/iu],
   ['robot_verification', /(?:robot verification|verify (?:that )?you are human|机器人验证|人机验证)/iu],
@@ -126,6 +129,11 @@ function imageKind(buffer) {
     buffer[7] === 0x0a
   ) return 'png'
   if (buffer.length >= 3 && buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff) return 'jpeg'
+  if (
+    buffer.length >= 12
+    && buffer.subarray(0, 4).toString('ascii') === 'RIFF'
+    && buffer.subarray(8, 12).toString('ascii') === 'WEBP'
+  ) return 'webp'
   return null
 }
 
@@ -159,6 +167,42 @@ async function bodyWithLimit(response, maxBytes) {
   return Buffer.concat(chunks, total)
 }
 
+export function createPinnedLookup(records) {
+  const addresses = Object.freeze(
+    (records || []).map((record) => {
+      const address = String(record?.address || '')
+      const family = isIP(address)
+      if (!family || !isPublicAddress(address)) {
+        throw new ImageDownloadError('Cannot pin an unvalidated image host address.', {
+          code: 'image_host_not_public',
+          blocked: true,
+        })
+      }
+      return Object.freeze({ address, family })
+    }),
+  )
+  if (addresses.length === 0) {
+    throw new ImageDownloadError('Cannot pin an image host without a public address.', {
+      code: 'image_host_not_public',
+      blocked: true,
+    })
+  }
+  return function pinnedLookup(_hostname, options, callback) {
+    const normalizedOptions = typeof options === 'number' ? { family: options } : options || {}
+    const requestedFamily = Number(normalizedOptions.family) || 0
+    const candidates = requestedFamily
+      ? addresses.filter((record) => record.family === requestedFamily)
+      : addresses
+    if (candidates.length === 0) {
+      return callback(Object.assign(new Error('No validated address matches the requested family.'), {
+        code: 'ENOTFOUND',
+      }))
+    }
+    if (normalizedOptions.all) return callback(null, candidates.map((record) => ({ ...record })))
+    return callback(null, candidates[0].address, candidates[0].family)
+  }
+}
+
 async function assertAllowed(url, allowImageUrl, sourceProductUrl, dnsLookup) {
   let parsed
   try {
@@ -168,6 +212,13 @@ async function assertAllowed(url, allowImageUrl, sourceProductUrl, dnsLookup) {
   }
   if (parsed.protocol !== 'https:') {
     throw new ImageDownloadError('Image URL must use HTTPS.', { code: 'image_url_not_allowed', blocked: true, url })
+  }
+  if (isHpoiHost(parsed.hostname)) {
+    throw new ImageDownloadError('Hpoi and known Hpoi mirror image hosts are permanently denied.', {
+      code: 'hpoi_image_host_denied',
+      blocked: true,
+      url,
+    })
   }
   if (!allowImageUrl(url, { sourceProductUrl })) {
     throw new ImageDownloadError('Image URL host is not allowlisted for this product.', {
@@ -188,7 +239,7 @@ async function assertAllowed(url, allowImageUrl, sourceProductUrl, dnsLookup) {
     if (!isPublicAddress(hostname)) {
       throw new ImageDownloadError('Image host address is not public.', { code: 'image_host_not_public', blocked: true, url })
     }
-    return parsed
+    return { parsed, records: [{ address: hostname, family: literalFamily }] }
   }
   let records
   try {
@@ -207,14 +258,65 @@ async function assertAllowed(url, allowImageUrl, sourceProductUrl, dnsLookup) {
       url,
     })
   }
-  return parsed
+  return {
+    parsed,
+    records: records.map((record) => ({ address: record.address, family: isIP(record.address) })),
+  }
 }
 
-async function fetchWithManualRedirects({ url, fetchImpl, allowImageUrl, sourceProductUrl, signal, maxRedirects, dnsLookup }) {
+function incomingHeaders(response) {
+  return {
+    get(name) {
+      const value = response.headers?.[String(name).toLowerCase()]
+      if (Array.isArray(value)) return value.join(', ')
+      return value === undefined ? null : String(value)
+    },
+  }
+}
+
+async function pinnedHttpsFetch(url, { records, signal, httpsRequest }) {
+  const parsed = new URL(url)
+  const lookup = createPinnedLookup(records)
+  return new Promise((resolve, reject) => {
+    const request = httpsRequest(parsed, {
+      method: 'GET',
+      agent: false,
+      lookup,
+      signal,
+      servername: isIP(parsed.hostname) ? undefined : parsed.hostname,
+      headers: {
+        Accept: 'image/avif,image/webp,image/png,image/jpeg;q=0.9,*/*;q=0.1',
+      },
+    }, (response) => {
+      const status = Number(response.statusCode || 0)
+      resolve({
+        status,
+        ok: status >= 200 && status < 300,
+        headers: incomingHeaders(response),
+        body: [204, 205, 304].includes(status) ? null : Readable.toWeb(response),
+      })
+    })
+    request.once('error', reject)
+    request.end()
+  })
+}
+
+async function fetchWithManualRedirects({
+  url,
+  fetchImpl,
+  allowImageUrl,
+  sourceProductUrl,
+  signal,
+  maxRedirects,
+  dnsLookup,
+  httpsRequest,
+}) {
   let current = url
   for (let redirects = 0; redirects <= maxRedirects; redirects += 1) {
-    await assertAllowed(current, allowImageUrl, sourceProductUrl, dnsLookup)
-    const response = await fetchImpl(current, { method: 'GET', redirect: 'manual', signal })
+    const validated = await assertAllowed(current, allowImageUrl, sourceProductUrl, dnsLookup)
+    const response = fetchImpl
+      ? await fetchImpl(current, { method: 'GET', redirect: 'manual', signal })
+      : await pinnedHttpsFetch(current, { records: validated.records, signal, httpsRequest })
     if ([301, 302, 303, 307, 308].includes(response.status)) {
       const location = response.headers.get('location')
       if (!location) {
@@ -228,7 +330,6 @@ async function fetchWithManualRedirects({ url, fetchImpl, allowImageUrl, sourceP
         throw new ImageDownloadError('Image redirect limit exceeded.', { code: 'redirect_limit', url: current })
       }
       const next = new URL(location, current).toString()
-      await assertAllowed(next, allowImageUrl, sourceProductUrl, dnsLookup)
       current = next
       continue
     }
@@ -269,16 +370,22 @@ export async function downloadAndStoreImage({
   sourceProductUrl,
   productKey,
   store,
-  fetchImpl = globalThis.fetch,
+  fetchImpl = null,
   allowImageUrl,
   maxBytes,
   signal,
   maxRedirects = 3,
   dnsLookup = defaultDnsLookup,
+  httpsRequest = https.request,
   runId = null,
   deferRegistration = false,
 }) {
-  if (typeof fetchImpl !== 'function') throw new Error('downloadAndStoreImage requires fetch.')
+  if (fetchImpl !== null && typeof fetchImpl !== 'function') {
+    throw new Error('downloadAndStoreImage fetchImpl must be a function when supplied.')
+  }
+  if (!fetchImpl && typeof httpsRequest !== 'function') {
+    throw new Error('downloadAndStoreImage requires the built-in HTTPS transport.')
+  }
   if (typeof allowImageUrl !== 'function') throw new Error('downloadAndStoreImage requires allowImageUrl.')
   if (!store || !productKey) throw new Error('downloadAndStoreImage requires store and productKey.')
 
@@ -292,6 +399,7 @@ export async function downloadAndStoreImage({
       signal,
       maxRedirects,
       dnsLookup,
+      httpsRequest,
     })
   } catch (error) {
     if (error?.name === 'AbortError') throw error
@@ -345,7 +453,7 @@ export async function downloadAndStoreImage({
   }
   const kind = imageKind(buffer)
   if (!kind) {
-    throw new ImageDownloadError('Response is not a supported PNG or JPEG image.', { code: 'invalid_magic', url: finalUrl })
+    throw new ImageDownloadError('Response is not a supported PNG, JPEG, or WebP image.', { code: 'invalid_magic', url: finalUrl })
   }
   const declaredMime = cleanMime(response.headers.get('content-type'))
   if (declaredMime !== MIME_BY_KIND[kind]) {
@@ -372,7 +480,7 @@ export async function downloadAndStoreImage({
   }
 
   const digest = sha256(buffer)
-  const extension = kind === 'jpeg' ? 'jpg' : 'png'
+  const extension = kind === 'jpeg' ? 'jpg' : kind
   const targetPath = store.objectPath(digest, extension)
   const duplicate = await exists(targetPath)
   if (!duplicate) await atomicWriteBuffer(targetPath, buffer)

@@ -6,7 +6,7 @@ Figure Gallery 是一个以“角色—官方手办原型—主图”为核心�
 
 PR-00 正式工程基线和 PR-01 核心目录模型均已进入 `main`，对应 Formal web CI 已通过。来源/候选池、审核工作流、正式媒体与主图、merge/split/undo、公开搜索和图库仍未实现。
 
-当前优先交付 **personal gallery MVP**：在 `tools/personal-gallery-mvp/` 建立一个可删除、只在本机运行、与正式应用完全隔离的个人拍摄参考工具。正式 PR-02—PR-08 路线暂时暂停但不删除；MVP 不是正式 Candidate、Review 或 Media 实现，也不会把自动数据写入正式目录。
+**personal gallery MVP-02 第一版已完成验收并冻结**：`tools/personal-gallery-mvp/` 是一个可删除、只在本机运行、与正式应用完全隔离的个人拍摄参考工具。当前柴郡图库收录 2 个官方商品和 19 个字节不同的本地图片对象，已通过系统 Google Chrome 的真实 loopback-only 验收；它不代表完整收录，也尚未做感知去重。正式 PR-02—PR-08 路线继续暂停但不删除；MVP 不是正式 Candidate、Review 或 Media 实现，也不会把自动数据写入正式目录。
 
 已接受的技术底座：
 
@@ -55,13 +55,14 @@ PR-00 正式工程基线和 PR-01 核心目录模型均已进入 `main`，对应
 - [PR-01 核心目录实现](docs/PR01_CORE_CATALOG_IMPLEMENTATION.md)
 - [PR-01 业务身份实现](docs/PR01_IDENTITY_IMPLEMENTATION.md)
 - [MVP-01 个人自动手办图库](docs/MVP01_PERSONAL_AUTO_GALLERY.md)
+- [MVP-02 柴郡官方来源图库](docs/MVP02_CHESHIRE_OFFICIAL_GALLERY.md)
 - [需求追踪矩阵](docs/TRACEABILITY_MATRIX.md)
 - [技术决策 ADR](research/TECH_STACK_DECISION.md)
 
 ## 来源与 Hpoi 边界
 
-Hpoi 当前只可作为人工参考；正式应用与 CI 必须保持 Hpoi 请求数为 0。未取得明确书面许可前，不得编写正式 Hpoi adapter。独立 personal gallery MVP 只提供默认关闭的技术能力：真实请求还必须同时具有明确书面许可确认、项目所有者主动打开实时开关、有效 Firecrawl 配置和本次交互确认；开关本身不代表授权，个人用途也不自动构成豁免。会员购和厂商官网仍只作人工补充与核验，不自动访问。所有未来正式来源数据必须先进入候选池，不能自动覆盖正式数据或正式主图。
+Hpoi 当前只可作为人工参考；在 personal gallery MVP 中也已经因连续 captcha 阻塞而冻结为 `blocked_by_source`，`retryAllowed=false`。MVP-02 不重试 Hpoi、不访问缓存或镜像，也不尝试规避；正式应用、MVP-02 和 CI 的 Hpoi 请求数必须保持 0。MVP-02 仅在项目所有者主动开启独立官方来源实时门禁后，使用 Firecrawl v2 Search（明确排除 Hpoi）和 `scrape` 访问受审查 allowlist 内的公开厂商官方商品页；不使用 crawl、Agent、浏览器动作、增强代理、Cookie 或登录。会员购仍只作人工补充与核验，不自动访问。所有未来正式来源数据必须先进入候选池，不能自动覆盖正式数据或正式主图。
 
 ## 开发状态
 
-PR-00 与 PR-01 已完成并合并。当前 `feat/mvp-01-personal-auto-gallery` 只交付隔离的个人图库 Draft；正式 PR-02—PR-08 暂停，PR-02 尚未开始。正式变化必须使用任务独立分支和独立 PR；未经明确授权不得合并或部署。MVP 达到停止条件后必须停止，恢复正式路线仍需新的明确授权。
+PR-00、PR-01、personal gallery MVP-01 与 MVP-02 第一版均已完成；MVP-02 的真实首轮、第二轮幂等及系统 Chrome 验收以 `research/evidence/mvp02/personal-gallery-results.json` 为准，不能由合成 CI fixture 代替。第一版现已冻结，项目所有者应先用于真实拍摄准备；正式 PR-02—PR-08 仍暂停，正式 PR-02 尚未开始。正式变化必须使用任务独立分支和独立 PR；未经明确授权不得合并或部署。恢复任何路线仍需新的明确授权。

@@ -4,7 +4,7 @@ import http from 'node:http'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-import { liveGate, TOOL_ROOT } from '../config.js'
+import { officialLiveGate, TOOL_ROOT } from '../config.js'
 import { resolveMediaObject } from '../gallery/read-model.js'
 import { createDefaultRuntime } from './runtime-adapter.js'
 
@@ -113,6 +113,8 @@ export function createJobManager(config, runtime) {
     return {
       runId: job.runId,
       query: job.query,
+      characterSlug: job.characterSlug || 'cheshire',
+      sourceMode: 'official_sources',
       status: job.status,
       startedAt: job.startedAt,
       completedAt: job.completedAt || null,
@@ -130,7 +132,18 @@ export function createJobManager(config, runtime) {
     const query = typeof input.query === 'string' ? input.query.trim() : ''
     if (!query) return { accepted: false, statusCode: 400, error: 'query_required' }
 
-    const gate = liveGate(config, { interactiveConfirmation: input.confirmSourcePermission === true })
+    if (input.characterUrl || (input.sourceMode && input.sourceMode !== 'official_sources')) {
+      return {
+        accepted: false,
+        statusCode: 410,
+        error: 'hpoi_live_source_disabled',
+        notice: 'Hpoi live access is permanently disabled; use official_sources.',
+      }
+    }
+
+    const gate = officialLiveGate(config, {
+      interactiveConfirmation: input.confirmOfficialSourceAccess === true,
+    })
     if (!gate.allowed) {
       last = {
         runId: null,
@@ -155,26 +168,46 @@ export function createJobManager(config, runtime) {
     const job = {
       runId: runIdFor(query),
       query,
+      characterSlug: 'cheshire',
+      sourceMode: 'official_sources',
       status: 'running',
       startedAt: new Date().toISOString(),
       progress: { pages: 0, products: 0, images: 0, failures: 0 },
       controller,
     }
-    job.galleryUrl = `/gallery/${encodeURIComponent(job.runId)}`
+    job.galleryUrl = '/gallery/characters/cheshire'
     active = job
     last = job
     const options = {
       query,
-      characterUrl: typeof input.characterUrl === 'string' ? input.characterUrl.trim() || null : null,
+      sourceMode: 'official_sources',
       limits: {
-        maxListPages: boundedInteger(input.maxListPages, config.maxListPages, 1, config.maxListPages),
-        maxProducts: boundedInteger(input.maxProducts, config.maxProducts, 1, config.maxProducts),
+        searchLimit: boundedInteger(
+          input.maxSearchResults,
+          config.officialMaxSearchResultsPerQuery,
+          1,
+          config.officialMaxSearchResultsPerQuery,
+        ),
+        maxCandidates: boundedInteger(
+          input.maxCandidates,
+          config.officialMaxCandidates,
+          1,
+          config.officialMaxCandidates,
+        ),
+        maxProducts: boundedInteger(
+          input.maxProducts,
+          config.officialMaxProducts,
+          1,
+          config.officialMaxProducts,
+        ),
         maxImagesPerProduct: boundedInteger(
           input.maxImagesPerProduct,
-          config.maxImagesPerProduct,
+          config.officialMaxImagesPerProduct,
           1,
-          config.maxImagesPerProduct,
+          config.officialMaxImagesPerProduct,
         ),
+        requestDelayMs: config.officialRequestDelayMs,
+        imageMaxBytes: config.imageMaxBytes,
       },
       requestedRunId: job.runId,
       signal: controller.signal,
@@ -255,7 +288,14 @@ export function createPersonalGalleryServer({ config, runtime = createDefaultRun
         return sendFile(response, path.join(STATIC_ROOT, name), contentType)
       }
       if (method === 'GET' && url.pathname === '/api/status') {
-        return sendJson(response, 200, { active: jobs.status(), recentRuns: await runtime.listRecentRuns(10) })
+        const sourceStatus = typeof runtime.readSourceStatus === 'function'
+          ? await runtime.readSourceStatus()
+          : null
+        return sendJson(response, 200, {
+          active: jobs.status(),
+          recentRuns: await runtime.listRecentRuns(10),
+          sourceStatus,
+        })
       }
       if (method === 'POST' && url.pathname === '/api/runs') {
         const result = await jobs.start(await readBody(request))

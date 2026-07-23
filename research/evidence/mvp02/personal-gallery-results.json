@@ -1,0 +1,496 @@
+{
+  "schemaVersion": 1,
+  "task": "MVP-02",
+  "overallStatus": "pass",
+  "generatedAt": "2026-07-22T21:26:50+08:00",
+  "baseline": {
+    "pr11MergeSha": "65231c0187cf49c7a2f4ea1c722bf16dc1d11133",
+    "branch": "feat/mvp-02-cheshire-official-gallery"
+  },
+  "sourcePolicy": {
+    "hpoi": {
+      "status": "blocked_by_source",
+      "stopReason": "captcha",
+      "retryAllowed": false,
+      "consecutiveBlockedRuns": 3,
+      "blockedAt": "2026-07-16T18:13:03.887Z",
+      "expectedTaskRequests": 0,
+      "actualTaskRequests": 0,
+      "requestValidationStatus": "pass"
+    },
+    "official": {
+      "mode": "firecrawl_search_v2_and_scrape",
+      "searchSources": [
+        "web"
+      ],
+      "excludedDomains": [
+        "hpoi.net",
+        "www.hpoi.net"
+      ],
+      "allowedPageHosts": [
+        "goodsmile.com",
+        "www.goodsmile.com",
+        "goodsmilearts.com",
+        "www.goodsmilearts.com",
+        "alter-web.jp",
+        "www.alter-web.jp"
+      ],
+      "queryLanguages": [
+        "en",
+        "ja",
+        "zh-CN"
+      ],
+      "queries": [
+        "\"Azur Lane\" Cheshire figure",
+        "\"Azur Lane\" Cheshire scale figure",
+        "アズールレーン チェシャー フィギュア",
+        "碧蓝航线 柴郡 手办",
+        "碧蓝航线 柴郡 比例手办"
+      ],
+      "forbiddenModes": [
+        "crawl",
+        "agent",
+        "browser_actions",
+        "enhanced_proxy",
+        "location_spoofing",
+        "cookie_injection",
+        "login",
+        "captcha_solving"
+      ]
+    }
+  },
+  "taskNetworkTotals": {
+    "scope": "all_actual_MVP-02_live_network_activity",
+    "firecrawlSearchRequests": 35,
+    "firecrawlScrapeRequests": 13,
+    "firecrawlRequestsTotal": 48,
+    "firecrawlCredits": 367,
+    "creditAccounting": {
+      "searchCreditsEstimatedUpperBound": 350,
+      "scrapeCreditsReported": 17
+    },
+    "acceptancePair": {
+      "searchRequests": 10,
+      "scrapeRequests": 4,
+      "credits": 104
+    },
+    "preferencePersistenceValidation": {
+      "searchRequests": 5,
+      "scrapeRequests": 2,
+      "credits": 52
+    },
+    "finalPinnedTransportPair": {
+      "searchRequests": 10,
+      "scrapeRequests": 4,
+      "credits": 104
+    },
+    "diagnosticRunsBeforeAcceptance": {
+      "searchRequests": 10,
+      "scrapeRequests": 3,
+      "credits": 107
+    },
+    "sdkTransportConfigurationDiagnostic": {
+      "actualHttpRequests": 0,
+      "excludedEstimatedCredits": 150,
+      "reason": "The SDK had been configured with maxRetries=0, which performed no transport attempt; the local estimate is not real usage."
+    },
+    "hpoiRequests": 0
+  },
+  "offlineValidation": {
+    "status": "pass",
+    "githubCiStatus": "pass_on_pre_correction_head_final_head_required_before_merge",
+    "ciRunId": 29605608880,
+    "ciHeadSha": "ffbe0e12f51236835dd4fa89dd5a9f9a2c55571c",
+    "hpoiRequests": 0,
+    "firecrawlRequests": 0,
+    "officialExternalRequests": 0,
+    "syntheticFixturesOnly": true,
+    "tests": {
+      "total": 150,
+      "passed": 150,
+      "failed": 0
+    },
+    "browser": {
+      "engine": "project_local_playwright_chromium",
+      "status": "pass",
+      "tests": 1,
+      "productCards": 2,
+      "localImages": 6,
+      "responsiveColumns": [
+        4,
+        3,
+        2
+      ],
+      "lightbox": true,
+      "zoom": true,
+      "crossProductNavigation": true,
+      "preferencePersistence": true,
+      "externalRequests": 0
+    }
+  },
+  "realRuns": {
+    "firstCompleteGallery": {
+      "status": "pass",
+      "runId": "2026-07-17T18-02-13-414Z-d33bdfe2-d398-45bd-86e7-18ae8de5d169",
+      "startedAt": "2026-07-17T18:02:13.414Z",
+      "completedAt": "2026-07-17T18:02:54.269Z",
+      "queriesExecuted": 5,
+      "searchCandidates": 49,
+      "allowlistHits": 2,
+      "unreviewedResultRecords": 47,
+      "unreviewedUniqueDomains": 31,
+      "unreviewedUniqueUrls": 44,
+      "seedUrls": 0,
+      "productsDiscovered": 2,
+      "productsParsed": 2,
+      "productsFailed": 0,
+      "newProducts": 1,
+      "unchangedProducts": 0,
+      "changedProducts": 1,
+      "newProductContext": "A prior partial diagnostic had already retained the Good Smile record, so this complete run correctly classified it as changed instead of new.",
+      "officialProducts": 2,
+      "alterProducts": 1,
+      "goodSmileProducts": 1,
+      "differentDesigns": 2,
+      "likelyScale": 1,
+      "likelyPrize": 0,
+      "unknown": 1,
+      "other": 0,
+      "imageUrls": 11,
+      "imagesDownloaded": 11,
+      "newSha256Objects": 9,
+      "galleryUniqueSha256Objects": 10,
+      "duplicateImages": 2,
+      "firecrawlSearchRequests": 5,
+      "firecrawlScrapeRequests": 2,
+      "firecrawlRequestsTotal": 7,
+      "firecrawlCredits": 52,
+      "hpoiRequests": 0,
+      "galleryUrl": "http://127.0.0.1:4317/gallery/characters/cheshire"
+    },
+    "secondIdempotencyRun": {
+      "status": "pass",
+      "runId": "2026-07-17T18-03-27-418Z-e745839a-43ad-4bcc-a8fa-4a349f0d092d",
+      "sameConfigurationAsFirst": true,
+      "newProducts": 0,
+      "newObjects": 0,
+      "unchangedProducts": 2,
+      "changedProducts": 0,
+      "duplicateImages": 11,
+      "preferencesPreserved": "not_applicable_empty_preferences",
+      "historicalRunPreserved": true,
+      "firecrawlSearchRequests": 5,
+      "firecrawlScrapeRequests": 2,
+      "firecrawlRequestsTotal": 7,
+      "firecrawlCredits": 52,
+      "hpoiRequests": 0
+    },
+    "preferencePersistenceRun": {
+      "status": "pass",
+      "runId": "2026-07-17T18-13-16-967Z-a8215d46-dc82-46f1-85a8-bad3c79babf5",
+      "sameConfigurationAsAcceptancePair": true,
+      "newProducts": 0,
+      "newObjects": 0,
+      "unchangedProducts": 2,
+      "changedProducts": 0,
+      "excludedImagePreservedDuringCollection": true,
+      "preferredCoverPreserved": true,
+      "manualNotePreserved": true,
+      "preferencesFileHashUnchanged": true,
+      "exclusionRestoredAfterValidation": true,
+      "firecrawlSearchRequests": 5,
+      "firecrawlScrapeRequests": 2,
+      "firecrawlCredits": 52,
+      "hpoiRequests": 0
+    },
+    "pinnedTransportRepresentationRun": {
+      "status": "pass_with_recorded_representation_change",
+      "runId": "2026-07-17T18-32-03-996Z-42affde3-2991-43a6-81aa-d58d5b29ffe4",
+      "productsNew": 0,
+      "productsUnchanged": 2,
+      "productsChanged": 0,
+      "newSha256Objects": 9,
+      "duplicateImages": 2,
+      "reason": "The hardened pinned HTTPS transport explicitly negotiated WebP for the same ten Good Smile image URLs that the earlier fetch transport had returned as JPEG. SHA-256 correctly retained the byte-distinct representations; ALTER remained unchanged.",
+      "firecrawlSearchRequests": 5,
+      "firecrawlScrapeRequests": 2,
+      "firecrawlCredits": 52,
+      "hpoiRequests": 0
+    },
+    "finalPinnedTransportIdempotencyRun": {
+      "status": "pass",
+      "runId": "2026-07-17T18-38-04-848Z-d30b630c-1804-4fe5-b1b4-513bc531edbd",
+      "startedAt": "2026-07-17T18:38:04.848Z",
+      "completedAt": "2026-07-17T18:38:24.977Z",
+      "sameFinalCodeAndConfigurationAsPriorRun": true,
+      "searchCandidates": 48,
+      "allowlistHits": 2,
+      "unreviewedResultRecords": 46,
+      "productsNew": 0,
+      "productsUnchanged": 2,
+      "productsChanged": 0,
+      "newSha256Objects": 0,
+      "duplicateImages": 11,
+      "firecrawlSearchRequests": 5,
+      "firecrawlScrapeRequests": 2,
+      "firecrawlCredits": 52,
+      "hpoiRequests": 0
+    }
+  },
+  "realGallery": {
+    "status": "pass",
+    "galleryUrl": "http://127.0.0.1:4317/gallery/characters/cheshire",
+    "sourceMode": "official_sources",
+    "officialProductCards": 2,
+    "localImages": 19,
+    "differentDesigns": 2,
+    "byteDistinctRepresentationSummary": {
+      "goodSmileJpegObjects": 9,
+      "goodSmileWebpObjects": 9,
+      "alterJpegObjects": 1,
+      "knownCrossFormatVisualPairs": 9,
+      "deduplicationBoundary": "SHA-256 byte identity; cross-format perceptual deduplication is intentionally outside MVP-02"
+    },
+    "allImageSourcesUseLocalMediaRoutes": true,
+    "localMediaHttpValidation": {
+      "status": "pass",
+      "uniqueRoutesChecked": 19,
+      "allReturnedHttp200": true,
+      "allRequestsUsedLoopback": true,
+      "mimeTypes": [
+        "image/jpeg",
+        "image/webp"
+      ]
+    },
+    "officialProductDomains": [
+      "goodsmile.com",
+      "alter-web.jp"
+    ],
+    "hpoiStatusVisible": "blocked_by_source"
+  },
+  "realBrowserValidation": {
+    "status": "pass",
+    "definition": "System-installed Google Chrome Stable uses a temporary clean profile to validate the real local Cheshire gallery, interactions, preference persistence, responsive layout, and loopback-only network boundary.",
+    "validatedAt": "2026-07-22T21:26:50+08:00",
+    "runner": "tools/personal-gallery-mvp/scripts/validate-real-system-chrome.mjs",
+    "browser": {
+      "product": "Google Chrome",
+      "executable": "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+      "version": "150.0.7871.129",
+      "headed": true,
+      "systemChrome": true,
+      "bundledChromiumUsed": false,
+      "temporaryCleanProfile": true,
+      "temporaryProfileDeleted": true,
+      "extensionsLoaded": 0,
+      "userProfileRead": false
+    },
+    "galleryUrl": "http://127.0.0.1:4317/gallery/characters/cheshire",
+    "gallery": {
+      "productCards": 2,
+      "localObjects": 19,
+      "localImages": 19,
+      "mediaHttp": {
+        "checked": 19,
+        "http200": 19,
+        "failures": 0
+      },
+      "manufacturers": {
+        "alter": true,
+        "goodSmile": true,
+        "separateCards": true
+      }
+    },
+    "network": {
+      "loopbackRequests": 176,
+      "loopbackWebSockets": 0,
+      "externalRequests": 0,
+      "externalHttpRequests": 0,
+      "externalWebSocketRequests": 0,
+      "hpoiRequests": 0,
+      "firecrawlRequests": 0,
+      "officialSourceRequests": 0,
+      "otherExternalRequests": 0,
+      "applicationNavigationGuarded": true
+    },
+    "responsive": [
+      {
+        "viewport": {
+          "width": 1280,
+          "height": 900
+        },
+        "expected": 4,
+        "actual": 4,
+        "status": "pass"
+      },
+      {
+        "viewport": {
+          "width": 900,
+          "height": 900
+        },
+        "expected": 3,
+        "actual": 3,
+        "status": "pass"
+      },
+      {
+        "viewport": {
+          "width": 600,
+          "height": 900
+        },
+        "expected": 2,
+        "actual": 2,
+        "status": "pass"
+      }
+    ],
+    "interactions": {
+      "open": true,
+      "fit": true,
+      "actualSize": true,
+      "zoomIn": true,
+      "zoomOut": true,
+      "rightAndLeft": true,
+      "crossProductNavigation": true,
+      "firstAndLastBoundaries": true,
+      "escapeClose": true,
+      "excludeRestore": true,
+      "preferredCoverPersisted": true,
+      "manualNotePersisted": true,
+      "originalBytesRestored": true
+    },
+    "artifacts": {
+      "screenshots": 0,
+      "videos": 0,
+      "traces": 0
+    },
+    "resultDigest": "5ad69ff6cdfe56d7b7248f9118e193c1dc5d4ff1aaa85b7df16df83928e36a5d"
+  },
+  "repositorySafety": {
+    "status": "pass",
+    "apiKeyLeak": false,
+    "authorizationHeaderLeak": false,
+    "cookieLeak": false,
+    "realHtmlTracked": false,
+    "realImagesTracked": false,
+    "runtimeTracked": false,
+    "formalApplicationImportsTool": false,
+    "largeFilesTracked": false,
+    "binaryFilesTracked": false,
+    "databaseOrDumpTracked": false,
+    "generatedBuildOutputTracked": false,
+    "unresolvedMarkers": 0,
+    "markdownLocalLinkFailures": 0,
+    "npmAuditHigh": 0,
+    "npmAuditCritical": 0,
+    "gitDiffCheck": "pass"
+  },
+  "gates": [
+    {
+      "id": "MVP02-01",
+      "name": "Hpoi frozen block and zero requests",
+      "status": "pass",
+      "evidence": [
+        "Frozen blocked_by_source/captcha status with retryAllowed=false",
+        "0 Hpoi requests across all MVP-02 live and offline activity"
+      ]
+    },
+    {
+      "id": "MVP02-02",
+      "name": "Firecrawl Search v2 excludes Hpoi",
+      "status": "pass",
+      "evidence": [
+        "Search uses sources=[web] and excludes hpoi.net plus www.hpoi.net",
+        "Unit and source-policy checks passed"
+      ]
+    },
+    {
+      "id": "MVP02-03",
+      "name": "official domain allowlist",
+      "status": "pass",
+      "evidence": [
+        "Only Good Smile and ALTER allowlist pages were scraped",
+        "The final accepted run had 48 candidates: 2 allowlist hits and 46 non-allowlisted records retained only as unreviewed metadata; the earlier 49/2/47 run remains in history"
+      ]
+    },
+    {
+      "id": "MVP02-04",
+      "name": "multilingual discovery",
+      "status": "pass",
+      "evidence": [
+        "Five English, Japanese, and Simplified Chinese queries executed in each accepted run"
+      ]
+    },
+    {
+      "id": "MVP02-05",
+      "name": "official product page validation",
+      "status": "pass",
+      "evidence": [
+        "Two allowlisted Cheshire/Azur Lane pages passed deterministic authenticity checks"
+      ]
+    },
+    {
+      "id": "MVP02-06",
+      "name": "deterministic official product parsing",
+      "status": "pass",
+      "evidence": [
+        "Good Smile and ALTER products parsed successfully; 0 product failures"
+      ]
+    },
+    {
+      "id": "MVP02-07",
+      "name": "public official image download and validation",
+      "status": "pass",
+      "evidence": [
+        "11 public page image URLs downloaded and validated",
+        "19 byte-distinct product-linked SHA-256 objects are served locally",
+        "Nine Good Smile JPEG/WebP representation pairs are retained because MVP-02 deduplicates exact bytes, not perceptual similarity"
+      ]
+    },
+    {
+      "id": "MVP02-08",
+      "name": "product and content-addressed image idempotency",
+      "status": "pass",
+      "evidence": [
+        "The final pinned-transport repeat created 0 products and 0 objects; 2 products were unchanged",
+        "The immediately preceding transport transition created 9 WebP objects for URLs previously returned as JPEG, and that representation change is recorded explicitly"
+      ]
+    },
+    {
+      "id": "MVP02-09",
+      "name": "first real Cheshire gallery",
+      "status": "pass",
+      "evidence": [
+        "2 official products, 2 different designs, 19 byte-distinct local image objects, stable character URL"
+      ]
+    },
+    {
+      "id": "MVP02-10",
+      "name": "second real run idempotency and preference preservation",
+      "status": "pass",
+      "evidence": [
+        "Second accepted run proved product and object idempotency",
+        "A subsequent same-configuration collection preserved non-empty exclusion, preferred cover, and note"
+      ]
+    },
+    {
+      "id": "MVP02-11",
+      "name": "system Chrome real local gallery acceptance",
+      "status": "pass",
+      "evidence": [
+        "System Google Chrome 150 used a temporary clean profile; no extension or user profile was required",
+        "2 real product cards and 19 real local objects returned 19/19 HTTP 200 responses",
+        "4/3/2 layout, lightbox, fit/actual, zoom, cross-product navigation, boundaries, Esc, exclusion restore, cover and note persistence passed",
+        "Browser external requests were 0; original preferences were byte-restored and the temporary profile was deleted",
+        "Offline Playwright interaction coverage remains synthetic and is not substituted for this real acceptance"
+      ]
+    },
+    {
+      "id": "MVP02-12",
+      "name": "Git, runtime, and formal application isolation",
+      "status": "pass",
+      "evidence": [
+        "No tracked runtime, credentials, real images, real pages, binaries, databases, dumps, or build output",
+        "Formal application import boundary and Markdown links passed"
+      ]
+    }
+  ]
+}

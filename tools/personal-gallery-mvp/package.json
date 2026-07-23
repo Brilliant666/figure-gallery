@@ -15,6 +15,7 @@
     "clean:runtime": "node src/cli/clean-runtime.js",
     "test": "node scripts/run-unit-tests.mjs",
     "test:e2e": "playwright test",
+    "validate:chrome:real": "node scripts/validate-real-system-chrome.mjs",
     "check": "node scripts/check-source.mjs",
     "ci:summary": "node scripts/write-ci-summary.mjs"
   },
