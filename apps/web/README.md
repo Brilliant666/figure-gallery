@@ -10,7 +10,7 @@ and public-read features remain unimplemented.
 ## Runtime baseline
 
 - Node.js `22.x` (`>=22.12.0 <23`) and npm with `package-lock.json`;
-- Payload CMS `3.86.0`, Next.js `16.2.10`, React `19.2.7`, and TypeScript;
+- Payload CMS `3.86.0`, Next.js `16.2.11`, React `19.2.7`, and TypeScript;
 - PostgreSQL through `@payloadcms/db-postgres@3.86.0`; SQLite is not a runtime option;
 - S3-compatible storage through `@payloadcms/storage-s3@3.86.0` in production;
 - `.next/standalone` as the production-shaped output.

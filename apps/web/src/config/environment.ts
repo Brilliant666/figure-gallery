@@ -99,6 +99,17 @@ const isForbiddenSourceHostname = (hostname: string): boolean => {
   return normalized === forbiddenDomain || normalized.endsWith(`.${forbiddenDomain}`)
 }
 
+const isCloudMetadataHostname = (hostname: string): boolean => {
+  const normalized = hostname
+    .toLowerCase()
+    .replace(/^\[|\]$/g, '')
+    .replace(/\.+$/g, '')
+  return normalized === '169.254.169.254' || normalized === 'fd00:ec2::254'
+}
+
+const hasAmbiguousHttpUrlSyntax = (value: string): boolean =>
+  value.includes('\\') || /%(?:2e|2f|40|5c)/i.test(value)
+
 const validateDatabaseUri = (value: string, issues: EnvironmentIssue[]): void => {
   try {
     const parsed = new URL(value)
@@ -114,6 +125,12 @@ const validateDatabaseUri = (value: string, issues: EnvironmentIssue[]): void =>
 }
 
 const validateS3Endpoint = (value: string, issues: EnvironmentIssue[]): void => {
+  if (hasAmbiguousHttpUrlSyntax(value)) {
+    issues.push({
+      reason: 'must not contain ambiguous authority or path encoding',
+      variable: 'S3_ENDPOINT',
+    })
+  }
   try {
     const parsed = new URL(value)
     if (parsed.username || parsed.password || parsed.search || parsed.hash) {
@@ -124,6 +141,12 @@ const validateS3Endpoint = (value: string, issues: EnvironmentIssue[]): void => 
     }
     if (isForbiddenSourceHostname(parsed.hostname)) {
       issues.push({ reason: 'points to a forbidden external source', variable: 'S3_ENDPOINT' })
+    }
+    if (isCloudMetadataHostname(parsed.hostname)) {
+      issues.push({ reason: 'points to a cloud metadata address', variable: 'S3_ENDPOINT' })
+    }
+    if (parsed.pathname !== '/') {
+      issues.push({ reason: 'must not contain an endpoint path', variable: 'S3_ENDPOINT' })
     }
     if (
       parsed.protocol !== 'https:' &&
