@@ -90,10 +90,10 @@ PR-00 只为尚未实现的模块建立最小目录说明或空入口；不得�
 | 类别 | 初始 pin/边界 |
 | --- | --- |
 | Runtime | Node.js `22.x`，`engines` 至少 `>=22.12.0 <23`；npm，提交 `package-lock.json` |
-| Core | `payload@3.86.0`、`@payloadcms/next@3.86.0`、`next@16.2.10` |
+| Core | `payload@3.86.0`、`@payloadcms/next@3.86.0`、`next@16.2.11` |
 | UI | `react@19.2.7`、`react-dom@19.2.7` |
 | Database | `@payloadcms/db-postgres@3.86.0`；正式配置不得依赖 SQLite |
-| Media | `@payloadcms/storage-s3@3.86.0`、`sharp@0.34.5` |
+| Media | `@payloadcms/storage-s3@3.86.0`、`sharp@0.35.3` |
 | Language | TypeScript；具体 patch 由脚手架锁文件记录 |
 | Quality | ESLint、Vitest、Playwright；版本由 PR-00 锁定并在 CI 验证 |
 
@@ -124,7 +124,7 @@ Pop-Location
 
 ```powershell
 npm ci
-npm install --save-exact @payloadcms/storage-s3@3.86.0 sharp@0.34.5
+npm install --save-exact @payloadcms/storage-s3@3.86.0 sharp@0.35.3
 npm run typecheck
 npm run lint
 npm test -- --run

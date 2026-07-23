@@ -16,7 +16,7 @@ PR-00 正式工程基线和 PR-01 核心目录模型均已进入 `main`，对应
 - npm、`package-lock.json`、ESLint、TypeScript typecheck、Vitest、Playwright 和 GitHub Actions；
 - 目标生产输出为 `.next/standalone`；PR-00 为正式骨架重新建立 CI 与本地 clean-start 验证，但不执行部署。
 
-上述 `x` 表示已接受的兼容版本线，不代表任意补丁可免审升级。PR-00 锁定的精确基线是 Payload `3.86.0`、Next.js `16.2.10`、React `19.2.7`、React DOM `19.2.7` 与 Sharp `0.34.5`；采用其他补丁前须通过独立依赖升级和生产门禁。
+上述 `x` 表示已接受的兼容版本线，不代表任意补丁可免审升级。当前精确基线是 Payload `3.86.0`、Next.js `16.2.11`、React `19.2.7`、React DOM `19.2.7` 与 Sharp `0.35.3`；采用其他补丁前须通过独立依赖升级和生产门禁。
 
 ## 第一阶段
 
