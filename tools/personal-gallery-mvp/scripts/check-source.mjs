@@ -142,14 +142,16 @@ if (
   browserEvidence.browser?.temporaryProfileDeleted !== true ||
   browserEvidence.browser?.extensionsLoaded !== 0 ||
   browserEvidence.browser?.userProfileRead !== false ||
-  Number(browserEvidence.gallery?.productCards) !== 2 ||
-  Number(browserEvidence.gallery?.localObjects) < 19 ||
-  Number(browserEvidence.gallery?.localImages) < 19 ||
-  Number(browserEvidence.gallery?.mediaHttp?.checked) < 19 ||
-  Number(browserEvidence.gallery?.mediaHttp?.http200) < 19 ||
+  Number(browserEvidence.gallery?.productCards) !== 7 ||
+  Number(browserEvidence.gallery?.localObjects) < 56 ||
+  Number(browserEvidence.gallery?.localImages) < 56 ||
+  Number(browserEvidence.gallery?.mediaHttp?.checked) < 56 ||
+  Number(browserEvidence.gallery?.mediaHttp?.http200) < 56 ||
   Number(browserEvidence.gallery?.mediaHttp?.failures) !== 0 ||
   browserEvidence.gallery?.manufacturers?.alter !== true ||
   browserEvidence.gallery?.manufacturers?.goodSmile !== true ||
+  browserEvidence.gallery?.manufacturers?.apex !== true ||
+  browserEvidence.gallery?.manufacturers?.amiami !== true ||
   browserEvidence.gallery?.manufacturers?.separateCards !== true ||
   !Array.isArray(browserEvidence.responsive) ||
   browserEvidence.responsive.length !== 3 ||
@@ -177,8 +179,14 @@ if (
   Number(mvp02Evidence.taskNetworkTotals?.hpoiRequests) !== 0 ||
   Number(mvp02Evidence.realRuns?.finalPinnedTransportIdempotencyRun?.productsNew) !== 0 ||
   Number(mvp02Evidence.realRuns?.finalPinnedTransportIdempotencyRun?.newSha256Objects) !== 0 ||
-  Number(mvp02Evidence.realGallery?.officialProductCards) !== 2 ||
-  Number(mvp02Evidence.realGallery?.localImages) < 19
+  Number(mvp02Evidence.coverageExpansion?.finalPair?.secondRun?.productsNew) !== 0 ||
+  Number(mvp02Evidence.coverageExpansion?.finalPair?.secondRun?.productsUnchanged) !== 7 ||
+  Number(mvp02Evidence.coverageExpansion?.finalPair?.secondRun?.productsChanged) !== 0 ||
+  Number(mvp02Evidence.coverageExpansion?.finalPair?.secondRun?.newSha256Objects) !== 0 ||
+  Number(mvp02Evidence.coverageExpansion?.finalPair?.secondRun?.imageFailures) !== 3 ||
+  Number(mvp02Evidence.realGallery?.officialProductCards) !== 7 ||
+  Number(mvp02Evidence.realGallery?.localImages) < 56 ||
+  Number(mvp02Evidence.realGallery?.knownCurrentFailures?.count) !== 3
 ) {
   fail('The committed MVP-02 result does not satisfy the corrected MVP02-11 and all-pass gate contract.')
 }
@@ -225,19 +233,32 @@ if (
   fail(`Official Firecrawl methods must be exactly search and scrape: ${officialClientMethods.join(', ')}`)
 }
 
-const expectedOfficialHosts = [
+const expectedManufacturerHosts = [
   'goodsmile.com',
   'www.goodsmile.com',
   'goodsmilearts.com',
   'www.goodsmilearts.com',
   'alter-web.jp',
   'www.alter-web.jp',
+  'apex-toys.com',
+  'www.apex-toys.com',
 ]
-const officialHostsBlock = officialUrlsText.match(/const OFFICIAL_HOSTS = new Set\(\[([\s\S]*?)\]\)/)
-const actualOfficialHosts = officialHostsBlock
-  ? [...officialHostsBlock[1].matchAll(/'([^']+)'/g)].map((match) => match[1])
+const expectedDistributorHosts = [
+  'amiami.jp',
+  'www.amiami.jp',
+]
+const manufacturerHostsBlock = officialUrlsText.match(/const OFFICIAL_MANUFACTURER_HOSTS = new Set\(\[([\s\S]*?)\]\)/)
+const distributorHostsBlock = officialUrlsText.match(/const OFFICIAL_DISTRIBUTOR_HOSTS = new Set\(\[([\s\S]*?)\]\)/)
+const actualManufacturerHosts = manufacturerHostsBlock
+  ? [...manufacturerHostsBlock[1].matchAll(/'([^']+)'/g)].map((match) => match[1])
   : []
-if (JSON.stringify(actualOfficialHosts) !== JSON.stringify(expectedOfficialHosts)) {
+const actualDistributorHosts = distributorHostsBlock
+  ? [...distributorHostsBlock[1].matchAll(/'([^']+)'/g)].map((match) => match[1])
+  : []
+if (
+  JSON.stringify(actualManufacturerHosts) !== JSON.stringify(expectedManufacturerHosts) ||
+  JSON.stringify(actualDistributorHosts) !== JSON.stringify(expectedDistributorHosts)
+) {
   fail('The MVP-02 official product-page allowlist changed.')
 }
 

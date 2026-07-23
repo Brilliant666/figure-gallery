@@ -3,6 +3,7 @@ import test from 'node:test'
 
 import {
   OFFICIAL_ALLOWED_PAGE_HOSTS,
+  OFFICIAL_SEARCH_DISCOVERABLE_HOSTS,
   canonicalOfficialDomain,
   classifyOfficialSearchResult,
   isAllowedOfficialProductUrl,
@@ -20,6 +21,10 @@ test('official URL allowlist is exact and Hpoi is always denied', () => {
     'www.goodsmilearts.com',
     'alter-web.jp',
     'www.alter-web.jp',
+    'apex-toys.com',
+    'www.apex-toys.com',
+    'amiami.jp',
+    'www.amiami.jp',
   ])
   for (const host of OFFICIAL_ALLOWED_PAGE_HOSTS) {
     assert.equal(isAllowedOfficialProductUrl(`https://${host}/products/synthetic-1`), true)
@@ -32,6 +37,9 @@ test('official URL allowlist is exact and Hpoi is always denied', () => {
   assert.equal(classifyOfficialSearchResult('https://www.hpoi.net/hobby/1').status, 'hpoi_denied')
   assert.equal(classifyOfficialSearchResult('https://img.hpoi.net.cn/hobby/1').status, 'hpoi_denied')
   assert.equal(classifyOfficialSearchResult('https://mirror.example/hpoi/1').status, 'unreviewed_domain')
+  assert.equal(classifyOfficialSearchResult('https://www.amiami.jp/top/detail/detail?gcode=FIGURE-1').status, 'seed_only_domain')
+  assert.equal(classifyOfficialSearchResult('https://apex-toys.com/productinfo/1.html').status, 'allowed')
+  assert.equal(OFFICIAL_SEARCH_DISCOVERABLE_HOSTS.includes('www.amiami.jp'), false)
 })
 
 test('unreviewed search-result URLs cannot persist credentials, sensitive query values, or tracking fragments', () => {

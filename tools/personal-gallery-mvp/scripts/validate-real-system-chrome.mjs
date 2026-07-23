@@ -140,8 +140,14 @@ async function validateRuntime(runtimeRoot) {
     }
     assert.equal(gallery.status, 'completed', 'The stable Cheshire gallery is not complete.')
     assert.equal(gallery.sourceMode, 'official_sources', 'The stable gallery is not official-source mode.')
-    assert.equal(gallery.products.length, 2, 'The stable gallery must contain exactly two products.')
-    assert.equal(gallery.failures.length, 0, 'The stable gallery contains a current failure.')
+    assert.equal(gallery.products.length, 7, 'The stable gallery must contain exactly seven reviewed products.')
+    assert.equal(gallery.failures.length, 3, 'The stable gallery must retain the three known APEX image failures.')
+    assert.equal(
+      gallery.failures.every((failure) =>
+        failure.kind === 'image' && /HTTP 404/u.test(failure.message || '')),
+      true,
+      'Only the three known APEX public-image HTTP 404 failures may remain.',
+    )
 
     const referencedSha256 = new Set(
       gallery.products.flatMap((product) => product.images.map((image) => image.sha256)),
@@ -258,7 +264,7 @@ function requestCategory(url) {
   if (hostname === 'hpoi.net' || hostname.endsWith('.hpoi.net')) return 'hpoiRequests'
   if (hostname === 'api.firecrawl.dev' || hostname.endsWith('.firecrawl.dev')) return 'firecrawlRequests'
   if (
-    ['goodsmile.com', 'goodsmilearts.com', 'alter-web.jp'].some(
+    ['goodsmile.com', 'goodsmilearts.com', 'alter-web.jp', 'apex-toys.com', 'amiami.jp'].some(
       (domain) => hostname === domain || hostname.endsWith(`.${domain}`),
     )
   ) return 'officialSourceRequests'
@@ -318,12 +324,16 @@ async function validateResponsiveColumns(page) {
 }
 
 async function validateLightbox(page) {
+  const totalImages = await page.locator('.image-open').count()
+  assert.ok(totalImages > 1, 'The real gallery needs multiple images for navigation validation.')
   await page.locator('.image-open').first().click()
   const lightbox = page.locator('#lightbox')
   await lightbox.waitFor({ state: 'visible' })
   assert.equal(await page.locator('#lightbox-previous').isDisabled(), true)
   const firstPosition = (await page.locator('#lightbox-position').textContent()).trim()
-  assert.match(firstPosition, /^1\s*\/\s*19$/)
+  const firstPositionMatch = /^1\s*\/\s*(\d+)$/u.exec(firstPosition)
+  assert.ok(firstPositionMatch, 'The lightbox position is not readable.')
+  assert.equal(Number(firstPositionMatch[1]), totalImages)
 
   await page.locator('#zoom-fit').click()
   assert.equal((await page.locator('#zoom-value').textContent()).trim(), '100%')
@@ -350,7 +360,7 @@ async function validateLightbox(page) {
   assert.equal(await page.locator('#lightbox-image').getAttribute('src'), firstImageSource)
 
   let crossedProduct = false
-  for (let index = 0; index < 19; index += 1) {
+  for (let index = 0; index < totalImages; index += 1) {
     if ((await page.locator('#lightbox-product-title').textContent()).trim() !== firstTitle) {
       crossedProduct = true
       break
@@ -515,14 +525,19 @@ async function performBrowserAcceptance(context, runtime) {
   assert.equal((await page.locator('#gallery-title').textContent()).trim(), '柴郡')
   assert.equal((await page.locator('#source-mode').textContent()).trim(), 'Official sources')
   assert.match(await page.locator('#hpoi-source-status').textContent(), /Blocked by captcha/i)
-  assert.equal(await page.locator('.product-card').count(), 2)
+  const productCardCount = await page.locator('.product-card').count()
+  assert.equal(productCardCount, 7)
   const cardText = await page.locator('.product-card').allTextContents()
   const alterCardIndex = cardText.findIndex((value) => /ALTER/i.test(value))
   const goodSmileCardIndex = cardText.findIndex((value) => /Good Smile/i.test(value))
+  const apexCardIndex = cardText.findIndex((value) => /APEX/i.test(value))
+  const amiamiCardIndex = cardText.findIndex((value) => /AniGame|あみあみ/i.test(value))
   assert.ok(alterCardIndex >= 0, 'The ALTER product card is missing.')
   assert.ok(goodSmileCardIndex >= 0, 'The Good Smile product card is missing.')
+  assert.ok(apexCardIndex >= 0, 'The APEX product card is missing.')
+  assert.ok(amiamiCardIndex >= 0, 'The AmiAmi/AniGame product card is missing.')
   assert.notEqual(alterCardIndex, goodSmileCardIndex, 'ALTER and Good Smile must be separate product cards.')
-  assert.equal((await page.locator('#failure-count').textContent()).trim(), '0')
+  assert.equal((await page.locator('#failure-count').textContent()).trim(), '3')
 
   const images = page.locator('.image-open img')
   assert.equal(await images.count(), runtime.objectCount)
@@ -583,7 +598,7 @@ async function performBrowserAcceptance(context, runtime) {
   assert.equal(extensionContexts, 0)
   network.applicationNavigationGuarded = true
   return {
-    productCards: 2,
+    productCards: productCardCount,
     localObjects: runtime.objectCount,
     localImages: await images.count(),
     mediaHttp: {
@@ -594,6 +609,8 @@ async function performBrowserAcceptance(context, runtime) {
     manufacturers: {
       alter: alterCardIndex >= 0,
       goodSmile: goodSmileCardIndex >= 0,
+      apex: apexCardIndex >= 0,
+      amiami: amiamiCardIndex >= 0,
       separateCards: alterCardIndex !== goodSmileCardIndex,
     },
     responsive,
@@ -698,6 +715,7 @@ async function main() {
       gate: 'MVP02-11',
       status,
       failureCode: error?.code || 'acceptance_assertion_failed',
+      failureMessage: String(error?.message || 'Acceptance assertion failed.').slice(0, 300),
     }
     await writeResult(result)
     console.error(`${result.status}: ${result.failureCode}`)

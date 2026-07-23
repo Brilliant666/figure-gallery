@@ -3,6 +3,7 @@ import path from 'node:path'
 import test from 'node:test'
 
 import {
+  DEFAULT_CHESHIRE_OFFICIAL_SEED_URLS,
   DEFAULT_RUNTIME_ROOT,
   liveGate,
   officialLiveGate,
@@ -37,6 +38,16 @@ test('Hpoi gate is permanently closed while official live access requires all lo
     { interactiveConfirmation: true },
   )
   assert.equal(openOfficial.allowed, true)
+})
+
+test('reviewed Cheshire fallback seeds stay limited to verified manufacturer and seed-only distributor pages', () => {
+  assert.deepEqual(DEFAULT_CHESHIRE_OFFICIAL_SEED_URLS, [
+    'https://www.goodsmile.com/en/product/36232/Cheshire%2BSummery%2BDate%2B',
+    'https://www.goodsmile.com/en/product/36234/Cheshire%2BCait%2BSith%2BCrooner',
+    'https://apex-toys.com/productinfo/3727461.html',
+    'https://www.amiami.jp/top/detail/detail?gcode=FIGURE-181336',
+    'https://www.amiami.jp/top/detail/detail?gcode=FIGURE-158150',
+  ])
 })
 
 test('Firecrawl base URL is pinned to the official HTTPS Cloud origin', () => {

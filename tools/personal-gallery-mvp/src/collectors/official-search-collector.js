@@ -161,7 +161,7 @@ export class OfficialSearchCollector {
         }
       }
 
-      for (const seed of seedUrls || []) {
+      for (const seed of [...(this.config.officialSeedUrls || []), ...(seedUrls || [])]) {
         const sourceUrl = normalizeOfficialPageUrl(typeof seed === 'string' ? seed : seed?.url)
         if (!sourceUrl || !isAllowedOfficialProductUrl(sourceUrl)) {
           await this.store.recordWarning?.(run.runId, { kind: 'seed_official_url_not_allowed', url: sourceUrl })
