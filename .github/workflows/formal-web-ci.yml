@@ -24,6 +24,7 @@ jobs:
       CI: "true"
       COMPOSE_ENV: infra/compose/.env
       COMPOSE_FILE: infra/compose/compose.yml
+      FORMAL_COMPOSE_PROJECT_NAME: figure-gallery-pr00
       NEXT_TELEMETRY_DISABLED: "1"
 
     steps:
@@ -148,6 +149,10 @@ jobs:
       - name: Verify exact direct dependency and lock pins
         run: node infra/scripts/check-dependency-pins.mjs
 
+      - name: Verify cleanup is safe after an early failure
+        shell: bash
+        run: bash infra/scripts/formal-ci-cleanup-smoke.sh
+
       - name: Validate disposable Compose configuration
         shell: bash
         run: |
@@ -170,6 +175,9 @@ jobs:
 
       - name: Summarize licenses and duplicate core packages
         run: node infra/scripts/dependency-quality.mjs --output="$PR00_SUMMARY/dependency-quality.json"
+
+      - name: Verify formal dependency security regressions
+        run: node infra/scripts/check-formal-dependency-security.mjs --output="$PR00_SUMMARY/dependency-security.json"
 
       - name: Audit production dependencies without mutation
         shell: bash
@@ -455,26 +463,4 @@ jobs:
       - name: Clean disposable processes secrets objects and volumes
         if: always()
         shell: bash
-        run: |
-          set +e
-          cleanup_status=0
-          if [[ -f "$COMPOSE_ENV" ]]; then
-            if [[ -n "${PR01_CYCLE_DB:-}" && "$PR01_CYCLE_DB" =~ ^[a-z0-9_]+$ ]]; then
-              docker compose --env-file "$COMPOSE_ENV" -f "$COMPOSE_FILE" exec -T postgres \
-                dropdb --if-exists -f -U figure_gallery --maintenance-db=postgres "$PR01_CYCLE_DB" || cleanup_status=$?
-            fi
-            docker compose --env-file "$COMPOSE_ENV" -f "$COMPOSE_FILE" down -v --remove-orphans || cleanup_status=$?
-          fi
-          rm -f "$COMPOSE_ENV"
-          rm -rf \
-            "$RUNNER_TEMP/pr00-standalone" \
-            "$RUNNER_TEMP/pr00-local-media" \
-            "$RUNNER_TEMP/pr00-drift" \
-            "$RUNNER_TEMP/pr01-catalog-markers" \
-            "$RUNNER_TEMP/pr00-init-markers" \
-            "$RUNNER_TEMP/formal-web-summary" \
-            "$RUNNER_TEMP/playwright-results" \
-            "$GITHUB_WORKSPACE/apps/web/.runtime" \
-            "$INIT_MARKERS" \
-            "$CAT_MARKERS"
-          exit "$cleanup_status"
+        run: bash infra/scripts/formal-ci-cleanup.sh

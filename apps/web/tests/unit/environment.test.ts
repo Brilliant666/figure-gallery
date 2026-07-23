@@ -67,6 +67,51 @@ describe('parseEnvironment', () => {
     ).toThrow(/S3_ENDPOINT/)
   })
 
+  it('uses the WHATWG final host for IPv4 and IPv6 loopback decisions', () => {
+    expect(
+      parseEnvironment(s3Environment({ S3_ENDPOINT: 'http://2130706433:9000' })).s3?.endpoint,
+    ).toBe('http://2130706433:9000')
+    expect(parseEnvironment(s3Environment({ S3_ENDPOINT: 'http://[::1]:9000' })).s3?.endpoint).toBe(
+      'http://[::1]:9000',
+    )
+    expect(() =>
+      parseEnvironment(s3Environment({ S3_ENDPOINT: 'http://127.0.0.1.example.invalid' })),
+    ).toThrow(/S3_ENDPOINT/)
+  })
+
+  it('rejects ambiguous authority delimiters and encoded dot segments', () => {
+    const endpoints = [
+      'https://storage.example.invalid\\@127.0.0.1',
+      'https://storage.example.invalid%5c@127.0.0.1',
+      'https://storage.example.invalid%2f@127.0.0.1',
+      'https://storage.example.invalid/%2e%2e/metadata',
+    ]
+
+    for (const endpoint of endpoints) {
+      expect(() => parseEnvironment(s3Environment({ S3_ENDPOINT: endpoint }))).toThrow(
+        /S3_ENDPOINT/,
+      )
+    }
+  })
+
+  it('rejects cloud metadata and forbidden-host allowlist confusion', () => {
+    const forbiddenDomain = `${['h', 'p', 'o', 'i'].join('')}.net`
+    const endpoints = [
+      'https://169.254.169.254/',
+      'https://[fd00:ec2::254]/',
+      `https://www.${forbiddenDomain}\\@storage.example.invalid`,
+      `https://www.${forbiddenDomain}%5c@storage.example.invalid`,
+      `https://storage.example.invalid\\@www.${forbiddenDomain}`,
+      `https://storage.example.invalid%5c@www.${forbiddenDomain}`,
+    ]
+
+    for (const endpoint of endpoints) {
+      expect(() => parseEnvironment(s3Environment({ S3_ENDPOINT: endpoint }))).toThrow(
+        /S3_ENDPOINT/,
+      )
+    }
+  })
+
   it('rejects forbidden source hosts before database or S3 transport', () => {
     const forbiddenDomain = `${['h', 'p', 'o', 'i'].join('')}.net`
     const hostnames = [forbiddenDomain, `www.${forbiddenDomain}`, `RFX.${forbiddenDomain}.`]
