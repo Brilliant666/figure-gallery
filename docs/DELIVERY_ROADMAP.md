@@ -8,7 +8,7 @@
 
 共同规则：
 
-- 技术底座固定为 Payload CMS `3.86.x`、Next.js `16.2.x`、React `19.2.x`、TypeScript、Node.js `22.x`、PostgreSQL 16 与 S3 兼容对象存储。
+- 技术底座固定为 Payload CMS `3.87.x`、Next.js `16.2.x`、React `19.2.x`、TypeScript、Node.js `22.x`、PostgreSQL 16 与 S3 兼容对象存储。
 - `apps/web` 只能由 PR-00 使用 Payload 官方脚手架干净生成；不得复制或迁移 `spikes/`。
 - 每个 PR 必须说明 migration、测试、回滚和数据兼容性；关键一致性不能只由 Admin UI 保证。
 - 正式变更必须经过领域 service、数据库事务和 `OperationLog`；候选入口不能写正式聚合。

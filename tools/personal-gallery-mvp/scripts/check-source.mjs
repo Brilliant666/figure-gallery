@@ -59,10 +59,16 @@ if (JSON.stringify(packageJson.devDependencies) !== JSON.stringify(expectedDevDe
 if (packageJson.scripts?.['validate:chrome:real'] !== 'node scripts/validate-real-system-chrome.mjs') {
   fail('The local-only system Chrome acceptance command is missing or changed.')
 }
+if (packageJson.scripts?.['check:dependencies'] !== 'node scripts/check-installed-dependencies.mjs') {
+  fail('The platform-aware dependency and Sharp runtime check is missing or changed.')
+}
 
 const lock = JSON.parse(readFileSync(path.join(toolRoot, 'package-lock.json'), 'utf8'))
 if (lock.lockfileVersion !== 3 || lock.packages?.['']?.name !== packageJson.name) {
   fail('The independent npm lockfile is missing or invalid.')
+}
+if (lock.packages?.['node_modules/undici']?.version !== '7.29.0') {
+  fail('The MVP lockfile must resolve undici to the audited 7.29.0 patch.')
 }
 
 const officialProviderText = readFileSync(

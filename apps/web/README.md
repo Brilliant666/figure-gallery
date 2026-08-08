@@ -10,9 +10,9 @@ and public-read features remain unimplemented.
 ## Runtime baseline
 
 - Node.js `22.x` (`>=22.12.0 <23`) and npm with `package-lock.json`;
-- Payload CMS `3.86.0`, Next.js `16.2.11`, React `19.2.7`, and TypeScript;
-- PostgreSQL through `@payloadcms/db-postgres@3.86.0`; SQLite is not a runtime option;
-- S3-compatible storage through `@payloadcms/storage-s3@3.86.0` in production;
+- Payload CMS `3.87.1`, Next.js `16.2.11`, React `19.2.7`, and TypeScript;
+- PostgreSQL through `@payloadcms/db-postgres@3.87.1`; SQLite is not a runtime option;
+- S3-compatible storage through `@payloadcms/storage-s3@3.87.1` in production;
 - `.next/standalone` as the production-shaped output.
 
 All direct dependencies are exact pins. Dependency changes require a separate review and
@@ -83,7 +83,7 @@ and Admin create/update/delete paths are denied. Formal writes enter through the
 adapter; it never saves a Collection directly. Every successful mutation records a
 non-reversible PR-01 OperationLog in the same transaction.
 
-Payload 3.86.0 supports adapter-wide UUID IDs, but the merged PR-00 technical tables use
+Payload 3.87.1 supports adapter-wide UUID IDs, but the merged PR-00 technical tables use
 serial IDs. PR-01 therefore preserves those technical IDs and adds an immutable, unique
 UUID `stableId` to each catalog entity/relation; commands and audit scope expose only the
 stable identity. See [the identity decision](../../docs/PR01_IDENTITY_IMPLEMENTATION.md).

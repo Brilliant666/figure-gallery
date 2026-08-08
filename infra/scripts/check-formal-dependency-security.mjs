@@ -43,14 +43,25 @@ function exactLockVersion(name, expected) {
 }
 
 exactLockVersion("sharp", "0.35.3");
-exactLockVersion("fast-uri", "3.1.4");
-exactLockVersion("postcss", "8.5.10");
+exactLockVersion("fast-uri", "3.1.5");
+exactLockVersion("postcss", "8.5.23");
 exactLockVersion("next", "16.2.11");
-exactLockVersion("payload", "3.86.0");
+exactLockVersion("payload", "3.87.1");
+exactLockVersion("@payloadcms/db-postgres", "3.87.1");
+exactLockVersion("@payloadcms/next", "3.87.1");
+exactLockVersion("@payloadcms/storage-s3", "3.87.1");
+exactLockVersion("@payloadcms/ui", "3.87.1");
+exactLockVersion("undici", "7.29.0");
+exactLockVersion("image-dimensions", "2.5.1");
+exactLockVersion("js-yaml", "4.3.1");
+exactLockVersion("nanoid", "3.3.17");
+check("image-size-runtime-removed", lockVersions("image-size").length === 0, {
+  versions: lockVersions("image-size"),
+});
 check("next-direct-pin", packageJson.dependencies?.next === "16.2.11", {
   actual: packageJson.dependencies?.next,
 });
-check("payload-direct-pin", packageJson.dependencies?.payload === "3.86.0", {
+check("payload-direct-pin", packageJson.dependencies?.payload === "3.87.1", {
   actual: packageJson.dependencies?.payload,
 });
 
@@ -58,7 +69,7 @@ const fastUri = requireFromApp("fast-uri");
 const fastUriPackage = readJson(
   join(appRoot, "node_modules", "fast-uri", "package.json"),
 );
-check("fast-uri-runtime-version", fastUriPackage.version === "3.1.4", {
+check("fast-uri-runtime-version", fastUriPackage.version === "3.1.5", {
   actual: fastUriPackage.version,
 });
 const literalBackslash = fastUri.parse(
@@ -82,7 +93,7 @@ const postcss = requireFromApp("postcss");
 const postcssPackage = readJson(
   join(appRoot, "node_modules", "postcss", "package.json"),
 );
-check("postcss-runtime-version", postcssPackage.version === "8.5.10", {
+check("postcss-runtime-version", postcssPackage.version === "8.5.23", {
   actual: postcssPackage.version,
 });
 const maliciousCss =

@@ -21,7 +21,7 @@
 
 ### 3.1 接受的版本线
 
-- Payload CMS `3.86.x`
+- Payload CMS `3.87.x`
 - Next.js `16.2.x`
 - React `19.2.x`
 - TypeScript strict
