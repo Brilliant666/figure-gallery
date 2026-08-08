@@ -1,0 +1,118 @@
+{
+  "schemaVersion": 1,
+  "task": "SECURITY-02",
+  "generatedAt": "2026-08-09T00:44:43+08:00",
+  "baseline": {
+    "mainSha": "bddd6eeb509793fc6975b839af9264837db94512",
+    "pr14InitialHead": "7478de71c2c910051b1cee6931491c3ca3df3692",
+    "failedRuns": {
+      "formalWeb": 31266082837,
+      "personalGallery": 31266082840
+    },
+    "node": "22.13.1",
+    "localNpm": "10.9.2",
+    "lockWriterNpm": "10.9.8"
+  },
+  "before": {
+    "formal": {
+      "lockSha256": "1ec6ba3b428956e65c1af665bbce171f3c7191326cb35c80245bcb1671a1e45e",
+      "lockPackages": 815,
+      "audit": { "critical": 0, "high": 8, "moderate": 6, "total": 14 },
+      "payload": "3.86.0",
+      "next": "16.2.11",
+      "undici": "7.28.0",
+      "imageSize": "2.0.2",
+      "sharp": "0.35.3"
+    },
+    "gallery": {
+      "lockSha256": "3abf293e60a68a9d1d0cf4c561433c354c215e2b07911f92106824ab3a019d5f",
+      "lockPackages": 93,
+      "audit": { "critical": 0, "high": 1, "moderate": 0, "total": 1 },
+      "undici": "7.28.0",
+      "sharp": "0.35.3"
+    }
+  },
+  "after": {
+    "formal": {
+      "lockSha256": "3f420aca499eb4c29ef08a2a3b97949fadd32118c5e396105da66219d0bb0abf",
+      "lockPackages": 814,
+      "audit": { "critical": 0, "high": 0, "moderate": 5, "total": 5 },
+      "payloadDirectPackages": {
+        "payload": "3.87.1",
+        "@payloadcms/db-postgres": "3.87.1",
+        "@payloadcms/next": "3.87.1",
+        "@payloadcms/storage-s3": "3.87.1",
+        "@payloadcms/ui": "3.87.1"
+      },
+      "next": "16.2.11",
+      "react": "19.2.7",
+      "reactDom": "19.2.7",
+      "undici": "7.29.0",
+      "imageSizeRuntimeNodes": 0,
+      "imageDimensions": "2.5.1",
+      "sharp": "0.35.3",
+      "overrides": {
+        "fast-uri": "3.1.5",
+        "nanoid": "3.3.17",
+        "postcss": "8.5.23",
+        "sharp": "$sharp"
+      }
+    },
+    "gallery": {
+      "lockSha256": "c4ec3780b4713f33ae6e48aa8ca55b0090d053b98415b60aba17eb7a78bb8629",
+      "lockPackages": 93,
+      "audit": { "critical": 0, "high": 0, "moderate": 0, "total": 0 },
+      "undici": "7.29.0",
+      "undiciOverride": false,
+      "sharp": "0.35.3"
+    }
+  },
+  "remainingModerate": [
+    "@payloadcms/db-postgres",
+    "drizzle-kit",
+    "@esbuild-kit/esm-loader",
+    "@esbuild-kit/core-utils",
+    "esbuild"
+  ],
+  "localChecks": {
+    "cleanInstallFormal": "pass",
+    "cleanInstallGallery": "pass",
+    "formalNpmLsNoInvalid": "pass",
+    "galleryPlatformDependencyTree": "pass",
+    "payloadTypesNoDiff": "pass",
+    "adminImportMapNoDiff": "pass",
+    "dependencyPins": "pass",
+    "dependencySecurity": "pass",
+    "repositorySafety": "pass",
+    "formalBoundaries": "pass",
+    "catalogBoundaries": "pass",
+    "typecheck": "pass",
+    "eslint": "pass",
+    "formalUnit": { "status": "pass", "passed": 51, "failed": 0 },
+    "formalBuild": "pass",
+    "galleryUnit": { "status": "pass", "passed": 150, "failed": 0 },
+    "galleryPlaywright": { "status": "pass", "passed": 1, "failed": 0 },
+    "sharpRuntime": {
+      "status": "pass",
+      "version": "0.35.3",
+      "libvips": "8.18.3",
+      "formats": ["png", "jpeg", "webp"],
+      "metadata": true,
+      "resize": true
+    },
+    "dockerInfrastructure": "environment_blocked"
+  },
+  "githubChecks": {
+    "formalWeb": "pending_on_security_pr",
+    "personalGallery": "pending_on_security_pr"
+  },
+  "protectedState": {
+    "hpoiRequests": 0,
+    "cheshireProducts": 7,
+    "cheshireSha256Objects": 56,
+    "recrawlPerformed": false,
+    "localRuntimeDeleted": false,
+    "deploymentPerformed": false,
+    "pr14Merged": false
+  }
+}

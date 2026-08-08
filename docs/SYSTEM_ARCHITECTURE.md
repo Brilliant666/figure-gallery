@@ -46,7 +46,7 @@
 
 | 层 | 选择 | 约束 |
 | --- | --- | --- |
-| CMS 与领域后台 | Payload CMS `3.86.x` | 正式初始化时锁定精确 patch；升级必须重跑生产门禁 |
+| CMS 与领域后台 | Payload CMS `3.87.x` | 锁定精确 patch；升级必须重跑生产门禁 |
 | Web 与服务端运行时 | Next.js `16.2.x` | App Router；Payload 与公开前台共享受控服务端边界 |
 | UI | React `19.2.x` | 公共图库和自定义 Admin view 共用设计 token，不共享越权数据接口 |
 | 语言 | TypeScript | `strict`；领域命令、API DTO 和审计事件必须有显式类型 |

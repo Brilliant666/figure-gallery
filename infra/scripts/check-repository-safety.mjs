@@ -74,6 +74,7 @@ const contentRoots = [
   "research/evidence/pr00/",
   "research/evidence/pr01/",
   "research/evidence/security-2026-07/",
+  "research/evidence/security-2026-08/",
 ];
 const textExtensions = new Set([
   "",
@@ -153,7 +154,8 @@ for (const rawPath of files) {
     path.startsWith("research/") &&
     !path.startsWith("research/evidence/pr00/") &&
     !path.startsWith("research/evidence/pr01/") &&
-    !path.startsWith("research/evidence/security-2026-07/")
+    !path.startsWith("research/evidence/security-2026-07/") &&
+    !path.startsWith("research/evidence/security-2026-08/")
   )
     continue;
   if (path.includes("/") && !contentRoots.some((root) => path.startsWith(root)))
