@@ -7,26 +7,33 @@ const packagePath = join(repositoryRoot, "apps", "web", "package.json");
 const lockPath = join(repositoryRoot, "apps", "web", "package-lock.json");
 const errors = [];
 const requiredPins = {
-  "@payloadcms/db-postgres": "3.86.0",
-  "@payloadcms/next": "3.86.0",
-  "@payloadcms/storage-s3": "3.86.0",
+  "@payloadcms/db-postgres": "3.87.1",
+  "@payloadcms/next": "3.87.1",
+  "@payloadcms/storage-s3": "3.87.1",
+  "@payloadcms/ui": "3.87.1",
   next: "16.2.11",
-  payload: "3.86.0",
+  payload: "3.87.1",
   react: "19.2.7",
   "react-dom": "19.2.7",
   sharp: "0.35.3",
 };
 const requiredOverrides = [
-  ["fast-uri", "3.1.4"],
-  ["postcss", "8.5.10"],
+  ["fast-uri", "3.1.5"],
+  ["nanoid", "3.3.17"],
+  ["postcss", "8.5.23"],
   ["sharp", "$sharp"],
 ];
 const requiredLockVersions = {
-  "fast-uri": "3.1.4",
+  "fast-uri": "3.1.5",
+  "@payloadcms/db-postgres": "3.87.1",
+  "@payloadcms/next": "3.87.1",
+  "@payloadcms/storage-s3": "3.87.1",
+  "@payloadcms/ui": "3.87.1",
   next: "16.2.11",
-  payload: "3.86.0",
-  postcss: "8.5.10",
+  payload: "3.87.1",
+  postcss: "8.5.23",
   sharp: "0.35.3",
+  undici: "7.29.0",
 };
 const exactStableSemver = /^\d+\.\d+\.\d+$/;
 

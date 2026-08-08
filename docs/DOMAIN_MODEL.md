@@ -30,7 +30,7 @@
 
 ### 3.1 标识、时间与版本
 
-- 业务身份使用 UUID。Payload 3.86.0 支持 adapter 级 UUID ID，但已合并 PR-00 的技术表使用 serial ID；PR-01 因此保留内部 serial `id`，并给每个目录实体/关系增加不可变、唯一、非空的 UUID `stableId`。领域命令、审计、导出和未来公开接口只使用 `stableId`；内部 ID 不是合同。后续若全局迁移 UUID 主键，必须独立 ADR/migration 且不得改变 stableId。
+- 业务身份使用 UUID。Payload 3.87.1 支持 adapter 级 UUID ID，但已合并 PR-00 的技术表使用 serial ID；PR-01 因此保留内部 serial `id`，并给每个目录实体/关系增加不可变、唯一、非空的 UUID `stableId`。领域命令、审计、导出和未来公开接口只使用 `stableId`；内部 ID 不是合同。后续若全局迁移 UUID 主键，必须独立 ADR/migration 且不得改变 stableId。
 - 本文实体表中写作概念 `id` 的领域身份，在 PR-01 物理实现中映射为 `stableId`；关系 FK 可在数据库内使用 Payload technical ID，但不得向领域/API 暴露。
 - 时间统一保存为 UTC 的 timestamptz；至少包含 created_at、updated_at。操作者界面按用户时区显示。
 - 可变聚合根必须有 lock_version，初值 1；每个命令携带 expected_version，并以条件更新或 SELECT FOR UPDATE 拒绝过期提交。
