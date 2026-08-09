@@ -59,6 +59,20 @@ test('official product identity is namespaced by canonical source domain', () =>
   assert.match(fallback.key, /^official_manufacturer_goodsmile\.com-url-[a-f0-9]{64}$/)
 })
 
+test('official product identity is additionally namespaced by character', () => {
+  const base = {
+    sourceKind: 'official_manufacturer',
+    sourceDomain: 'goodsmile.com',
+    officialProductId: 'SHARED-001',
+    sourceUrl: 'https://goodsmile.com/en/product/shared-001',
+  }
+  const cheshire = productIdentity({ ...base, characterId: 'azur-lane:cheshire' })
+  const rem = productIdentity({ ...base, characterId: 'rezero:rem' })
+  assert.notEqual(cheshire.key, rem.key)
+  assert.equal(cheshire.characterId, 'azur-lane:cheshire')
+  assert.equal(rem.characterId, 'rezero:rem')
+})
+
 test('official discovery provenance and observation timestamps do not create false changes', async (t) => {
   const { store } = await temporaryStore(t)
   const base = {

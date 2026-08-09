@@ -6,14 +6,6 @@ import process from 'node:process'
 export const TOOL_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 export const REPOSITORY_ROOT = path.resolve(TOOL_ROOT, '..', '..')
 export const DEFAULT_RUNTIME_ROOT = path.join(REPOSITORY_ROOT, '.local', 'personal-gallery')
-export const DEFAULT_CHESHIRE_OFFICIAL_SEED_URLS = Object.freeze([
-  'https://www.goodsmile.com/en/product/36232/Cheshire%2BSummery%2BDate%2B',
-  'https://www.goodsmile.com/en/product/36234/Cheshire%2BCait%2BSith%2BCrooner',
-  'https://apex-toys.com/productinfo/3727461.html',
-  'https://www.amiami.jp/top/detail/detail?gcode=FIGURE-181336',
-  'https://www.amiami.jp/top/detail/detail?gcode=FIGURE-158150',
-])
-
 function isSameOrInside(parent, candidate) {
   const relative = path.relative(path.resolve(parent), path.resolve(candidate))
   return relative === '' || (!relative.startsWith(`..${path.sep}`) && relative !== '..' && !path.isAbsolute(relative))
@@ -94,7 +86,7 @@ export function loadConfig({ loadEnv = true } = {}) {
 
   const rootValue = process.env.PERSONAL_GALLERY_ROOT?.trim()
   return Object.freeze({
-    defaultQuery: process.env.PERSONAL_GALLERY_DEFAULT_QUERY || '柴郡',
+    defaultQuery: process.env.PERSONAL_GALLERY_DEFAULT_QUERY || '',
     firecrawlApiKey: process.env.FIRECRAWL_API_KEY?.trim() || null,
     firecrawlBaseUrl: validateFirecrawlBaseUrl(
       process.env.FIRECRAWL_BASE_URL || 'https://api.firecrawl.dev',
@@ -113,12 +105,13 @@ export function loadConfig({ loadEnv = true } = {}) {
     writtenPermissionConfirmed: boolean('HPOI_WRITTEN_PERMISSION_CONFIRMED'),
     officialLiveFetchEnabled: boolean('OFFICIAL_SOURCE_LIVE_FETCH_ENABLED'),
     officialMaxSearchResultsPerQuery: integer('OFFICIAL_MAX_SEARCH_RESULTS_PER_QUERY', 10, { min: 1, max: 10 }),
-    officialMaxCandidates: integer('OFFICIAL_MAX_CANDIDATES', 20, { min: 2, max: 20 }),
-    officialMaxProducts: integer('OFFICIAL_MAX_PRODUCTS', 20, { min: 2, max: 20 }),
+    officialMaxQueries: integer('OFFICIAL_MAX_QUERIES', 30, { min: 1, max: 30 }),
+    officialMaxCandidates: integer('OFFICIAL_MAX_CANDIDATES', 80, { min: 2, max: 80 }),
+    officialMaxProducts: integer('OFFICIAL_MAX_PRODUCTS', 80, { min: 2, max: 80 }),
     officialMaxImagesPerProduct: integer('OFFICIAL_MAX_IMAGES_PER_PRODUCT', 10, { min: 1, max: 10 }),
     officialRequestDelayMs: integer('OFFICIAL_REQUEST_DELAY_MS', 1_000, { min: 1_000, max: 60_000 }),
+    officialImageRequestDelayMs: integer('OFFICIAL_IMAGE_REQUEST_DELAY_MS', 1_000, { min: 1_000, max: 60_000 }),
     officialMaxRetries: integer('OFFICIAL_MAX_RETRIES', 2, { min: 0, max: 2 }),
-    officialSeedUrls: DEFAULT_CHESHIRE_OFFICIAL_SEED_URLS,
   })
 }
 

@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url'
 import { officialLiveGate, TOOL_ROOT } from '../config.js'
 import { resolveMediaObject } from '../gallery/read-model.js'
 import { createDefaultRuntime } from './runtime-adapter.js'
+import { normalizeCharacterSlug, resolveBuiltinCharacter } from '../characters/registry.js'
 
 const STATIC_ROOT = path.join(TOOL_ROOT, 'static')
 const BODY_LIMIT = 64 * 1024
@@ -113,7 +114,7 @@ export function createJobManager(config, runtime) {
     return {
       runId: job.runId,
       query: job.query,
-      characterSlug: job.characterSlug || 'cheshire',
+      characterSlug: job.characterSlug || null,
       sourceMode: 'official_sources',
       status: job.status,
       startedAt: job.startedAt,
@@ -132,6 +133,23 @@ export function createJobManager(config, runtime) {
     const query = typeof input.query === 'string' ? input.query.trim() : ''
     if (!query) return { accepted: false, statusCode: 400, error: 'query_required' }
 
+    const character = typeof runtime.resolveCharacter === 'function'
+      ? await runtime.resolveCharacter(query)
+      : resolveBuiltinCharacter(query)
+    if (!character) {
+      return {
+        accepted: false,
+        statusCode: 409,
+        error: 'character_confirmation_required',
+        suggestedCharacter: {
+          displayName: query,
+          slug: normalizeCharacterSlug(input.slug || query),
+          aliases: [query],
+          workNames: [],
+        },
+      }
+    }
+
     if (input.characterUrl || (input.sourceMode && input.sourceMode !== 'official_sources')) {
       return {
         accepted: false,
@@ -148,11 +166,13 @@ export function createJobManager(config, runtime) {
       last = {
         runId: null,
         query,
+        characterSlug: character.slug,
         status: 'environment_blocked',
         startedAt: new Date().toISOString(),
         completedAt: new Date().toISOString(),
         progress: { pages: 0, products: 0, images: 0, failures: 0 },
         stopReason: gate.notice,
+        galleryUrl: `/gallery/characters/${encodeURIComponent(character.slug)}`,
       }
       return {
         accepted: false,
@@ -168,18 +188,19 @@ export function createJobManager(config, runtime) {
     const job = {
       runId: runIdFor(query),
       query,
-      characterSlug: 'cheshire',
+      characterSlug: character.slug,
       sourceMode: 'official_sources',
       status: 'running',
       startedAt: new Date().toISOString(),
       progress: { pages: 0, products: 0, images: 0, failures: 0 },
       controller,
     }
-    job.galleryUrl = '/gallery/characters/cheshire'
+    job.galleryUrl = `/gallery/characters/${encodeURIComponent(character.slug)}`
     active = job
     last = job
     const options = {
       query,
+      characterConfig: character,
       sourceMode: 'official_sources',
       limits: {
         searchLimit: boundedInteger(
@@ -207,6 +228,7 @@ export function createJobManager(config, runtime) {
           config.officialMaxImagesPerProduct,
         ),
         requestDelayMs: config.officialRequestDelayMs,
+        imageRequestDelayMs: config.officialImageRequestDelayMs,
         imageMaxBytes: config.imageMaxBytes,
       },
       requestedRunId: job.runId,
@@ -291,11 +313,37 @@ export function createPersonalGalleryServer({ config, runtime = createDefaultRun
         const sourceStatus = typeof runtime.readSourceStatus === 'function'
           ? await runtime.readSourceStatus()
           : null
+        const characterConfigs = typeof runtime.listCharacters === 'function'
+          ? await runtime.listCharacters()
+          : []
+        const characters = await Promise.all(characterConfigs.map(async (character) => {
+          const gallery = await runtime.loadGalleryByQuery(character.slug)
+          return {
+            characterId: character.characterId,
+            slug: character.slug,
+            displayName: character.displayName,
+            aliases: character.aliases,
+            workNames: character.workNames,
+            hasGallery: Boolean(gallery?.products?.length),
+            summary: gallery?.summary || null,
+          }
+        }))
         return sendJson(response, 200, {
           active: jobs.status(),
           recentRuns: await runtime.listRecentRuns(10),
           sourceStatus,
+          defaultQuery: config.defaultQuery || '',
+          characters,
         })
+      }
+      if (method === 'GET' && url.pathname === '/api/characters') {
+        const characters = typeof runtime.listCharacters === 'function' ? await runtime.listCharacters() : []
+        return sendJson(response, 200, { characters })
+      }
+      if (method === 'POST' && url.pathname === '/api/characters') {
+        if (typeof runtime.createCharacter !== 'function') return sendJson(response, 501, { error: 'character_config_not_supported' })
+        const character = await runtime.createCharacter(await readBody(request))
+        return sendJson(response, 201, { character })
       }
       if (method === 'POST' && url.pathname === '/api/runs') {
         const result = await jobs.start(await readBody(request))
@@ -319,9 +367,10 @@ export function createPersonalGalleryServer({ config, runtime = createDefaultRun
           ? sendJson(response, 200, gallery)
           : sendJson(response, 404, { error: 'gallery_not_found' })
       }
-      if (method === 'POST' && url.pathname === '/api/preferences') {
+      if (method === 'POST' && url.pathname.startsWith('/api/preferences/')) {
+        const characterSlug = decodeURIComponent(url.pathname.slice('/api/preferences/'.length))
         const body = await readBody(request)
-        const preferences = await runtime.savePreferences(body)
+        const preferences = await runtime.savePreferences(characterSlug, body)
         return sendJson(response, 200, { preferences })
       }
       if (method === 'GET' && url.pathname.startsWith('/media/')) {

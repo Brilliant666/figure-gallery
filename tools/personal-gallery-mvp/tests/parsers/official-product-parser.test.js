@@ -9,13 +9,18 @@ import {
   OfficialPageValidationError,
   parseOfficialProductPage,
 } from '../../src/parsers/official-product-parser.js'
+import { resolveBuiltinCharacter } from '../../src/characters/registry.js'
 
 const fixtures = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', 'fixtures')
 const fixture = (name) => readFile(path.join(fixtures, name), 'utf8')
+const cheshire = resolveBuiltinCharacter('cheshire')
+const parseCheshire = (options) => parseOfficialProductPage({ ...options, characterConfig: cheshire })
+const rem = resolveBuiltinCharacter('蕾姆')
+const parseRem = (options) => parseOfficialProductPage({ ...options, characterConfig: rem })
 
 test('Good Smile parser returns official fields and only product-gallery images', async () => {
   const rawHtml = await fixture('goodsmile-product.synthetic.html')
-  const product = parseOfficialProductPage({
+  const product = parseCheshire({
     rawHtml,
     url: 'https://www.goodsmile.com/en/product/19001/cheshire-summery-date?ref=search',
     images: [
@@ -46,7 +51,7 @@ test('Good Smile parser returns official fields and only product-gallery images'
 })
 
 test('ALTER parser reads Japanese specifications and the current bxslider gallery', async () => {
-  const product = parseOfficialProductPage({
+  const product = parseCheshire({
     rawHtml: await fixture('alter-product.synthetic.html'),
     url: 'https://www.alter-web.jp/products/19002/',
     discoveryMethod: 'seed_official_url',
@@ -56,7 +61,7 @@ test('ALTER parser reads Japanese specifications and the current bxslider galler
   assert.equal(product.sourceDomain, 'alter-web.jp')
   assert.equal(product.discoveryMethod, 'seed_official_url')
   assert.equal(product.officialProductId, 'ALT-SYN-19002')
-  assert.equal(product.character, 'Cheshire')
+  assert.equal(product.character, '柴郡')
   assert.equal(product.series, 'アズールレーン')
   assert.equal(product.manufacturer, 'ALTER')
   assert.equal(product.scale, '1/7')
@@ -70,7 +75,7 @@ test('ALTER parser reads Japanese specifications and the current bxslider galler
 })
 
 test('reviewed APEX manufacturer and AmiAmi distributor pages preserve source roles and stable IDs', async () => {
-  const apex = parseOfficialProductPage({
+  const apex = parseCheshire({
     rawHtml: await fixture('apex-shell.synthetic.html'),
     renderedHtml: await fixture('apex-cheshire.synthetic.html'),
     url: 'https://apex-toys.com/productinfo/3727461.html',
@@ -86,7 +91,7 @@ test('reviewed APEX manufacturer and AmiAmi distributor pages preserve source ro
   assert.equal(apex.imageUrls.length, 3)
   assert.equal(apex.imageUrls.some((url) => url.includes('cheshire-details')), true)
 
-  const amiami = parseOfficialProductPage({
+  const amiami = parseCheshire({
     rawHtml: await fixture('amiami-cheshire.synthetic.html'),
     url: 'https://www.amiami.jp/top/detail/detail?gcode=FIGURE-181336&utm_source=synthetic',
     discoveryMethod: 'seed_official_url',
@@ -103,7 +108,7 @@ test('reviewed APEX manufacturer and AmiAmi distributor pages preserve source ro
 })
 
 test('multiple JSON-LD Products select only the item matching the current canonical URL and title', async () => {
-  const product = parseOfficialProductPage({
+  const product = parseCheshire({
     rawHtml: await fixture('official-multiple-jsonld.synthetic.html'),
     url: 'https://www.goodsmile.com/en/product/19006/cheshire-current',
   })
@@ -115,7 +120,7 @@ test('multiple JSON-LD Products select only the item matching the current canoni
 })
 
 test('a lone unrelated JSON-LD Product cannot override a visible current-page title', async () => {
-  const product = parseOfficialProductPage({
+  const product = parseCheshire({
     rawHtml: await fixture('official-single-unrelated-jsonld.synthetic.html'),
     url: 'https://www.goodsmile.com/en/product/19007/cheshire-dom-product',
   })
@@ -129,7 +134,7 @@ test('a lone unrelated JSON-LD Product cannot override a visible current-page ti
 test('related-product mentions cannot turn a different product into Cheshire', async () => {
   const rawHtml = await fixture('official-related-only.synthetic.html')
   assert.throws(
-    () => parseOfficialProductPage({
+    () => parseCheshire({
       rawHtml,
       url: 'https://www.goodsmile.com/en/product/19004/belfast',
     }),
@@ -139,7 +144,7 @@ test('related-product mentions cannot turn a different product into Cheshire', a
 })
 
 test('Nendoroid is retained as other while insufficient pages are rejected', async () => {
-  const nendoroid = parseOfficialProductPage({
+  const nendoroid = parseCheshire({
     rawHtml: await fixture('goodsmile-nendoroid.synthetic.html'),
     url: 'https://goodsmile.com/en/product/19003/nendoroid-cheshire',
   })
@@ -148,7 +153,7 @@ test('Nendoroid is retained as other while insufficient pages are rejected', asy
 
   const missingFields = await fixture('official-missing-fields.synthetic.html')
   assert.throws(
-    () => parseOfficialProductPage({
+    () => parseCheshire({
       rawHtml: missingFields,
       url: 'https://goodsmilearts.com/product/19005/cheshire-placeholder',
     }),
@@ -160,10 +165,40 @@ test('Nendoroid is retained as other while insufficient pages are rejected', asy
 test('parser rejects unreviewed domains before inspecting content', async () => {
   const rawHtml = await fixture('goodsmile-product.synthetic.html')
   assert.throws(
-    () => parseOfficialProductPage({
+    () => parseCheshire({
       rawHtml,
       url: 'https://example.test/product/19001',
     }),
     (error) => error instanceof OfficialPageValidationError && error.code === 'official_url_not_allowed',
   )
+})
+
+test('Rem parser requires the target character, Re:Zero work, and a physical figure product', async () => {
+  const product = parseRem({
+    rawHtml: await fixture('rem-goodsmile.synthetic.html'),
+    url: 'https://www.goodsmile.com/en/product/29001/rem-snow-dress',
+    discoveryQuery: 'Re:Zero Rem scale figure',
+  })
+  assert.equal(product.characterId, 'rezero:rem')
+  assert.equal(product.characterSlug, 'rem')
+  assert.equal(product.character, '蕾姆')
+  assert.match(product.series, /Re:ZERO/iu)
+  assert.equal(product.manufacturer, 'KADOKAWA')
+  assert.equal(product.classification, 'likely_scale')
+  assert.equal(product.authenticity.evidence.figureEvidence, true)
+  assert.ok(product.imageUrls.length >= 4)
+
+  const ramHtml = await fixture('ram-goodsmile.synthetic.html')
+  assert.throws(() => parseRem({
+    rawHtml: ramHtml,
+    url: 'https://www.goodsmile.com/en/product/29002/ram-snow-dress',
+  }), (error) => error instanceof OfficialPageValidationError
+    && error.evidence?.rejectedReason === 'character_not_in_primary_product_title')
+
+  const software = `<!doctype html><html data-fixture="synthetic-rem-software"><head><title>REM Backup Software</title></head><body><main data-product-detail><h1>REM Backup Software</h1><dl><dt>Series</dt><dd>Re:Zero</dd><dt>Manufacturer</dt><dd>Synthetic Software</dd><dt>Release Date</dt><dd>2032-04</dd></dl><p class="product-description">A synthetic data backup utility that must never be accepted as character merchandise.</p></main></body></html>`
+  assert.throws(() => parseRem({
+    rawHtml: software,
+    url: 'https://www.goodsmile.com/en/product/29003/rem-backup-software',
+  }), (error) => error instanceof OfficialPageValidationError
+    && error.evidence?.rejectedReason === 'figure_product_not_confirmed')
 })

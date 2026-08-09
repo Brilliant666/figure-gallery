@@ -4,6 +4,12 @@ import { acquireCollectorLock } from '../storage/collector-lock.js'
 import { GalleryStore } from '../storage/gallery-store.js'
 import { readSourceStatus } from '../storage/source-status.js'
 import { validateFirecrawlBaseUrl } from '../config.js'
+import {
+  createLocalCharacterConfig,
+  listCharacterConfigs,
+  resolveCharacterConfig,
+} from '../storage/character-store.js'
+import { validateCharacterConfig } from '../characters/registry.js'
 
 async function findCollector() {
   const candidate = await import('../collectors/official-search-collector.js')
@@ -62,7 +68,7 @@ export function createDefaultRuntime(
   {
     providerFactory = createCollectorProvider,
     collectorLoader = findCollector,
-    storeFactory = async (root) => new GalleryStore(root).initialize(),
+    storeFactory = async (root, characterConfig) => new GalleryStore(root, { characterConfig }).initialize(),
   } = {},
 ) {
   if (!config || typeof config !== 'object' || !config.root) {
@@ -77,14 +83,18 @@ export function createDefaultRuntime(
       if (options.characterUrl || (options.sourceMode && options.sourceMode !== 'official_sources')) {
         throw new Error('The runtime accepts only official-source collection; Hpoi live access is disabled.')
       }
+      const characterConfig = validateCharacterConfig(
+        options.characterConfig || await resolveCharacterConfig(root, options.query),
+      )
       const lock = await acquireCollectorLock(root)
       try {
         const collector = await collectorLoader()
         const requestRecords = []
         const provider = providerFactory(config, options.gate, requestRecords)
-        const store = await storeFactory(root)
+        const store = await storeFactory(root, characterConfig)
         const result = await collector({
           ...options,
+          characterConfig,
           root,
           provider,
           store,
@@ -110,7 +120,10 @@ export function createDefaultRuntime(
     loadGalleryByQuery: (query) => loadGalleryByQuery(root, query),
     loadRunGallery: (runId) => loadRunGallery(root, runId),
     listRecentRuns: (limit) => listRecentRuns(root, limit),
+    listCharacters: () => listCharacterConfigs(root),
+    resolveCharacter: (value) => resolveCharacterConfig(root, value),
+    createCharacter: (value) => createLocalCharacterConfig(root, value),
     readSourceStatus: () => readSourceStatus(root),
-    savePreferences: (preferences) => savePreferences(root, preferences),
+    savePreferences: (characterSlug, preferences) => savePreferences(root, characterSlug, preferences),
   }
 }

@@ -7,9 +7,11 @@ import { fileURLToPath } from 'node:url'
 
 import { OfficialSearchCollector } from '../../src/collectors/official-search-collector.js'
 import { OfficialProviderBlockedError } from '../../src/providers/official-web-search-provider.js'
+import { resolveBuiltinCharacter, validateCharacterConfig } from '../../src/characters/registry.js'
 
 const fixtures = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', 'fixtures')
 const fixture = (name) => readFile(path.join(fixtures, name), 'utf8')
+const cheshire = validateCharacterConfig({ ...resolveBuiltinCharacter('cheshire'), reviewedSeeds: [] })
 
 class MemoryStore {
   constructor() {
@@ -142,6 +144,7 @@ test('official collector aggregates five queries, uses seed provenance, and is i
 
   const first = await collector.collect({
     query: '柴郡',
+    characterConfig: cheshire,
     seedUrls: [alterUrl],
     requestedRunId: 'official-round-one',
   })
@@ -163,6 +166,7 @@ test('official collector aggregates five queries, uses seed provenance, and is i
   const firstObjectCount = objects.size
   const second = await collector.collect({
     query: '柴郡',
+    characterConfig: cheshire,
     seedUrls: [alterUrl],
     requestedRunId: 'official-round-two',
   })
@@ -210,7 +214,7 @@ test('candidate and product hard caps stop at 20 without scraping unreviewed dom
     imageUrls: [],
   })
   const result = await new OfficialSearchCollector({ provider, store, parser, downloadImage: async () => assert.fail() })
-    .collect({ query: '柴郡', limits: { maxCandidates: 20, maxProducts: 20 } })
+    .collect({ query: '柴郡', characterConfig: cheshire, limits: { maxCandidates: 20, maxProducts: 20 } })
 
   assert.equal(result.status, 'partial_by_limit')
   assert.equal(result.stopReason, 'max_candidates')
@@ -233,7 +237,7 @@ test('a blocked provider result is converted to CollectionBlockedError and stops
     },
     async fetchOfficialProductPage() { assert.fail('blocked discovery must not scrape') },
   }
-  const result = await new OfficialSearchCollector({ provider, store }).collect({ query: '柴郡' })
+  const result = await new OfficialSearchCollector({ provider, store }).collect({ query: '柴郡', characterConfig: cheshire })
   assert.equal(searches, 1)
   assert.equal(result.status, 'blocked')
   assert.equal(result.stopReason, 'captcha')

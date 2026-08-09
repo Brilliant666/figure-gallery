@@ -5,12 +5,12 @@ import test from 'node:test'
 
 import { CollectionBlockedError, toCollectionError } from '../../src/collectors/access-policy.js'
 import {
-  OFFICIAL_DISCOVERY_QUERIES,
   OFFICIAL_FIRECRAWL_METHODS,
   OfficialProviderBlockedError,
   OfficialWebSearchProvider,
   buildOfficialDiscoveryQueries,
 } from '../../src/providers/official-web-search-provider.js'
+import { resolveBuiltinCharacter } from '../../src/characters/registry.js'
 
 const gate = Object.freeze({ allowed: true, missing: [] })
 
@@ -25,16 +25,17 @@ function clock() {
 }
 
 test('Cheshire discovery always uses the five required English, Japanese, and Chinese queries', () => {
-  assert.deepEqual(buildOfficialDiscoveryQueries('柴郡'), [...OFFICIAL_DISCOVERY_QUERIES])
-  assert.deepEqual(buildOfficialDiscoveryQueries('Cheshire'), [...OFFICIAL_DISCOVERY_QUERIES])
-  assert.deepEqual(OFFICIAL_DISCOVERY_QUERIES, [
+  const queries = buildOfficialDiscoveryQueries(resolveBuiltinCharacter('柴郡'))
+  assert.deepEqual(queries, [
     '"Azur Lane" Cheshire figure',
     '"Azur Lane" Cheshire scale figure',
     'アズールレーン チェシャー フィギュア',
     '碧蓝航线 柴郡 手办',
     '碧蓝航线 柴郡 比例手办',
   ])
-  assert.throws(() => buildOfficialDiscoveryQueries('another character'), /limited to Cheshire/)
+  const rem = buildOfficialDiscoveryQueries(resolveBuiltinCharacter('蕾姆'))
+  assert.equal(rem.length, 30)
+  assert.deepEqual(rem, buildOfficialDiscoveryQueries(resolveBuiltinCharacter('Rem')))
 })
 
 test('SDK retries are disabled and only the provider retry loop owns physical attempts', () => {

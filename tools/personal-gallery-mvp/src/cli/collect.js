@@ -8,7 +8,7 @@ import { createDefaultRuntime } from '../server/runtime-adapter.js'
 const config = loadConfig()
 const program = new Command()
   .name('personal-gallery-collect')
-  .description('Build a bounded local Cheshire gallery from allowlisted public official product pages.')
+  .description('Build a bounded local character gallery from allowlisted public official product pages.')
   .argument('[query]', 'character name (also accepted positionally for Windows npm forwarding)')
   .option('--query <name>', 'character name')
   .option(
@@ -75,6 +75,7 @@ if (!gate.allowed) {
         'max-search-results',
         config.officialMaxSearchResultsPerQuery,
       ),
+      maxQueries: config.officialMaxQueries,
       maxCandidates: integer(options.maxCandidates, 'max-candidates', config.officialMaxCandidates),
       maxProducts: integer(options.maxProducts, 'max-products', config.officialMaxProducts),
       maxImagesPerProduct: integer(
@@ -83,6 +84,7 @@ if (!gate.allowed) {
         config.officialMaxImagesPerProduct,
       ),
       requestDelayMs: config.officialRequestDelayMs,
+      imageRequestDelayMs: config.officialImageRequestDelayMs,
       imageMaxBytes: config.imageMaxBytes,
     },
     onProgress(progress) {

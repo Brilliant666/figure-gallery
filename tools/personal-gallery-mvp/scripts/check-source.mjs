@@ -4,6 +4,15 @@ import { readFileSync, readdirSync, statSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
+import {
+  BUILTIN_CHARACTERS,
+  buildCharacterDiscoveryQueries,
+  conflictingCharacterMatch,
+  matchesCharacterText,
+  matchesCharacterWork,
+  resolveBuiltinCharacter,
+} from '../src/characters/registry.js'
+
 const toolRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const repositoryRoot = path.resolve(toolRoot, '..', '..')
 
@@ -59,6 +68,9 @@ if (JSON.stringify(packageJson.devDependencies) !== JSON.stringify(expectedDevDe
 if (packageJson.scripts?.['validate:chrome:real'] !== 'node scripts/validate-real-system-chrome.mjs') {
   fail('The local-only system Chrome acceptance command is missing or changed.')
 }
+if (packageJson.scripts?.['validate:chrome:mvp04'] !== 'node scripts/validate-mvp04-system-chrome.mjs') {
+  fail('The local-only MVP-04 two-character system Chrome acceptance command is missing or changed.')
+}
 if (packageJson.scripts?.['check:dependencies'] !== 'node scripts/check-installed-dependencies.mjs') {
   fail('The platform-aware dependency and Sharp runtime check is missing or changed.')
 }
@@ -97,8 +109,16 @@ const mvp03aEvidence = JSON.parse(readFileSync(
   path.join(repositoryRoot, 'research', 'evidence', 'mvp03a', 'reference-index-results.json'),
   'utf8',
 ))
+const mvp04Evidence = JSON.parse(readFileSync(
+  path.join(repositoryRoot, 'research', 'evidence', 'mvp04', 'multi-character-results.json'),
+  'utf8',
+))
 const mvp03aChromeRunnerText = readFileSync(
   path.join(toolRoot, 'scripts', 'validate-mvp03a-system-chrome.mjs'),
+  'utf8',
+)
+const mvp04ChromeRunnerText = readFileSync(
+  path.join(toolRoot, 'scripts', 'validate-mvp04-system-chrome.mjs'),
   'utf8',
 )
 
@@ -258,21 +278,99 @@ if (
   fail('The MVP-03A system Chrome acceptance guard is incomplete.')
 }
 
-const expectedOfficialQueries = [
+const generalizationGates = Array.isArray(mvp04Evidence.gates) ? mvp04Evidence.gates : []
+const expectedGeneralizationGates = Array.from(
+  { length: 15 },
+  (_, index) => `GEN-${String(index + 1).padStart(2, '0')}`,
+)
+if (
+  mvp04Evidence.status !== 'MVP-04 ready for personal use review' ||
+  JSON.stringify(generalizationGates.map((gate) => gate.id)) !== JSON.stringify(expectedGeneralizationGates) ||
+  generalizationGates.some((gate) => gate.status !== 'pass') ||
+  mvp04Evidence.baseline?.mergeCommit !== '47d85275e1d01734a53806d1243a33696ddf756a' ||
+  mvp04Evidence.baseline?.mainSha !== '47d85275e1d01734a53806d1243a33696ddf756a' ||
+  mvp04Evidence.baseline?.mainFormalConclusion !== 'success' ||
+  mvp04Evidence.baseline?.mainGalleryConclusion !== 'success' ||
+  Number(mvp04Evidence.characterModel?.characters) !== 2 ||
+  Number(mvp04Evidence.characterModel?.remQueryMatrix) !== 30 ||
+  mvp04Evidence.characterModel?.remRamConflictProtection !== 'pass' ||
+  Number(mvp04Evidence.realCollection?.finalIdempotencyRun?.productsNew) !== 0 ||
+  Number(mvp04Evidence.realCollection?.finalIdempotencyRun?.productsUnchanged) !== 11 ||
+  Number(mvp04Evidence.realCollection?.finalIdempotencyRun?.productsChanged) !== 0 ||
+  Number(mvp04Evidence.realCollection?.finalIdempotencyRun?.newSha256Objects) !== 0 ||
+  Number(mvp04Evidence.realCollection?.taskTotals?.hpoiRequests) !== 0 ||
+  Number(mvp04Evidence.realCollection?.sourceBoundary?.newReviewedOfficialDomains) !== 0 ||
+  Number(mvp04Evidence.realCollection?.sourceBoundary?.retailerSeeds) !== 0 ||
+  Number(mvp04Evidence.realRuntime?.cheshire?.products) !== 7 ||
+  Number(mvp04Evidence.realRuntime?.cheshire?.images) !== 65 ||
+  mvp04Evidence.realRuntime?.cheshire?.regression !== 'pass' ||
+  Number(mvp04Evidence.realRuntime?.rem?.products) !== 11 ||
+  Number(mvp04Evidence.realRuntime?.rem?.images) !== 89 ||
+  Number(mvp04Evidence.realRuntime?.rem?.manufacturers) !== 7 ||
+  Number(mvp04Evidence.realRuntime?.rem?.classification?.unknown) !== 0 ||
+  Number(mvp04Evidence.realRuntime?.rem?.classification?.other) !== 0 ||
+  Number(mvp04Evidence.realRuntime?.unionSha256Objects) !== 154 ||
+  Number(mvp04Evidence.realRuntime?.crossCharacterReusedObjects) !== 0 ||
+  mvp04Evidence.realRuntime?.runtimeTrackedByGit !== false ||
+  mvp04Evidence.systemChrome?.status !== 'pass' ||
+  Number(mvp04Evidence.systemChrome?.network?.externalRequests) !== 0 ||
+  Number(mvp04Evidence.systemChrome?.network?.hpoiRequests) !== 0 ||
+  mvp04Evidence.outOfScope?.perceptualDeduplication !== false ||
+  mvp04Evidence.outOfScope?.formalPayloadWrite !== false ||
+  mvp04Evidence.outOfScope?.deployment !== false ||
+  mvp04Evidence.outOfScope?.formalPr02Started !== false ||
+  /https?:\/\//iu.test(JSON.stringify(mvp04Evidence))
+) {
+  fail('The committed MVP-04 evidence does not satisfy GEN-01 through GEN-15 or contains a URL list.')
+}
+
+const expectedCheshireQueries = [
   '"Azur Lane" Cheshire figure',
   '"Azur Lane" Cheshire scale figure',
   'アズールレーン チェシャー フィギュア',
   '碧蓝航线 柴郡 手办',
   '碧蓝航线 柴郡 比例手办',
 ]
-const officialQueriesBlock = officialProviderText.match(
-  /export const OFFICIAL_DISCOVERY_QUERIES = Object\.freeze\(\[([\s\S]*?)\]\)/,
-)
-const actualOfficialQueries = officialQueriesBlock
-  ? [...officialQueriesBlock[1].matchAll(/'([^']+)'/g)].map((match) => match[1])
-  : []
-if (JSON.stringify(actualOfficialQueries) !== JSON.stringify(expectedOfficialQueries)) {
-  fail('The ordered MVP-02 multilingual discovery query set changed.')
+const cheshire = resolveBuiltinCharacter('cheshire')
+const rem = resolveBuiltinCharacter('rem')
+const remQueries = buildCharacterDiscoveryQueries(rem, { maxQueries: 30 })
+if (
+  BUILTIN_CHARACTERS.length !== 2 ||
+  !cheshire ||
+  !rem ||
+  JSON.stringify(buildCharacterDiscoveryQueries(cheshire)) !== JSON.stringify(expectedCheshireQueries) ||
+  remQueries.length !== 30 ||
+  JSON.stringify(remQueries) !== JSON.stringify(buildCharacterDiscoveryQueries(rem, { maxQueries: 30 })) ||
+  [...rem.aliases, ...rem.workNames, ...rem.productTerms].some((term) =>
+    !remQueries.some((query) => query.normalize('NFKC').includes(term.normalize('NFKC')))
+  ) ||
+  !matchesCharacterText('Re:ZERO Rem 1/7 scale figure', rem) ||
+  !matchesCharacterText('Re:ゼロ レム フィギュア', rem) ||
+  !matchesCharacterWork('Re:Zero Rem 1/7 scale figure', rem) ||
+  conflictingCharacterMatch('Re:ZERO Ram 1/7 scale figure', rem) !== 'Ram'
+) {
+  fail('The deterministic two-character registry, legacy Cheshire queries, or Rem/Ram protection changed.')
+}
+
+const runtimeCharacterFiles = [
+  ...walk(path.join(toolRoot, 'src')),
+  ...walk(path.join(toolRoot, 'static')),
+].filter((name) => !name.endsWith(path.join('src', 'characters', 'registry.js')))
+for (const name of runtimeCharacterFiles) {
+  if (!/\.(?:js|mjs|html|css)$/iu.test(name)) continue
+  if (/cheshire|柴郡|azur-lane:cheshire/iu.test(readFileSync(name, 'utf8'))) {
+    fail(`A Cheshire-only runtime assumption remains outside the character registry: ${name}`)
+  }
+}
+if (
+  !mvp04ChromeRunnerText.includes('figure-gallery-mvp04-chrome-') ||
+  !mvp04ChromeRunnerText.includes('--disable-extensions') ||
+  !mvp04ChromeRunnerText.includes('--host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE 127.0.0.1') ||
+  !mvp04ChromeRunnerText.includes("loadGalleryByQuery(runtimeRoot, 'cheshire')") ||
+  !mvp04ChromeRunnerText.includes("loadGalleryByQuery(runtimeRoot, 'rem')") ||
+  /screenshot\s*:|recordVideo\s*:|trace\s*:/iu.test(mvp04ChromeRunnerText)
+) {
+  fail('The MVP-04 system Chrome two-character acceptance guard is incomplete.')
 }
 
 if (
@@ -339,9 +437,10 @@ if (!/^OFFICIAL_SOURCE_LIVE_FETCH_ENABLED=false$/m.test(envExampleText)) {
 }
 if (
   !/^\s*HPOI_LIVE_FETCH_ENABLED:\s*"false"$/m.test(workflowText) ||
-  !/^\s*OFFICIAL_SOURCE_LIVE_FETCH_ENABLED:\s*"false"$/m.test(workflowText)
+  !/^\s*OFFICIAL_SOURCE_LIVE_FETCH_ENABLED:\s*"false"$/m.test(workflowText) ||
+  !workflowText.includes('- feat/mvp-04-second-character-generalization')
 ) {
-  fail('Offline CI must explicitly disable both Hpoi and official-source live fetch.')
+  fail('Offline CI must cover MVP-04 and explicitly disable both Hpoi and official-source live fetch.')
 }
 
 const tracked = trackedFiles()
@@ -398,7 +497,11 @@ console.log(
         officialSearchExcludesHpoi: true,
         officialFirecrawlMethods: ['search', 'scrape'],
         officialAllowlistPinned: true,
-        multilingualQueries: expectedOfficialQueries.length,
+        builtInCharacters: BUILTIN_CHARACTERS.length,
+        cheshireLegacyQueries: expectedCheshireQueries.length,
+        remMultilingualQueries: remQueries.length,
+        remRamProtection: true,
+        noCheshireOnlyRuntimeAssumptions: true,
         hpoiLiveFrozen: true,
         officialLiveDefaultOff: true,
         ciLiveGatesOff: true,
@@ -406,6 +509,8 @@ console.log(
         mvp02AllTwelveGatesPass: true,
         mvp03aAllFifteenGatesPass: true,
         mvp03aSystemChromeAcceptanceContract: true,
+        mvp04SystemChromeAcceptanceContract: true,
+        mvp04AllFifteenGatesPass: true,
         noTrackedRuntimeOrMedia: true,
         syntheticFixtureSize: true,
       },

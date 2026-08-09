@@ -10,6 +10,7 @@ import {
 } from '../parsers/official-urls.js'
 import { buildOfficialDiscoveryQueries } from '../providers/official-web-search-provider.js'
 import { downloadAndStoreImage } from '../storage/image-store.js'
+import { validateCharacterConfig } from '../characters/registry.js'
 
 function assertNotAborted(signal) {
   if (!signal?.aborted) return
@@ -23,7 +24,13 @@ function bounded(value, fallback, max) {
 }
 
 function classificationCounter(value) {
-  return ({ likely_scale: 'likelyScale', likely_prize: 'likelyPrize', other: 'other', unknown: 'unknown' })[value] || 'unknown'
+  return ({
+    likely_scale: 'likelyScale',
+    likely_prize: 'likelyPrize',
+    likely_static: 'likelyStatic',
+    other: 'other',
+    unknown: 'unknown',
+  })[value] || 'unknown'
 }
 
 function imageUrls(product) {
@@ -79,21 +86,33 @@ export class OfficialSearchCollector {
     this.lastImageRequestAt = 0
   }
 
-  async collect({ query = '柴郡', seedUrls = [], limits = {}, requestedRunId = null, signal } = {}) {
-    const discoveryQueries = buildOfficialDiscoveryQueries(query)
+  async collect({ query, characterConfig, seedUrls = [], limits = {}, requestedRunId = null, signal } = {}) {
+    const character = validateCharacterConfig(characterConfig)
+    const effectiveQuery = String(query || character.displayName).trim()
+    const discoveryQueries = buildOfficialDiscoveryQueries(character, {
+      maxQueries: bounded(limits.maxQueries, this.config.officialMaxQueries || 30, 30),
+    })
     const effective = {
       searchLimit: bounded(limits.searchLimit, this.config.officialMaxSearchResultsPerQuery || 10, 10),
-      maxCandidates: bounded(limits.maxCandidates, this.config.officialMaxCandidates || 20, 20),
-      maxProducts: bounded(limits.maxProducts, this.config.officialMaxProducts || 20, 20),
+      maxCandidates: bounded(limits.maxCandidates, this.config.officialMaxCandidates || 80, 80),
+      maxProducts: bounded(limits.maxProducts, this.config.officialMaxProducts || 80, 80),
       maxImagesPerProduct: bounded(limits.maxImagesPerProduct, this.config.officialMaxImagesPerProduct || 10, 10),
       requestDelayMs: bounded(limits.requestDelayMs, this.config.officialRequestDelayMs || 1_000, 60_000),
+      imageRequestDelayMs: bounded(
+        limits.imageRequestDelayMs,
+        this.config.officialImageRequestDelayMs || 1_000,
+        60_000,
+      ),
       imageMaxBytes: bounded(limits.imageMaxBytes, this.config.imageMaxBytes || 20_971_520, 50_000_000),
       requestConcurrency: 1,
     }
     if (effective.requestDelayMs < 1_000) throw new Error('Official request delay must be at least 1000 ms.')
     const run = await this.store.createRun({
-      query: String(query).trim(),
-      characterSlug: 'cheshire',
+      query: effectiveQuery,
+      characterId: character.characterId,
+      characterSlug: character.slug,
+      characterDisplayName: character.displayName,
+      characterConfig: character,
       discoveryQueries,
       limits: effective,
       requestedRunId,
@@ -118,6 +137,7 @@ export class OfficialSearchCollector {
       duplicateImages: 0,
       likelyScale: 0,
       likelyPrize: 0,
+      likelyStatic: 0,
       unknown: 0,
       other: 0,
     }
@@ -161,7 +181,7 @@ export class OfficialSearchCollector {
         }
       }
 
-      for (const seed of [...(this.config.officialSeedUrls || []), ...(seedUrls || [])]) {
+      for (const seed of [...(character.reviewedSeeds || []), ...(seedUrls || [])]) {
         const sourceUrl = normalizeOfficialPageUrl(typeof seed === 'string' ? seed : seed?.url)
         if (!sourceUrl || !isAllowedOfficialProductUrl(sourceUrl)) {
           await this.store.recordWarning?.(run.runId, { kind: 'seed_official_url_not_allowed', url: sourceUrl })
@@ -209,6 +229,7 @@ export class OfficialSearchCollector {
             url: page.finalUrl || candidate.url,
             discoveryQuery: candidate.discoveryQuery,
             discoveryMethod: candidate.discoveryMethod,
+            characterConfig: character,
           })
         } catch (error) {
           counters.productFailures += 1
@@ -217,6 +238,16 @@ export class OfficialSearchCollector {
             candidate.url,
             error,
           ))
+          continue
+        }
+
+        if (product.classification === 'other') {
+          counters.other += 1
+          await this.store.recordWarning?.(run.runId, {
+            kind: 'out_of_scope_product',
+            productUrl: candidate.url,
+            excludedReason: product.excludedReason || 'classification_other',
+          })
           continue
         }
 
@@ -235,7 +266,7 @@ export class OfficialSearchCollector {
         for (const imageUrl of urls) {
           assertNotAborted(signal)
           try {
-            await this.#waitForImageSlot(effective.requestDelayMs, signal)
+            await this.#waitForImageSlot(effective.imageRequestDelayMs, signal)
             const image = await this.downloadImage({
               url: imageUrl,
               sourceProductUrl: product.sourceUrl,
@@ -282,17 +313,37 @@ export class OfficialSearchCollector {
       }
     }
 
-    return this.store.finalizeRun(run.runId, {
+    const finalized = await this.store.finalizeRun(run.runId, {
       status,
       stopReason,
       counters,
       extra: {
         sourceMode: 'official_sources',
-        characterSlug: 'cheshire',
+        characterId: character.characterId,
+        characterSlug: character.slug,
+        characterDisplayName: character.displayName,
         discoveryQueries,
         unreviewedDomains,
       },
     })
+    await this.store.writeCoverage?.(character.slug, {
+      schemaVersion: 1,
+      characterId: character.characterId,
+      characterSlug: character.slug,
+      runId: run.runId,
+      status,
+      searchQueries: discoveryQueries.length,
+      searchCandidates: candidates.size,
+      officialHits: counters.productsProcessed,
+      unreviewedDomains: new Set(unreviewedDomains.map((entry) => entry.sourceDomain).filter(Boolean)).size,
+      retailerOnlySeeds: character.reviewedSeeds.filter((seed) => seed.sourceType === 'retailer_seed_only').length,
+      parserUnsupported: counters.productFailures,
+      sourceBlocked: status === 'blocked' ? 1 : 0,
+      outOfScopeProducts: counters.other,
+      duplicateCandidates: Math.max(0, counters.officialCandidates - counters.productsDiscovered),
+      hpoiRequests: 0,
+    })
+    return finalized
   }
 
   #addCandidate(target, candidate, { searchWins = false } = {}) {

@@ -64,7 +64,7 @@ const OFFICIAL_SOURCE_DOMAINS = new Set([
 const CLASSIFICATION_LABELS = Object.freeze({
   likely_scale: '比例手办',
   likely_prize: '景品',
-  other: '其他',
+  likely_static: '静态完成品',
 })
 
 function classificationLabel(value) {
@@ -96,8 +96,8 @@ function apiUrlFromRoute() {
 }
 
 function characterGalleryPath() {
-  const slug = gallery?.characterSlug || route.characterSlug || 'cheshire'
-  return `/gallery/characters/${encodeURIComponent(slug)}`
+  const slug = gallery?.characterSlug || route.characterSlug
+  return slug ? `/gallery/characters/${encodeURIComponent(slug)}` : `/gallery/${encodeURIComponent(route.runId)}`
 }
 
 function productDetailPath(productId) {
@@ -141,7 +141,7 @@ function currentProducts() {
   const manufacturer = manufacturerFilter.value
   const design = designFilter.value
   const scale = scaleFilter.value
-  return gallery.products.filter((product) => {
+  return referenceProducts().filter((product) => {
     if (!showExcluded.checked && product.excluded) return false
     if (classification !== 'all' && product.classification !== classification) return false
     if (manufacturer !== 'all' && product.manufacturer !== manufacturer) return false
@@ -149,6 +149,10 @@ function currentProducts() {
     if (scale !== 'all' && product.scale !== scale) return false
     return true
   })
+}
+
+function referenceProducts() {
+  return gallery?.products.filter((product) => Object.hasOwn(CLASSIFICATION_LABELS, product.classification)) || []
 }
 
 function selectedProduct() {
@@ -169,7 +173,7 @@ function productPreference(productId) {
 }
 
 async function persistPreferences() {
-  const response = await fetch('/api/preferences', {
+  const response = await fetch(`/api/preferences/${encodeURIComponent(gallery.characterSlug)}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(gallery.preferences),
@@ -337,12 +341,13 @@ function createDetailImageTile(product, image) {
   return tile
 }
 
-function renderMetrics(products) {
+function renderMetrics() {
+  const reference = referenceProducts()
   const entries = [
-    ['商品', gallery.summary.products],
-    ['本地图片', gallery.summary.images],
-    ['索引封面', gallery.summary.indexCovers],
-    ['无图商品', gallery.summary.productsWithoutImages],
+    ['商品', reference.length],
+    ['本地图片', reference.reduce((total, product) => total + product.images.length, 0)],
+    ['索引封面', reference.filter((product) => product.coverImage).length],
+    ['无图商品', reference.filter((product) => !product.coverImage).length],
     ['失败', gallery.failures.length],
   ]
   metricList.replaceChildren(
@@ -398,8 +403,8 @@ function renderIndex() {
   grid.replaceChildren(...products.map(createProductCard))
   empty.classList.toggle('hidden', products.length > 0)
   visibleImages = []
-  meta.textContent = `${gallery.summary.products} 款手办 · 每款仅显示一张拍摄参考封面`
-  renderMetrics(products)
+  meta.textContent = `${referenceProducts().length} 款手办 · 每款仅显示一张拍摄参考封面`
+  renderMetrics()
   renderFailures()
 }
 
@@ -448,6 +453,7 @@ function renderDetail() {
   referenceIndex.classList.add('hidden')
   productDetail.classList.remove('hidden')
   detailBackLink.href = characterGalleryPath()
+  detailBackLink.textContent = `← 返回${gallery.query}`
   title.textContent = gallery.query
   meta.textContent = '手办详情 · 全部官方参考图片'
   detailTitle.textContent = product.title
@@ -545,15 +551,15 @@ async function load() {
     renderSourceStatus()
     replaceFilterOptions(
       classificationFilter,
-      gallery.products
+      referenceProducts()
         .map((product) => product.classification)
         .filter((value) => Object.hasOwn(CLASSIFICATION_LABELS, value)),
       '全部类型',
       classificationLabel,
     )
-    replaceFilterOptions(manufacturerFilter, gallery.products.map((product) => product.manufacturer), '全部厂商')
-    replaceFilterOptions(designFilter, gallery.products.map((product) => product.design), '全部造型')
-    replaceFilterOptions(scaleFilter, gallery.products.map((product) => product.scale), '全部比例')
+    replaceFilterOptions(manufacturerFilter, referenceProducts().map((product) => product.manufacturer), '全部厂商')
+    replaceFilterOptions(designFilter, referenceProducts().map((product) => product.design), '全部造型')
+    replaceFilterOptions(scaleFilter, referenceProducts().map((product) => product.scale), '全部比例')
     render()
     if (gallery.status === 'running' || gallery.status === 'stopping') schedulePolling()
     else stopPolling()
