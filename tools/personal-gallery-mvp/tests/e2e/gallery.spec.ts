@@ -28,7 +28,7 @@ async function seedGallery() {
   const runId = '20260809T020304Z-synthetic-cheshire'
   const runDirectory = path.join(root, 'runs', runId)
   await mkdir(runDirectory, { recursive: true })
-  const imageCounts = [8, 10, 9, 10, 9, 10, 0]
+  const imageCounts = [8, 8, 8, 8, 8, 8, 8]
   const imagesByProduct = []
   let imageIndex = 0
   for (const [productIndex, imageCount] of imageCounts.entries()) {
@@ -57,21 +57,19 @@ async function seedGallery() {
     id: `official-synthetic-id-cheshire-${index + 1}`,
     sourceKind: 'official_manufacturer',
     sourceDomain: index % 2 === 0 ? 'alter-web.jp' : 'goodsmile.com',
-    title: index === 6 ? 'Synthetic APEX Cheshire without local images' : `Synthetic Cheshire Figure ${index + 1}`,
+    title: index === 6 ? 'Synthetic APEX Cheshire with public image' : `Synthetic Cheshire Figure ${index + 1}`,
     design: `Synthetic design ${index + 1}`,
     character: 'Cheshire',
     series: 'Azur Lane',
     manufacturer: manufacturers[index],
-    classification: index === 2 ? 'unknown' : 'likely_scale',
+    classification: 'likely_scale',
     category: 'finished figure',
     scale: index % 2 === 0 ? '1/7' : '1/6',
     releaseDate: '2026-08',
     status: 'released',
     sourceUrl: `https://${index % 2 === 0 ? 'alter-web.jp' : 'goodsmile.com'}/product/synthetic-${index + 1}`,
     homepageImage: imagesByProduct[index][0]?.sourceUrl || null,
-    imageUrls: index === 6
-      ? [1, 2, 3].map((value) => `https://images.synthetic.invalid/apex-missing-${value}.png`)
-      : imagesByProduct[index].map((image) => image.sourceUrl),
+    imageUrls: imagesByProduct[index].map((image) => image.sourceUrl),
     images: imagesByProduct[index],
     imageCount,
   }))
@@ -85,9 +83,7 @@ async function seedGallery() {
     completedAt: '2026-08-09T02:03:10Z',
   }))
   await writeFile(path.join(runDirectory, 'products.json'), JSON.stringify(products))
-  await writeFile(path.join(runDirectory, 'failures.json'), JSON.stringify(
-    products[6].imageUrls.map((url) => ({ kind: 'image', code: 'http_404', status: 404, url })),
-  ))
+  await writeFile(path.join(runDirectory, 'failures.json'), '[]')
   await writeFile(path.join(root, 'preferences.json'), JSON.stringify({
     schemaVersion: 1,
     excludedProductIds: [],
@@ -154,15 +150,18 @@ test('one-cover index and per-product detail work offline with 56 synthetic imag
   await expect(page.locator('body')).toHaveAttribute('data-view', 'character')
   await expect(page.locator('#gallery-title')).toHaveText('柴郡')
   await expect(page.locator('.product-card')).toHaveCount(7)
-  await expect(page.locator('.reference-cover')).toHaveCount(6)
-  await expect(page.locator('.no-image-placeholder', { hasText: '暂无可用图片' })).toHaveCount(1)
+  await expect(page.locator('.reference-cover')).toHaveCount(7)
+  await expect(page.locator('.no-image-placeholder', { hasText: '暂无可用图片' })).toHaveCount(0)
   await expect(page.locator('.detail-image-tile')).toHaveCount(0)
   await expect(page.locator('#management-status')).not.toHaveAttribute('open', '')
   for (const image of await page.locator('.reference-cover').all()) {
     await image.scrollIntoViewIfNeeded()
     await expect(image).toHaveJSProperty('complete', true)
   }
-  expect(mediaRequests.index.size).toBe(6)
+  expect(mediaRequests.index.size).toBe(7)
+
+  await expect(page.locator('#classification-filter option')).toHaveText(['全部类型', '比例手办'])
+  await expect(page.locator('#classification-filter option[value="unknown"]')).toHaveCount(0)
 
   await page.locator('#manufacturer-filter').selectOption('ALTER')
   await expect(page.locator('.product-card')).toHaveCount(2)
@@ -170,8 +169,8 @@ test('one-cover index and per-product detail work offline with 56 synthetic imag
   await page.locator('#scale-filter').selectOption('1/6')
   await expect(page.locator('.product-card')).toHaveCount(3)
   await page.locator('#scale-filter').selectOption('all')
-  await page.locator('#classification-filter').selectOption('unknown')
-  await expect(page.locator('.product-card')).toHaveCount(1)
+  await page.locator('#classification-filter').selectOption('likely_scale')
+  await expect(page.locator('.product-card')).toHaveCount(7)
   await page.locator('#classification-filter').selectOption('all')
 
   const columnCount = () => page.locator('#product-grid').evaluate(
@@ -247,13 +246,12 @@ test('one-cover index and per-product detail work offline with 56 synthetic imag
 
   await page.locator('#detail-back-link').click()
   const apexCard = page.locator('.product-card').filter({ hasText: 'APEX' })
-  await expect(apexCard.locator('.no-image-placeholder')).toHaveText('暂无可用图片')
+  await expect(apexCard.locator('.reference-cover')).toHaveCount(1)
   await apexCard.locator('.reference-card-link').click()
-  await expect(page.locator('#detail-image-count')).toHaveText('0')
-  await expect(page.locator('#detail-failure-count')).toHaveText('3')
-  await expect(page.locator('#detail-failure-list li')).toHaveCount(3)
-  await expect(page.locator('#detail-failure-list')).toContainText('HTTP 404')
-  await expect(page.locator('#detail-no-images')).toBeVisible()
+  await expect(page.locator('#detail-image-count')).toHaveText('8')
+  await expect(page.locator('#detail-failure-count')).toHaveText('0')
+  await expect(page.locator('#detail-failure-list li')).toHaveCount(0)
+  await expect(page.locator('#detail-no-images')).toBeHidden()
 
   expect(network.externalRequests).toBe(0)
   expect(network.hpoiRequests).toBe(0)
@@ -266,11 +264,11 @@ test('one-cover index and per-product detail work offline with 56 synthetic imag
     network,
     responsive: { desktop: 4, tablet: 3, mobile: 2 },
     productCards: 7,
-    indexCovers: 6,
+    indexCovers: 7,
     indexImageRequests: mediaRequests.index.size,
     detailImageRequests: 8,
     totalFixtureImages: 56,
-    noImagePlaceholders: 1,
+    noImagePlaceholders: 0,
     details: true,
     lightbox: true,
     zoom: true,
@@ -281,7 +279,7 @@ test('one-cover index and per-product detail work offline with 56 synthetic imag
     filtersByProduct: true,
     screenshots: 0,
     videos: 0,
-    fixture: 'synthetic_seven_products_and_56_pngs',
+    fixture: 'synthetic_seven_products_with_56_pngs',
   }, null, 2)}\n`)
   await context.close()
 })

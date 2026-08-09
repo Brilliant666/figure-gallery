@@ -12,22 +12,34 @@
   },
   "realRuntime": {
     "products": 7,
-    "images": 56,
-    "uniqueObjects": 56,
-    "productsWithImages": 6,
-    "productsWithoutImages": 1,
-    "indexCovers": 6,
+    "images": 62,
+    "uniqueObjects": 62,
+    "productsWithImages": 7,
+    "productsWithoutImages": 0,
+    "indexCovers": 7,
     "automaticCovers": 3,
-    "manualOverrideCovers": 3,
+    "manualOverrideCovers": 4,
+    "classificationCounts": {
+      "likelyScale": 7,
+      "likelyPrize": 0,
+      "unknown": 0,
+      "other": 0
+    },
     "apex": {
-      "localImages": 0,
-      "safeHttp404FailureRecords": 3
+      "localImages": 1,
+      "activeFailureRecords": 0,
+      "sourceDomain": "amiami.jp",
+      "historicalHttp404FailureRecordsPreservedInOldRun": 3
+    },
+    "alter": {
+      "localImages": 6,
+      "manualFullFrontCover": true
     },
     "runtimeTrackedByGit": false
   },
   "humanCoverReview": {
-    "reviewed": 6,
-    "passed": 6,
+    "reviewed": 7,
+    "passed": 7,
     "criteria": [
       "correct product",
       "complete overall pose",
@@ -38,7 +50,7 @@
       "useful for shooting reference"
     ],
     "limitations": [
-      "One product has only one local official composite candidate; its complete central figure was retained after review."
+      "The APEX product currently has one reviewed distributor composite main image; an AmiAmi review page returned HTTP 403 and was not retried or bypassed."
     ]
   },
   "systemChrome": {
@@ -52,10 +64,10 @@
     "extensionsLoaded": 0,
     "index": {
       "productCards": 7,
-      "coverImages": 6,
-      "noImagePlaceholders": 1,
+      "coverImages": 7,
+      "noImagePlaceholders": 0,
       "detailTiles": 0,
-      "imageRequests": 6,
+      "imageRequests": 7,
       "managementCollapsed": true
     },
     "detailSamples": [
@@ -76,7 +88,9 @@
       "zoom": "pass",
       "fit": "pass",
       "escapeClose": "pass",
-      "preferredCoverReloadPersistence": "pass"
+      "preferredCoverReloadPersistence": "pass",
+      "classificationLabels": "pass",
+      "unknownOptionAbsent": "pass"
     },
     "network": {
       "externalRequests": 0,
@@ -110,6 +124,13 @@
   "collection": {
     "cheshireRecrawled": false,
     "productsAdded": 0,
+    "targetedOfficialImageRepair": true,
+    "activeSourceIdentityReplaced": 1,
+    "imageUrlsProcessed": 7,
+    "imagesDownloaded": 7,
+    "uniqueObjectsAdded": 6,
+    "duplicateObjects": 1,
+    "activeImageFailures": 0,
     "hpoiRequests": 0,
     "firecrawlRequests": 0,
     "allowlistChanged": false

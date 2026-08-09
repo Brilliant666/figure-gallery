@@ -107,18 +107,22 @@ async function validateRuntime(runtimeRoot) {
     assert.equal(gallery.status, 'completed')
     assert.equal(gallery.sourceMode, 'official_sources')
     assert.equal(gallery.products.length, 7)
-    assert.equal(gallery.summary.images, 56)
-    assert.equal(gallery.summary.indexCovers, 6)
-    assert.equal(gallery.summary.productsWithoutImages, 1)
-    assert.equal(gallery.failures.length, 3)
-    assert.equal(gallery.failures.every((failure) => failure.kind === 'image' && /404/.test(failure.message || '')), true)
+    assert.equal(gallery.summary.images, 62)
+    assert.equal(gallery.summary.indexCovers, 7)
+    assert.equal(gallery.summary.productsWithoutImages, 0)
+    assert.equal(gallery.summary.unknown, 0)
+    assert.equal(gallery.failures.length, 0)
     const apex = gallery.products.find((product) => /APEX/i.test(`${product.manufacturer} ${product.title}`))
     assert.ok(apex)
-    assert.equal(apex.images.length, 0)
-    assert.equal(apex.failureCount, 3)
+    assert.equal(apex.sourceDomain, 'amiami.jp')
+    assert.equal(apex.images.length, 1)
+    assert.equal(apex.failureCount, 0)
+    const alter = gallery.products.find((product) => product.sourceDomain === 'alter-web.jp')
+    assert.ok(alter)
+    assert.equal(alter.images.length, 6)
 
     const referenced = new Set(gallery.products.flatMap((product) => product.images.map((image) => image.sha256)))
-    assert.equal(referenced.size, 56)
+    assert.equal(referenced.size, 62)
     for (const digest of referenced) {
       const objectPath = await resolveMediaObject(runtimeRoot, digest)
       assert.ok(objectPath)
@@ -126,7 +130,7 @@ async function validateRuntime(runtimeRoot) {
     }
     assert.equal((await findTransientFiles(runtimeRoot)).length, 0)
     const coverReview = summarizeCoverReview(gallery)
-    assert.deepEqual(coverReview, { reviewed: 6, automatic: 3, manualOverride: 3, missing: 1 })
+    assert.deepEqual(coverReview, { reviewed: 7, automatic: 3, manualOverride: 4, missing: 0 })
     return { gallery, objectCount: referenced.size, coverReview }
   } catch (cause) {
     throw Object.assign(new Error('The real Cheshire runtime failed the MVP-03A integrity gate.'), {
@@ -303,14 +307,18 @@ async function performAcceptance(context, runtime) {
   assert.equal(response?.status(), 200)
   await waitForComplete(page)
   assert.equal(await page.locator('.product-card').count(), 7)
-  assert.equal(await page.locator('.reference-cover').count(), 6)
-  assert.equal(await page.locator('.no-image-placeholder').count(), 1)
+  assert.equal(await page.locator('.reference-cover').count(), 7)
+  assert.equal(await page.locator('.no-image-placeholder').count(), 0)
   assert.equal(await page.locator('.detail-image-tile').count(), 0)
   assert.equal(await page.locator('#management-status').evaluate((node) => node.open), false)
   const coverPaths = await decodeAll(page.locator('.reference-cover'))
-  assert.equal(new Set(coverPaths).size, 6)
+  assert.equal(new Set(coverPaths).size, 7)
   const indexMediaRequests = new Set(mediaResponses.map((item) => item.path)).size
-  assert.equal(indexMediaRequests, 6)
+  assert.equal(indexMediaRequests, 7)
+
+  const typeOptions = await page.locator('#classification-filter option').allTextContents()
+  assert.deepEqual(typeOptions, ['全部类型', '比例手办'])
+  assert.equal(await page.locator('#classification-filter option[value="unknown"]').count(), 0)
 
   const responsive = await validateResponsive(page)
   const manufacturerOptions = await page.locator('#manufacturer-filter option').count()
@@ -341,16 +349,14 @@ async function performAcceptance(context, runtime) {
     if (index === 0) lightbox = await validateLightbox(page, product.images.length)
   }
 
-  const apex = runtime.gallery.products.find((product) => product.images.length === 0)
+  const apex = runtime.gallery.products.find((product) => /APEX/i.test(`${product.manufacturer} ${product.title}`))
   await page.goto(`${BASE_URL}${INDEX_PATH}/products/${encodeURIComponent(apex.id)}`, { waitUntil: 'networkidle' })
   await waitForComplete(page)
-  assert.equal(await page.locator('.detail-image-tile').count(), 0)
-  assert.equal((await page.locator('#detail-image-count').textContent()).trim(), '0')
-  assert.equal((await page.locator('#detail-failure-count').textContent()).trim(), '3')
-  assert.equal(await page.locator('#detail-failure-list li').count(), 3)
-  const apexFailureText = await page.locator('#detail-failure-list').textContent()
-  assert.match(apexFailureText, /404/)
-  assert.doesNotMatch(apexFailureText, /https?:\/\//i)
+  assert.equal(await page.locator('.detail-image-tile').count(), 1)
+  assert.equal((await page.locator('#detail-image-count').textContent()).trim(), '1')
+  assert.equal((await page.locator('#detail-failure-count').textContent()).trim(), '0')
+  assert.equal(await page.locator('#detail-failure-list li').count(), 0)
+  assert.equal(await page.locator('#detail-no-images').isHidden(), true)
 
   await page.goto(`${BASE_URL}${INDEX_PATH}`, { waitUntil: 'networkidle' })
   await waitForComplete(page)
@@ -367,7 +373,7 @@ async function performAcceptance(context, runtime) {
     source: item.dataset.coverSource,
   })))
   assert.deepEqual(afterReload, beforeReload)
-  assert.equal(afterReload.filter((item) => item.source === 'manual_override').length, 3)
+  assert.equal(afterReload.filter((item) => item.source === 'manual_override').length, 4)
 
   const userAgent = await page.evaluate(() => navigator.userAgent)
   assert.match(userAgent, /Chrome\//)
@@ -387,14 +393,14 @@ async function performAcceptance(context, runtime) {
   return {
     index: {
       productCards: 7,
-      coverImages: 6,
-      noImagePlaceholders: 1,
+      coverImages: 7,
+      noImagePlaceholders: 0,
       detailTiles: 0,
       indexMediaRequests,
       managementCollapsed: true,
     },
     details,
-    apex: { localImages: 0, safeFailureRecords: 3 },
+    apex: { localImages: 1, safeFailureRecords: 0, sourceDomain: 'amiami.jp' },
     filters: { productLevel: true, filteredCount },
     responsive,
     lightbox,

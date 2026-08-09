@@ -45,7 +45,7 @@ test('Good Smile parser returns official fields and only product-gallery images'
   assert.equal(product.imageUrls.some((url) => url.includes('related-product')), false)
 })
 
-test('ALTER parser reads Japanese specifications and sample gallery', async () => {
+test('ALTER parser reads Japanese specifications and the current bxslider gallery', async () => {
   const product = parseOfficialProductPage({
     rawHtml: await fixture('alter-product.synthetic.html'),
     url: 'https://www.alter-web.jp/products/19002/',
@@ -65,6 +65,7 @@ test('ALTER parser reads Japanese specifications and sample gallery', async () =
   assert.equal(product.price, '26,800円')
   assert.equal(product.classification, 'likely_scale')
   assert.ok(product.imageUrls.length >= 4)
+  assert.equal(product.imageUrls.some((url) => url.includes('cheshire-19002-03')), true)
   assert.equal(product.imageUrls.some((url) => url.includes('recommended')), false)
 })
 

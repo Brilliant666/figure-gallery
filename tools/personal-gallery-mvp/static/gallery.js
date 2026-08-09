@@ -56,7 +56,20 @@ const OFFICIAL_SOURCE_DOMAINS = new Set([
   'www.goodsmilearts.com',
   'alter-web.jp',
   'www.alter-web.jp',
+  'amiami.jp',
+  'www.amiami.jp',
+  'apex-toys.com',
+  'www.apex-toys.com',
 ])
+const CLASSIFICATION_LABELS = Object.freeze({
+  likely_scale: '比例手办',
+  likely_prize: '景品',
+  other: '其他',
+})
+
+function classificationLabel(value) {
+  return CLASSIFICATION_LABELS[value] || '待确认'
+}
 
 function parseRoute(pathname = window.location.pathname) {
   const characterMatch = /^\/gallery\/characters\/([^/]+)(?:\/products\/([^/]+))?\/?$/u.exec(pathname)
@@ -130,8 +143,7 @@ function currentProducts() {
   const scale = scaleFilter.value
   return gallery.products.filter((product) => {
     if (!showExcluded.checked && product.excluded) return false
-    if (classification === 'default' && product.classification === 'other') return false
-    if (classification !== 'default' && classification !== 'all' && product.classification !== classification) return false
+    if (classification !== 'all' && product.classification !== classification) return false
     if (manufacturer !== 'all' && product.manufacturer !== manufacturer) return false
     if (design !== 'all' && product.design !== design) return false
     if (scale !== 'all' && product.scale !== scale) return false
@@ -289,7 +301,7 @@ function createProductCard(product) {
   const body = element('div', 'reference-card-body')
   body.append(element('h2', null, product.title))
   body.append(element('p', 'product-meta', product.manufacturer))
-  body.append(element('p', 'product-meta', `${product.scale} · ${product.classification}`))
+  body.append(element('p', 'product-meta', `${product.scale} · ${classificationLabel(product.classification)}`))
   link.append(body)
   card.append(link)
   return card
@@ -355,7 +367,7 @@ function renderFailures() {
   failureList.replaceChildren(...gallery.failures.map((failure) => element('li', null, failureLabel(failure))))
 }
 
-function replaceFilterOptions(select, values, allLabel) {
+function replaceFilterOptions(select, values, allLabel, labelFor = (value) => value) {
   const selected = select.value
   const all = document.createElement('option')
   all.value = 'all'
@@ -364,7 +376,7 @@ function replaceFilterOptions(select, values, allLabel) {
   for (const value of [...new Set(values.filter(Boolean))].sort()) {
     const option = document.createElement('option')
     option.value = value
-    option.textContent = value
+    option.textContent = labelFor(value)
     select.append(option)
   }
   if ([...select.options].some((option) => option.value === selected)) select.value = selected
@@ -439,7 +451,7 @@ function renderDetail() {
   title.textContent = gallery.query
   meta.textContent = '手办详情 · 全部官方参考图片'
   detailTitle.textContent = product.title
-  detailMeta.textContent = `${product.manufacturer} · ${product.scale} · ${product.classification}`
+  detailMeta.textContent = `${product.manufacturer} · ${product.scale} · ${classificationLabel(product.classification)}`
   detailSourceMeta.textContent = `${product.sourceKind} · ${product.sourceDomain}`
   detailImageCount.textContent = String(product.images.length)
   coverSelection.textContent = coverSourceLabel(product)
@@ -467,7 +479,7 @@ function updateLightbox() {
   lightboxImage.alt = item.image.alt
   lightboxPosition.textContent = `${currentImageIndex + 1} / ${visibleImages.length}`
   lightboxTitle.textContent = item.product.title
-  lightboxMeta.textContent = `${item.product.manufacturer} · ${item.product.classification} · ${item.product.scale}`
+  lightboxMeta.textContent = `${item.product.manufacturer} · ${classificationLabel(item.product.classification)} · ${item.product.scale}`
   previousButton.disabled = currentImageIndex === 0
   nextButton.disabled = currentImageIndex === visibleImages.length - 1
 }
@@ -531,6 +543,14 @@ async function load() {
       ? `${selectedProduct()?.title || gallery.query} · Shooting Reference`
       : `${gallery.query} · Shooting Reference Index`
     renderSourceStatus()
+    replaceFilterOptions(
+      classificationFilter,
+      gallery.products
+        .map((product) => product.classification)
+        .filter((value) => Object.hasOwn(CLASSIFICATION_LABELS, value)),
+      '全部类型',
+      classificationLabel,
+    )
     replaceFilterOptions(manufacturerFilter, gallery.products.map((product) => product.manufacturer), '全部厂商')
     replaceFilterOptions(designFilter, gallery.products.map((product) => product.design), '全部造型')
     replaceFilterOptions(scaleFilter, gallery.products.map((product) => product.scale), '全部比例')

@@ -15,7 +15,7 @@ import {
   officialUrlIdentity,
 } from './official-urls.js'
 
-export const OFFICIAL_PRODUCT_PARSER_VERSION = 'official-deterministic-v1'
+export const OFFICIAL_PRODUCT_PARSER_VERSION = 'official-deterministic-v2'
 
 const CHESHIRE = /(?:\bcheshire\b|チェシャー|柴郡)/iu
 const AZUR_LANE = /(?:\bazur\s+lane\b|アズールレーン|碧蓝航线|碧藍航線)/iu
@@ -43,6 +43,7 @@ const GALLERY_SELECTORS = [
   '.item-images',
   '.item_photo',
   '.item-photo',
+  '.bxslider',
   '.w-detailcontent img.fullScreen',
   '[data-fancybox="product"]',
   '[data-lightbox="product"]',

@@ -222,12 +222,19 @@ if (
   JSON.stringify(referenceGates.map((gate) => gate.id)) !== JSON.stringify(expectedReferenceGates) ||
   referenceGates.some((gate) => gate.status !== 'pass') ||
   Number(mvp03aEvidence.realRuntime?.products) !== 7 ||
-  Number(mvp03aEvidence.realRuntime?.images) !== 56 ||
-  Number(mvp03aEvidence.realRuntime?.indexCovers) !== 6 ||
-  Number(mvp03aEvidence.systemChrome?.index?.imageRequests) !== 6 ||
+  Number(mvp03aEvidence.realRuntime?.images) !== 62 ||
+  Number(mvp03aEvidence.realRuntime?.indexCovers) !== 7 ||
+  Number(mvp03aEvidence.realRuntime?.productsWithoutImages) !== 0 ||
+  Number(mvp03aEvidence.realRuntime?.classificationCounts?.unknown) !== 0 ||
+  Number(mvp03aEvidence.realRuntime?.apex?.localImages) !== 1 ||
+  Number(mvp03aEvidence.realRuntime?.alter?.localImages) !== 6 ||
+  Number(mvp03aEvidence.systemChrome?.index?.imageRequests) !== 7 ||
+  mvp03aEvidence.systemChrome?.interactions?.unknownOptionAbsent !== 'pass' ||
   Number(mvp03aEvidence.systemChrome?.network?.externalRequests) !== 0 ||
   mvp03aEvidence.realRuntime?.runtimeTrackedByGit !== false ||
   mvp03aEvidence.collection?.cheshireRecrawled !== false ||
+  mvp03aEvidence.collection?.targetedOfficialImageRepair !== true ||
+  Number(mvp03aEvidence.collection?.uniqueObjectsAdded) !== 6 ||
   mvp03aEvidence.collection?.hpoiRequests !== 0 ||
   mvp03aEvidence.collection?.firecrawlRequests !== 0
 ) {
