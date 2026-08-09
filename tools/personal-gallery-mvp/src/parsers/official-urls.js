@@ -1,10 +1,22 @@
-const OFFICIAL_HOSTS = new Set([
+const OFFICIAL_MANUFACTURER_HOSTS = new Set([
   'goodsmile.com',
   'www.goodsmile.com',
   'goodsmilearts.com',
   'www.goodsmilearts.com',
   'alter-web.jp',
   'www.alter-web.jp',
+  'apex-toys.com',
+  'www.apex-toys.com',
+])
+
+const OFFICIAL_DISTRIBUTOR_HOSTS = new Set([
+  'amiami.jp',
+  'www.amiami.jp',
+])
+
+const OFFICIAL_HOSTS = new Set([
+  ...OFFICIAL_MANUFACTURER_HOSTS,
+  ...OFFICIAL_DISTRIBUTOR_HOSTS,
 ])
 
 const HPOI_DENIED_ROOT_HOSTS = new Set([
@@ -17,6 +29,7 @@ const SENSITIVE_PARAMETER = /^(?:access_?token|api_?key|apikey|auth|authorizatio
 const NON_PRODUCT_PATH = /\/(?:account|accounts|blog|cart|checkout|community|forum|login|log-in|member|news|search|sign-in|signin|user|users)(?:\/|$)/i
 
 export const OFFICIAL_ALLOWED_PAGE_HOSTS = Object.freeze([...OFFICIAL_HOSTS])
+export const OFFICIAL_SEARCH_DISCOVERABLE_HOSTS = Object.freeze([...OFFICIAL_MANUFACTURER_HOSTS])
 
 export function parseOfficialHttpUrl(value, baseUrl) {
   if (typeof value !== 'string' || !value.trim()) return null
@@ -61,6 +74,14 @@ export function canonicalOfficialDomain(value) {
 
 export function isAllowedOfficialDomain(value) {
   return OFFICIAL_HOSTS.has(String(value || '').replace(/\.$/, '').toLowerCase())
+}
+
+export function isSearchDiscoverableOfficialDomain(value) {
+  return OFFICIAL_MANUFACTURER_HOSTS.has(String(value || '').replace(/\.$/, '').toLowerCase())
+}
+
+export function isOfficialDistributorDomain(value) {
+  return OFFICIAL_DISTRIBUTOR_HOSTS.has(String(value || '').replace(/\.$/, '').toLowerCase())
 }
 
 export function normalizeOfficialPageUrl(value, baseUrl) {
@@ -112,5 +133,8 @@ export function classifyOfficialSearchResult(value) {
   const url = normalizeOfficialPageUrl(parsed.href)
   if (!url) return { status: 'invalid_url', sourceDomain, url: null }
   if (!isAllowedOfficialProductUrl(url)) return { status: 'non_product_path', sourceDomain, url }
+  if (!isSearchDiscoverableOfficialDomain(sourceDomain)) {
+    return { status: 'seed_only_domain', sourceDomain, url }
+  }
   return { status: 'allowed', sourceDomain, url }
 }

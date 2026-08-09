@@ -52,15 +52,16 @@ Search v2 固定使用：
 碧蓝航线 柴郡 比例手办
 ```
 
-第一轮详情页 allowlist 仅包含：
+搜索可自动进入详情验证的厂商 allowlist 仅包含：
 
 - `goodsmile.com`、`www.goodsmile.com`；
 - `goodsmilearts.com`、`www.goodsmilearts.com`；
-- `alter-web.jp`、`www.alter-web.jp`。
+- `alter-web.jp`、`www.alter-web.jp`；
+- `apex-toys.com`、`www.apex-toys.com`。
 
-搜索命中其他域名时只记为 `unreviewedDomain`，不得访问详情、下载图片或自动扩充 allowlist。Good Smile 或 ALTER 页面返回的图片 host 只有在具体商品页直接列出 URL 后，才可作为该父页面本次图片候选；不得按 URL 规律构造资源。
+`amiami.jp`、`www.amiami.jp` 是 seed-only 发行方域名：只有任务中已经逐页人工审核的明确商品 URL 可以访问，Search 命中不会自动进入详情访问。搜索命中其他域名时只记为 `unreviewedDomain`，不得访问详情、下载图片或自动扩充 allowlist。厂商或发行方页面返回的图片 host 只有在具体商品页直接列出 URL 后，才可作为该父页面本次图片候选；不得按 URL 规律构造资源。
 
-已知 ALTER 柴郡和 Good Smile 的 Cheshire: Summery Date!、Cait Sith Crooner、The Cat in the Magic Hat 只能作为召回校验或明确官方 seed 提示，不能硬编码成伪搜索结果。使用官方 seed URL 时必须记录 `discoveryMethod=seed_official_url`；Search 发现记录 `firecrawl_search`。
+柴郡默认受审 seed 只包含搜索漏召回的 Good Smile `Summery Date!`、`Cait Sith Crooner`、APEX `Dating Summer！Ver.`，以及两个明确的 AmiAmi×AniGame 商品页。它们不能硬编码成伪搜索结果；使用 seed URL 必须记录 `discoveryMethod=seed_official_url`，Search 发现记录 `firecrawl_search`。任何新增 seed 都需要独立逐页审核，不能从发行方域名自动枚举。
 
 ## 4. 官方商品页真实性
 
@@ -172,9 +173,9 @@ node src/cli/collect.js --query "柴郡" --confirm-official-source-access
 
 缺少实时开关、Key 或本次确认时只能返回阻塞状态，不得触网。API Key、Authorization header 和 Firecrawl 内部请求头不得打印或写入 manifest。
 
-本轮真实结果使用五组中、日、英查询自动发现了 Good Smile 与 ALTER 各一个柴郡官方商品页。首个完整图库运行解析 2 个商品并关联 10 个 SHA-256 图片对象；完全相同配置的下一轮运行新增商品和对象均为 0，2 个商品均为 `unchanged`。随后又执行一次偏好跨采集验证，确认非空排除、首选封面和备注不会被重新采集覆盖。
+最初的真实结果由五组中、日、英查询自动发现 Good Smile 与 ALTER 各一个商品。覆盖补齐后，同样的五组查询与 5 个受审 seed 共同形成 7 个第一阶段静态/比例手办条目：Good Smile 3 个、ALTER 1 个、APEX 1 个、AmiAmi×AniGame 2 个。最终同配置两轮均解析 7 个商品；第二轮新增商品 0、对象 0，7 个商品全部为 `unchanged`。
 
-最终安全加固把图片传输切换为经过公网 DNS 校验并绑定解析地址的 HTTPS 请求。Good Smile 对同一组公开图片 URL 返回了 WebP，而旧传输曾返回 JPEG，因此按字节 SHA-256 新增 9 个表示版本；ALTER 对象未变化。紧接着用相同最终代码复跑，新增商品和对象再次均为 0。目前本地图库保留 19 个字节不同的图片对象，其中包含 9 组 JPEG/WebP 视觉对应项；跨格式感知去重不属于 MVP-02，不能把不同字节伪报为同一 SHA-256 对象。请求计数、credits 口径、run ID 与浏览器门禁状态以脱敏证据 JSON 为准；真实页面、图片、manifest 和完整日志只保留在 Git 忽略的 `.local/` 中。
+最终安全加固继续使用经过公网 DNS 校验并绑定解析地址的 HTTPS 图片传输。本地图库保留 56 个字节不同的 SHA-256 图片对象，6 个商品具有本地图。APEX 商品页明确列出的 3 个商品图 URL 实际均返回 HTTP 404，因此商品卡片保留、失败可见，但不猜测替代地址、不修改参数也不绕过；最终幂等轮稳定复现这 3 个失败且不产生半成品对象。历史 Good Smile JPEG/WebP 字节表示仍按 SHA-256 分别保留；跨格式感知去重不属于 MVP-02。请求计数、credits、run ID 与浏览器门禁状态以脱敏证据 JSON 为准；真实页面、图片、manifest 和完整日志只保留在 Git 忽略的 `.local/` 中。
 
 ## 10. 私有图库验收
 
@@ -186,13 +187,13 @@ node src/cli/collect.js --query "柴郡" --confirm-official-source-access
 
 图库继续支持 4/3/2 响应式列、原始比例、懒加载、灯箱、fit/actual、缩放、Esc、当前结果左右切换、排除/恢复、首选封面和备注。浏览器会话只能请求 loopback，图片必须来自本地对象。
 
-真实首轮通过标准：至少发现并解析 2 个柴郡官方商品、至少两个不同造型、至少 6 张公开官方样品图、至少 2 个商品卡片，并完成真实 Chrome loopback-only 验收。若官方页面实际图片较少，必须按真实结果报告，不能用合成图补数。
+覆盖补齐的当前验收标准为：同一真实运行清单包含 7 个受审第一阶段商品、至少 6 个有本地图的商品、所有已保存对象通过 SHA-256 和本地读取校验，并完成真实 Chrome loopback-only 验收。来源图片缺失或失效必须按真实结果报告，不能用合成图补数。
 
 MVP02-11 的权威定义是：**系统安装的 Google Chrome Stable 使用临时、独立、干净的 profile 加载真实本地柴郡图库；真实商品、真实本地对象、交互、偏好持久性、响应式布局和 loopback-only 网络全部通过。** 本机验收器位于 `scripts/validate-real-system-chrome.mjs`，从两个标准 Windows 安装路径定位 Google Chrome，并拒绝 bundled Chromium、Edge 和用户 profile。它不安装或加载扩展，不读取 Cookie、历史记录、密码或登录状态；结束时必须按原始字节恢复 `preferences.json` 并删除临时 profile。
 
 ChatGPT Chrome Extension、Chrome Profile 8、Chrome Profile 5、任何用户日常 profile 和 Codex 扩展控制通道都不是此门禁的要求。合成 Playwright fixture 只能作为离线回归，不能代替真实 `.local/personal-gallery/` 数据或系统 Chrome。真实验收只允许访问 `127.0.0.1:4317`；context 观察到任何外网 HTTP/HTTPS/WebSocket 请求、热链图片、损坏对象或偏好未恢复时，MVP02-11 必须失败。
 
-2026-07-22 的本机验收使用系统 Google Chrome `150.0.7871.129` headed 模式和一次性空白 profile：2 个商品卡片、19 个本地对象均成功显示，19/19 媒体路由返回 HTTP 200，外网请求为 0；4/3/2、灯箱、fit/actual、缩放、左右及跨商品切换、首尾边界、Esc、图片排除/恢复、封面和备注持久化全部通过。验收后原偏好字节一致，扩展、截图、视频和 trace 均为 0，临时 profile 已删除。
+2026-07-23 的本机验收使用系统 Google Chrome `150.0.7871.129` headed 模式和一次性空白 profile：7 个商品卡片、56 个本地对象均成功显示，56/56 媒体路由返回 HTTP 200，外网请求为 0；4/3/2、灯箱、fit/actual、缩放、左右及跨商品切换、首尾边界、Esc、图片排除/恢复、封面和备注持久化全部通过。验收后原偏好字节一致，扩展、截图、视频和 trace 均为 0，临时 profile 已删除。
 
 ## 11. 离线 CI
 
@@ -218,22 +219,22 @@ CI 永远设置 Hpoi 和官方来源实时开关为 `false`，不使用 Reposito
 | --- | --- |
 | MVP02-01 | Hpoi 固化为 `blocked_by_source`、captcha、禁止重试；本任务 Hpoi 请求 0 |
 | MVP02-02 | Firecrawl Search v2 明确排除 `hpoi.net` 与 `www.hpoi.net`，不使用禁用模式 |
-| MVP02-03 | 详情只访问初始官方 allowlist，其他域名只记 `unreviewedDomain` |
+| MVP02-03 | 详情只访问受审厂商 allowlist 和明确 seed-only 发行方页面，其他域名只记 `unreviewedDomain` |
 | MVP02-04 | 中、日、英五组查询均执行并可审计 |
 | MVP02-05 | 角色、作品、官方证据和页面类型真实性校验通过 |
-| MVP02-06 | Good Smile 与 ALTER 商品字段确定性解析通过 |
-| MVP02-07 | 公开官方样品图下载、验证与本地读取通过 |
+| MVP02-06 | Good Smile、ALTER、APEX 与 AmiAmi 商品字段确定性解析通过 |
+| MVP02-07 | 公开商品图下载、验证与本地读取通过；APEX 的 3 个 HTTP 404 如实保留为失败 |
 | MVP02-08 | 商品身份、SHA-256 内容去重和历史 run 隔离通过 |
-| MVP02-09 | 真实首轮达到官方商品、不同造型、图片与卡片标准 |
-| MVP02-10 | 相同配置第二轮新增商品/对象为 0，unchanged/changed 正确，偏好保持 |
-| MVP02-11 | 系统 Google Chrome Stable 以临时干净 profile 对真实 `.local` 柴郡图库完成交互、偏好恢复、19 个本地对象和 loopback-only 网络验收；不依赖扩展、用户 profile 或 bundled Chromium |
+| MVP02-09 | 同一真实运行清单达到 7 个第一阶段商品、6 个有图商品和 56 个本地对象 |
+| MVP02-10 | 相同配置第二轮新增商品/对象为 0，7 个商品均 unchanged，偏好保持 |
+| MVP02-11 | 系统 Google Chrome Stable 以临时干净 profile 对 7 个卡片、56 个本地对象完成交互、偏好恢复和 loopback-only 网络验收；不依赖扩展、用户 profile 或 bundled Chromium |
 | MVP02-12 | `.local/`、Key、真实页面/图片/manifest 与正式 Payload 完全隔离 |
 
 全部 12 项通过后，MVP-02 才能声明 `pass`。当前状态必须以 [`research/evidence/mvp02/personal-gallery-results.json`](../research/evidence/mvp02/personal-gallery-results.json) 为准；未执行项写 `not_run`，不得用离线 fixture 冒充真实结果。
 
 ## 13. 停止和后续边界
 
-MVP-02 第一版通过后立即冻结，先供项目所有者在拍摄准备中实际使用。当前只收录 2 个官方商品和 19 个字节不同的图片对象，其中有 9 组 JPEG/WebP 视觉对应项；48 个最终搜索候选中仅 2 个命中当前官方 allowlist，只做了 SHA-256 精确去重，没有感知去重，因此不代表柴郡全部手办的完整收录。Hpoi 继续因 captcha 停用。
+MVP-02 柴郡覆盖补齐后继续作为本机个人拍摄工具使用。当前收录 7 个第一阶段静态/比例手办商品卡片和 56 个字节不同的图片对象；Hpoi 的 9+ 结果还包含黏土人、可动、盲盒/Q 版、GK、抱枕及不同角色等非第一阶段条目，不能直接等同于本工具目标数。当前只做 SHA-256 精确去重，没有感知去重；APEX 的 3 个公开图片 URL 仍为 HTTP 404 缺口。Hpoi 继续因 captcha 停用，本轮 Hpoi 请求为 0。
 
 达到真实首轮、第二轮幂等、真实浏览器、PR 合并与干净工作区停止条件后立即停止。不得继续增加 allowlist、搜索 query、第二角色、感知哈希、正式 Candidate/Review/Media、正式 PR-02、Payload 导入、原画图库、公开部署或 Hpoi 绕过。
 

@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "task": "MVP-02",
   "overallStatus": "pass",
-  "generatedAt": "2026-07-22T21:26:50+08:00",
+  "generatedAt": "2026-07-23T22:32:25+08:00",
   "baseline": {
     "pr11MergeSha": "65231c0187cf49c7a2f4ea1c722bf16dc1d11133",
     "branch": "feat/mvp-02-cheshire-official-gallery"
@@ -33,7 +33,13 @@
         "goodsmilearts.com",
         "www.goodsmilearts.com",
         "alter-web.jp",
-        "www.alter-web.jp"
+        "www.alter-web.jp",
+        "apex-toys.com",
+        "www.apex-toys.com"
+      ],
+      "seedOnlyDistributorHosts": [
+        "amiami.jp",
+        "www.amiami.jp"
       ],
       "queryLanguages": [
         "en",
@@ -61,13 +67,13 @@
   },
   "taskNetworkTotals": {
     "scope": "all_actual_MVP-02_live_network_activity",
-    "firecrawlSearchRequests": 35,
-    "firecrawlScrapeRequests": 13,
-    "firecrawlRequestsTotal": 48,
-    "firecrawlCredits": 367,
+    "firecrawlSearchRequests": 83,
+    "firecrawlScrapeRequests": 72,
+    "firecrawlRequestsTotal": 155,
+    "firecrawlCredits": 906,
     "creditAccounting": {
-      "searchCreditsEstimatedUpperBound": 350,
-      "scrapeCreditsReported": 17
+      "historicalMvp02Credits": 367,
+      "coverageExpansionCreditsOrUpperBound": 539
     },
     "acceptancePair": {
       "searchRequests": 10,
@@ -89,6 +95,12 @@
       "scrapeRequests": 3,
       "credits": 107
     },
+    "coverageExpansion": {
+      "searchRequests": 48,
+      "scrapeRequests": 59,
+      "requests": 107,
+      "creditsOrUpperBound": 539
+    },
     "sdkTransportConfigurationDiagnostic": {
       "actualHttpRequests": 0,
       "excludedEstimatedCredits": 150,
@@ -98,16 +110,16 @@
   },
   "offlineValidation": {
     "status": "pass",
-    "githubCiStatus": "pass_on_pre_correction_head_final_head_required_before_merge",
-    "ciRunId": 29605608880,
-    "ciHeadSha": "ffbe0e12f51236835dd4fa89dd5a9f9a2c55571c",
+    "githubCiStatus": "pending_current_coverage_expansion_head",
+    "ciRunId": null,
+    "ciHeadSha": null,
     "hpoiRequests": 0,
     "firecrawlRequests": 0,
     "officialExternalRequests": 0,
     "syntheticFixturesOnly": true,
     "tests": {
-      "total": 150,
-      "passed": 150,
+      "total": 152,
+      "passed": 152,
       "failed": 0
     },
     "browser": {
@@ -237,24 +249,113 @@
       "hpoiRequests": 0
     }
   },
+  "coverageExpansion": {
+    "status": "pass_with_known_source_image_gap",
+    "validatedAt": "2026-07-23T22:32:25+08:00",
+    "scope": "reviewed_first_phase_static_and_scale_products",
+    "hpoiComparison": {
+      "ownerObservedResultCount": "more_than_9",
+      "notEquivalentToFirstPhaseCount": true,
+      "excludedOrSeparateCategories": [
+        "nendoroid",
+        "articulated_figure",
+        "blind_box_or_q_style",
+        "garage_kit",
+        "dakimakura_merchandise",
+        "different_character"
+      ],
+      "hpoiRequests": 0
+    },
+    "reviewedProducts": {
+      "total": 7,
+      "withLocalImages": 6,
+      "withoutLocalImages": 1,
+      "likelyScale": 7,
+      "likelyPrize": 0,
+      "unknown": 0,
+      "other": 0,
+      "bySource": {
+        "goodSmile": 3,
+        "alter": 1,
+        "apex": 1,
+        "amiamiAnigame": 2
+      }
+    },
+    "finalPair": {
+      "firstRun": {
+        "runId": "2026-07-23T14-19-38-837Z-3ed53b19-d017-45e9-8b0d-6c9c02e3095a",
+        "query": "柴郡",
+        "status": "completed",
+        "productsProcessed": 7,
+        "productsNew": 0,
+        "productsUnchanged": 7,
+        "productsChanged": 0,
+        "imageUrls": 53,
+        "imagesDownloaded": 50,
+        "imageFailures": 3,
+        "newSha256Objects": 0,
+        "firecrawlRequests": 12,
+        "firecrawlCredits": 57,
+        "hpoiRequests": 0
+      },
+      "secondRun": {
+        "runId": "2026-07-23T14-25-14-722Z-af5b8948-66fe-495e-b6e0-294c6ce3bac1",
+        "query": "柴郡",
+        "status": "completed",
+        "sameFinalCodeAndConfigurationAsFirst": true,
+        "productsProcessed": 7,
+        "productsNew": 0,
+        "productsUnchanged": 7,
+        "productsChanged": 0,
+        "imageUrls": 53,
+        "imagesDownloaded": 50,
+        "imageFailures": 3,
+        "newSha256Objects": 0,
+        "duplicateImages": 50,
+        "firecrawlRequests": 12,
+        "firecrawlCredits": 57,
+        "hpoiRequests": 0
+      }
+    },
+    "supplementalNetworkTotals": {
+      "runManifestFirecrawlRequests": 105,
+      "diagnosticFirecrawlScrapes": 2,
+      "firecrawlRequestsTotal": 107,
+      "firecrawlCreditsOrUpperBound": 539,
+      "hpoiRequests": 0
+    },
+    "apexImageGap": {
+      "status": "source_urls_return_http_404",
+      "publicProductImageUrlsObserved": 3,
+      "http404": 3,
+      "localObjectsCreated": 0,
+      "productRecordRetained": true,
+      "replacementUrlGuessed": false,
+      "parameterMutationAttempted": false,
+      "accessControlBypassAttempted": false
+    }
+  },
   "realGallery": {
     "status": "pass",
     "galleryUrl": "http://127.0.0.1:4317/gallery/characters/cheshire",
     "sourceMode": "official_sources",
-    "officialProductCards": 2,
-    "localImages": 19,
-    "differentDesigns": 2,
+    "officialProductCards": 7,
+    "productsWithLocalImages": 6,
+    "productsWithoutLocalImages": 1,
+    "localImages": 56,
+    "differentDesigns": 7,
     "byteDistinctRepresentationSummary": {
       "goodSmileJpegObjects": 9,
       "goodSmileWebpObjects": 9,
       "alterJpegObjects": 1,
       "knownCrossFormatVisualPairs": 9,
+      "allCurrentProductLinkedObjects": 56,
       "deduplicationBoundary": "SHA-256 byte identity; cross-format perceptual deduplication is intentionally outside MVP-02"
     },
     "allImageSourcesUseLocalMediaRoutes": true,
     "localMediaHttpValidation": {
       "status": "pass",
-      "uniqueRoutesChecked": 19,
+      "uniqueRoutesChecked": 56,
       "allReturnedHttp200": true,
       "allRequestsUsedLoopback": true,
       "mimeTypes": [
@@ -264,14 +365,22 @@
     },
     "officialProductDomains": [
       "goodsmile.com",
-      "alter-web.jp"
+      "alter-web.jp",
+      "apex-toys.com",
+      "amiami.jp"
     ],
+    "knownCurrentFailures": {
+      "count": 3,
+      "source": "APEX product page image URLs",
+      "result": "HTTP 404",
+      "partialObjectsCreated": 0
+    },
     "hpoiStatusVisible": "blocked_by_source"
   },
   "realBrowserValidation": {
     "status": "pass",
     "definition": "System-installed Google Chrome Stable uses a temporary clean profile to validate the real local Cheshire gallery, interactions, preference persistence, responsive layout, and loopback-only network boundary.",
-    "validatedAt": "2026-07-22T21:26:50+08:00",
+    "validatedAt": "2026-07-23T22:32:25+08:00",
     "runner": "tools/personal-gallery-mvp/scripts/validate-real-system-chrome.mjs",
     "browser": {
       "product": "Google Chrome",
@@ -287,22 +396,24 @@
     },
     "galleryUrl": "http://127.0.0.1:4317/gallery/characters/cheshire",
     "gallery": {
-      "productCards": 2,
-      "localObjects": 19,
-      "localImages": 19,
+      "productCards": 7,
+      "localObjects": 56,
+      "localImages": 56,
       "mediaHttp": {
-        "checked": 19,
-        "http200": 19,
+        "checked": 56,
+        "http200": 56,
         "failures": 0
       },
       "manufacturers": {
         "alter": true,
         "goodSmile": true,
+        "apex": true,
+        "amiami": true,
         "separateCards": true
       }
     },
     "network": {
-      "loopbackRequests": 176,
+      "loopbackRequests": 441,
       "loopbackWebSockets": 0,
       "externalRequests": 0,
       "externalHttpRequests": 0,
@@ -362,7 +473,7 @@
       "videos": 0,
       "traces": 0
     },
-    "resultDigest": "5ad69ff6cdfe56d7b7248f9118e193c1dc5d4ff1aaa85b7df16df83928e36a5d"
+    "resultDigest": "4a3fb76930668d0322fc411b3c6d25114aa7c612d6ceef43688639ae070bdf3f"
   },
   "repositorySafety": {
     "status": "pass",
@@ -407,8 +518,9 @@
       "name": "official domain allowlist",
       "status": "pass",
       "evidence": [
-        "Only Good Smile and ALTER allowlist pages were scraped",
-        "The final accepted run had 48 candidates: 2 allowlist hits and 46 non-allowlisted records retained only as unreviewed metadata; the earlier 49/2/47 run remains in history"
+        "Search-discoverable detail access is limited to reviewed Good Smile, ALTER, and APEX manufacturer hosts",
+        "AmiAmi is seed-only: search hits cannot auto-promote distributor pages, and only two explicitly reviewed product URLs are seeded",
+        "The final accepted run retained 46 non-allowlisted records only as unreviewed metadata"
       ]
     },
     {
@@ -424,7 +536,7 @@
       "name": "official product page validation",
       "status": "pass",
       "evidence": [
-        "Two allowlisted Cheshire/Azur Lane pages passed deterministic authenticity checks"
+        "Seven reviewed Cheshire/Azur Lane product pages passed deterministic authenticity checks"
       ]
     },
     {
@@ -432,7 +544,7 @@
       "name": "deterministic official product parsing",
       "status": "pass",
       "evidence": [
-        "Good Smile and ALTER products parsed successfully; 0 product failures"
+        "Three Good Smile, one ALTER, one APEX, and two AmiAmi/AniGame products parsed successfully; 0 product failures"
       ]
     },
     {
@@ -440,9 +552,9 @@
       "name": "public official image download and validation",
       "status": "pass",
       "evidence": [
-        "11 public page image URLs downloaded and validated",
-        "19 byte-distinct product-linked SHA-256 objects are served locally",
-        "Nine Good Smile JPEG/WebP representation pairs are retained because MVP-02 deduplicates exact bytes, not perceptual similarity"
+        "The final run observed 53 public page image URLs and successfully validated 50 image responses",
+        "56 byte-distinct product-linked SHA-256 objects are served locally across six products",
+        "Three APEX product-image URLs returned HTTP 404 and produced no partial objects; the product record and failures remain visible"
       ]
     },
     {
@@ -450,8 +562,8 @@
       "name": "product and content-addressed image idempotency",
       "status": "pass",
       "evidence": [
-        "The final pinned-transport repeat created 0 products and 0 objects; 2 products were unchanged",
-        "The immediately preceding transport transition created 9 WebP objects for URLs previously returned as JPEG, and that representation change is recorded explicitly"
+        "The final same-code, same-configuration repeat created 0 products and 0 objects; all 7 products were unchanged",
+        "All 50 successful image responses resolved to existing SHA-256 objects; the three APEX HTTP 404 failures were stable"
       ]
     },
     {
@@ -459,7 +571,8 @@
       "name": "first real Cheshire gallery",
       "status": "pass",
       "evidence": [
-        "2 official products, 2 different designs, 19 byte-distinct local image objects, stable character URL"
+        "7 reviewed first-phase products, 7 different designs, 56 byte-distinct local image objects, and a stable character URL",
+        "6 products have local images; the APEX card remains visible with its source-image failure"
       ]
     },
     {
@@ -467,8 +580,8 @@
       "name": "second real run idempotency and preference preservation",
       "status": "pass",
       "evidence": [
-        "Second accepted run proved product and object idempotency",
-        "A subsequent same-configuration collection preserved non-empty exclusion, preferred cover, and note"
+        "The second expanded-coverage run proved 7-product and object idempotency",
+        "System Chrome acceptance preserved and byte-restored exclusion, preferred cover, and note state"
       ]
     },
     {
@@ -477,7 +590,7 @@
       "status": "pass",
       "evidence": [
         "System Google Chrome 150 used a temporary clean profile; no extension or user profile was required",
-        "2 real product cards and 19 real local objects returned 19/19 HTTP 200 responses",
+        "7 real product cards and 56 real local objects returned 56/56 HTTP 200 responses",
         "4/3/2 layout, lightbox, fit/actual, zoom, cross-product navigation, boundaries, Esc, exclusion restore, cover and note persistence passed",
         "Browser external requests were 0; original preferences were byte-restored and the temporary profile was deleted",
         "Offline Playwright interaction coverage remains synthetic and is not substituted for this real acceptance"

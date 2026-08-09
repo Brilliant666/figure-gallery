@@ -10,6 +10,7 @@ import { normalizeImageUrl } from './urls.js'
 import {
   canonicalOfficialDomain,
   isAllowedOfficialProductUrl,
+  isOfficialDistributorDomain,
   normalizeOfficialPageUrl,
   officialUrlIdentity,
 } from './official-urls.js'
@@ -42,6 +43,7 @@ const GALLERY_SELECTORS = [
   '.item-images',
   '.item_photo',
   '.item-photo',
+  '.w-detailcontent img.fullScreen',
   '[data-fancybox="product"]',
   '[data-lightbox="product"]',
 ]
@@ -181,6 +183,21 @@ function selectStructuredProduct(documents, { pageUrl, title }) {
 function cleanId(value) {
   const result = cleanText(value)
   return result && /^[\p{Letter}\p{Number}._-]{1,128}$/u.test(result) ? result : null
+}
+
+function sourceIdFromUrl(sourceUrl, sourceDomain) {
+  const parsed = new URL(sourceUrl)
+  if (sourceDomain === 'amiami.jp') return cleanId(parsed.searchParams.get('gcode'))
+  if (sourceDomain === 'apex-toys.com') return cleanId(/\/productinfo\/(\d+)\.html$/iu.exec(parsed.pathname)?.[1])
+  return null
+}
+
+function firstTextMatch(value, patterns) {
+  for (const pattern of patterns) {
+    const match = pattern.exec(value || '')
+    if (match?.[1]) return cleanText(match[1])
+  }
+  return null
 }
 
 function primaryDocument(rawHtml) {
@@ -366,16 +383,38 @@ export function parseOfficialProductPage({
     title: visibleTitle,
   })
   const title = visibleTitle || schemaValue(structuredProduct?.name)
-  const series = field(fields, ['series', 'work', 'title', '作品名', '作品', '原作', '系列'])
+  const series = field(fields, ['series', 'work', 'title', '作品名', '作品', '原作', '原作名', '系列'])
     || cleanText(primary('[data-series], .product-series, .item_title').first().text())
-  const characterField = field(fields, ['character', '角色', 'キャラクター'])
-  const explicitManufacturer = field(fields, ['manufacturer', 'maker', 'brand', '厂商', '製造元', 'メーカー'])
+  const characterField = field(fields, ['character', '角色', 'キャラクター', 'キャラ名'])
+  const knownManufacturer = sourceDomain === 'alter-web.jp'
+    ? 'ALTER'
+    : sourceDomain === 'apex-toys.com'
+      ? 'APEX'
+      : null
+  const explicitManufacturer = field(fields, [
+    'manufacturer',
+    'maker',
+    'brand',
+    'brand name',
+    'ブランド名',
+    '厂商',
+    '製造元',
+    'メーカー',
+  ])
     || schemaValue(structuredProduct?.brand)
     || schemaValue(firecrawlProduct?.brand)
   const category = field(fields, ['category', 'type', '分类', '類型', '商品形態', '仕様'])
     || schemaValue(structuredProduct?.category)
+  const primaryText = searchableDocumentText(primary)
   const scale = field(fields, ['scale', '比例', 'スケール'])
+    || firstTextMatch(primaryText, [
+      /(?:スケール|scale|比例)[^\p{Number}]{0,20}(1\s*\/\s*\d+)/iu,
+      /\b(1\s*\/\s*\d+)\s*(?:scale|スケール|比例)/iu,
+    ])?.replace(/\s+/g, '')
   const height = field(fields, ['height', '全高', '尺寸', 'サイズ'])
+    || firstTextMatch(primaryText, [
+      /(?:全高|高さ|height|サイズ)[^。；;\n]{0,10}((?:約\s*)?\d+(?:\.\d+)?\s*(?:mm|cm))/iu,
+    ])
   const releaseDate = field(fields, ['release date', 'release', '発売時期', '発売月', '发售时间', '發售時間'])
     || schemaValue(structuredProduct?.releaseDate)
   const sculptor = field(fields, ['sculptor', '原型', '原型制作', '原型製作'])
@@ -389,19 +428,17 @@ export function parseOfficialProductPage({
       || structuredProduct?.sku
       || structuredProduct?.productID
       || structuredProduct?.mpn,
-  )
+  ) || sourceIdFromUrl(sourceUrl, sourceDomain)
   // Join text nodes explicitly so adjacent HTML elements retain word
   // boundaries (for example, </h1><p>Azur Lane). Cheerio's `.text()`
   // concatenates those nodes without a separator and can otherwise turn a
   // valid series marker into `CheshireAzur Lane`.
-  const primaryText = searchableDocumentText(primary)
   const specificationEvidence = [category, scale, height, releaseDate, price, sculptor, paintwork].some(Boolean)
-  const isAlter = sourceDomain === 'alter-web.jp'
   const validation = validateOfficialProductPage({
     title,
     primaryText,
     series,
-    manufacturerEvidence: explicitManufacturer || (isAlter ? 'ALTER' : null),
+    manufacturerEvidence: explicitManufacturer || knownManufacturer,
     specificationEvidence,
     descriptionEvidence: description && description.length >= 20,
   })
@@ -411,10 +448,10 @@ export function parseOfficialProductPage({
     })
   }
 
-  const manufacturer = explicitManufacturer || (isAlter ? 'ALTER' : null)
-  const goodSmileManufacturer = /good\s*smile|グッドスマイル/iu.test(manufacturer || '')
-  const sourceKind = isAlter || goodSmileManufacturer ? 'official_manufacturer' : 'official_distributor'
-  const distributor = isAlter || goodSmileManufacturer ? null : 'Good Smile Company'
+  const manufacturer = explicitManufacturer || knownManufacturer
+  const distributorSource = isOfficialDistributorDomain(new URL(sourceUrl).hostname)
+  const sourceKind = distributorSource ? 'official_distributor' : 'official_manufacturer'
+  const distributor = distributorSource ? 'AmiAmi' : null
   const candidateImages = collectGalleryImages(full, sourceUrl, images, structuredProduct)
   const classification = classifyProduct({ title, rawCategory: category, rawScale: scale })
   const character = characterField || (CHESHIRE.test(title || '') ? 'Cheshire' : null)

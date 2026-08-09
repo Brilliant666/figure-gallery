@@ -68,6 +68,37 @@ test('ALTER parser reads Japanese specifications and sample gallery', async () =
   assert.equal(product.imageUrls.some((url) => url.includes('recommended')), false)
 })
 
+test('reviewed APEX manufacturer and AmiAmi distributor pages preserve source roles and stable IDs', async () => {
+  const apex = parseOfficialProductPage({
+    rawHtml: await fixture('apex-cheshire.synthetic.html'),
+    url: 'https://apex-toys.com/productinfo/3727461.html',
+    discoveryMethod: 'seed_official_url',
+  })
+  assert.equal(apex.sourceKind, 'official_manufacturer')
+  assert.equal(apex.sourceDomain, 'apex-toys.com')
+  assert.equal(apex.manufacturer, 'APEX')
+  assert.equal(apex.distributor, null)
+  assert.equal(apex.officialProductId, '3727461')
+  assert.equal(apex.scale, '1/8')
+  assert.equal(apex.classification, 'likely_scale')
+  assert.equal(apex.imageUrls.length, 2)
+
+  const amiami = parseOfficialProductPage({
+    rawHtml: await fixture('amiami-cheshire.synthetic.html'),
+    url: 'https://www.amiami.jp/top/detail/detail?gcode=FIGURE-181336&utm_source=synthetic',
+    discoveryMethod: 'seed_official_url',
+  })
+  assert.equal(amiami.sourceKind, 'official_distributor')
+  assert.equal(amiami.sourceDomain, 'amiami.jp')
+  assert.equal(amiami.manufacturer, 'あみあみ×AniGame')
+  assert.equal(amiami.distributor, 'AmiAmi')
+  assert.equal(amiami.officialProductId, 'FIGURE-181336')
+  assert.equal(amiami.scale, '1/6')
+  assert.equal(amiami.classification, 'likely_scale')
+  assert.equal(amiami.imageUrls.length, 2)
+  assert.equal(amiami.imageUrls.some((url) => url.includes('related-product')), false)
+})
+
 test('multiple JSON-LD Products select only the item matching the current canonical URL and title', async () => {
   const product = parseOfficialProductPage({
     rawHtml: await fixture('official-multiple-jsonld.synthetic.html'),

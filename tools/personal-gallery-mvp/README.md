@@ -9,7 +9,9 @@ MVP-02 的权威说明见 [`docs/MVP02_CHESHIRE_OFFICIAL_GALLERY.md`](../../docs
 - Hpoi 实时访问已冻结为 `blocked_by_source`。历史 Hpoi parser 只用于合成 fixture 的离线回归，不得触发网络请求，也不得自动重试。
 - MVP-02 仅发现公开的官方厂商或官方发行方商品页。Firecrawl 只使用 Search v2 的 `web` source 和 v2 `scrape`；不使用 crawl、Agent、浏览器动作、增强代理、位置伪装、Cookie、登录或验证码处理。
 - Search 明确排除 `hpoi.net` 与 `www.hpoi.net`，并使用柴郡的中、日、英五条固定检索词。搜索结果只有落入代码内 allowlist 的官方商品页才会进入下载流程。
-- 当前 allowlist 为 `goodsmile.com`、`www.goodsmile.com`、`goodsmilearts.com`、`www.goodsmilearts.com`、`alter-web.jp`、`www.alter-web.jp`。其他域名只记入 `unreviewed-domains.json`，不会自动访问。
+- 搜索可自动进入详情验证的厂商 allowlist 为 `goodsmile.com`、`www.goodsmile.com`、`goodsmilearts.com`、`www.goodsmilearts.com`、`alter-web.jp`、`www.alter-web.jp`、`apex-toys.com`、`www.apex-toys.com`。
+- `amiami.jp`、`www.amiami.jp` 只允许作为已经逐页人工确认的发行方 seed；Search 命中不会自动进入详情访问，不能借此扩展到任意 AmiAmi 商品。
+- 柴郡默认 seed 仅包含两个搜索漏召回的 Good Smile 商品页、一个 APEX 商品页和两个 AmiAmi×AniGame 明确商品页。其他域名只记入 `unreviewed-domains.json`，不会自动访问。
 - 401、403、429、captcha、登录/机器人验证、robots 拒绝或非 allowlist 跳转会停止当前运行；不会更换代理、伪装身份或绕过访问控制。
 
 打开实时开关不等于获得来源授权。启用者必须自行确认对公开官方商品页的访问权限，并在每次真实运行时作主动确认。
@@ -63,6 +65,8 @@ npm run collect -- --query "柴郡" --confirm-official-source-access
 | `npm run clean:runtime` | 显示绑定目标的确认短语；再次明确确认后才删除个人运行目录 |
 
 稳定柴郡图库地址为 `http://127.0.0.1:4317/gallery/characters/cheshire`。图库提供厂商、造型、比例筛选，4/3/2 响应式布局，灯箱、缩放、跨商品左右切换，以及商品/图片排除与恢复。它不提供下载按钮、公共账号或公网部署。
+
+当前本机验收基线为 7 个第一阶段静态/比例手办商品卡片和 56 个本地 SHA-256 图片对象。6 个商品具有本地图；APEX `Dating Summer！Ver.` 商品页公开列出的 3 个图片 URL 当前均返回 HTTP 404，因此保留商品卡片和失败记录，不猜测替代图片 URL。Hpoi 上的黏土人、可动人偶、盲盒/Q 版、GK、抱枕等条目不计入这 7 个第一阶段商品。
 
 `validate:chrome:real` 不属于 CI：运行前必须已有完整真实图库并启动 loopback 服务。它只接受 Windows 标准路径中的系统 Google Chrome Stable，优先 headed、无法显示窗口时才使用同一 Chrome binary 的 headless 模式；它不使用 bundled Chromium、Edge、ChatGPT Chrome Extension 或用户 profile。验收器在 browser context 层阻断所有非 `127.0.0.1:4317` 请求，临时修改偏好以验证持久性，随后按原始字节恢复偏好并删除临时 profile。默认脱敏结果只写入系统临时目录，不提交 Git。
 
