@@ -10,9 +10,10 @@ import { isCharacterUrl, normalizePageUrl, sanitizeUrlForRecord } from '../parse
 const EMPTY_INDEX = Object.freeze({ schemaVersion: 1, runs: [], queries: {} })
 const EMPTY_IMAGE_INDEX = Object.freeze({ schemaVersion: 1, objects: {}, urlHistory: {} })
 const EMPTY_PREFERENCES = Object.freeze({
-  schemaVersion: 1,
+  schemaVersion: 2,
   excludedProductIds: [],
   excludedImageSha256: [],
+  products: {},
   preferredCoverImage: {},
   manualNote: {},
 })
@@ -369,8 +370,15 @@ export class GalleryStore {
   async updatePreferences(mutate) {
     return updateJson(this.preferencesPath, EMPTY_PREFERENCES, (preferences) => {
       const next = mutate(preferences) || preferences
+      next.schemaVersion = 2
       next.excludedProductIds = unique(next.excludedProductIds || [])
       next.excludedImageSha256 = unique(next.excludedImageSha256 || [])
+      next.products = next.products && typeof next.products === 'object' ? next.products : {}
+      next.preferredCoverImage =
+        next.preferredCoverImage && typeof next.preferredCoverImage === 'object'
+          ? next.preferredCoverImage
+          : {}
+      next.manualNote = next.manualNote && typeof next.manualNote === 'object' ? next.manualNote : {}
       return next
     })
   }
@@ -405,6 +413,10 @@ export class GalleryStore {
 
   setPreferredCover(productKey, imageSha256) {
     return this.updatePreferences((preferences) => {
+      preferences.products ||= {}
+      preferences.products[productKey] ||= {}
+      preferences.products[productKey].preferredCoverImageId = imageSha256
+      preferences.preferredCoverImage ||= {}
       preferences.preferredCoverImage[productKey] = imageSha256
       return preferences
     })
@@ -412,8 +424,14 @@ export class GalleryStore {
 
   setManualNote(productKey, note) {
     return this.updatePreferences((preferences) => {
+      preferences.products ||= {}
+      preferences.products[productKey] ||= {}
+      if (note) preferences.products[productKey].manualNote = note
+      else delete preferences.products[productKey].manualNote
+      preferences.manualNote ||= {}
       if (note) preferences.manualNote[productKey] = note
       else delete preferences.manualNote[productKey]
+      if (Object.keys(preferences.products[productKey]).length === 0) delete preferences.products[productKey]
       return preferences
     })
   }

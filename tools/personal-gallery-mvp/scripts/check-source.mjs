@@ -93,6 +93,14 @@ const mvp02Evidence = JSON.parse(readFileSync(
   path.join(repositoryRoot, 'research', 'evidence', 'mvp02', 'personal-gallery-results.json'),
   'utf8',
 ))
+const mvp03aEvidence = JSON.parse(readFileSync(
+  path.join(repositoryRoot, 'research', 'evidence', 'mvp03a', 'reference-index-results.json'),
+  'utf8',
+))
+const mvp03aChromeRunnerText = readFileSync(
+  path.join(toolRoot, 'scripts', 'validate-mvp03a-system-chrome.mjs'),
+  'utf8',
+)
 
 if (
   !realChromeRunnerText.includes('chromium.launchPersistentContext(') ||
@@ -202,6 +210,36 @@ function systemChromeCandidatesForEvidence() {
     'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
     'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
   ]
+}
+
+const referenceGates = Array.isArray(mvp03aEvidence.gates) ? mvp03aEvidence.gates : []
+const expectedReferenceGates = Array.from(
+  { length: 15 },
+  (_, index) => `REF-${String(index + 1).padStart(2, '0')}`,
+)
+if (
+  mvp03aEvidence.status !== 'MVP-03A ready for personal use review' ||
+  JSON.stringify(referenceGates.map((gate) => gate.id)) !== JSON.stringify(expectedReferenceGates) ||
+  referenceGates.some((gate) => gate.status !== 'pass') ||
+  Number(mvp03aEvidence.realRuntime?.products) !== 7 ||
+  Number(mvp03aEvidence.realRuntime?.images) !== 56 ||
+  Number(mvp03aEvidence.realRuntime?.indexCovers) !== 6 ||
+  Number(mvp03aEvidence.systemChrome?.index?.imageRequests) !== 6 ||
+  Number(mvp03aEvidence.systemChrome?.network?.externalRequests) !== 0 ||
+  mvp03aEvidence.realRuntime?.runtimeTrackedByGit !== false ||
+  mvp03aEvidence.collection?.cheshireRecrawled !== false ||
+  mvp03aEvidence.collection?.hpoiRequests !== 0 ||
+  mvp03aEvidence.collection?.firecrawlRequests !== 0
+) {
+  fail('The committed MVP-03A evidence does not satisfy REF-01 through REF-15.')
+}
+if (
+  !mvp03aChromeRunnerText.includes('figure-gallery-mvp03a-chrome-') ||
+  !mvp03aChromeRunnerText.includes('--disable-extensions') ||
+  !mvp03aChromeRunnerText.includes('--host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE 127.0.0.1') ||
+  /screenshot\s*:|recordVideo\s*:|trace\s*:/i.test(mvp03aChromeRunnerText)
+) {
+  fail('The MVP-03A system Chrome acceptance guard is incomplete.')
 }
 
 const expectedOfficialQueries = [
@@ -349,6 +387,8 @@ console.log(
         ciLiveGatesOff: true,
         systemChromeAcceptanceContract: true,
         mvp02AllTwelveGatesPass: true,
+        mvp03aAllFifteenGatesPass: true,
+        mvp03aSystemChromeAcceptanceContract: true,
         noTrackedRuntimeOrMedia: true,
         syntheticFixtureSize: true,
       },

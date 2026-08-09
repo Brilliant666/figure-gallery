@@ -1,0 +1,125 @@
+{
+  "schemaVersion": 1,
+  "task": "MVP-03A",
+  "status": "MVP-03A ready for personal use review",
+  "baseline": {
+    "pr14Head": "0e5b6774a062d5c42105f8e396e124d22587af48",
+    "mergeStrategy": "squash",
+    "mergeCommit": "d3c92eef5461c58e82b8f93afce02da68d109771",
+    "mainFormalRun": 31289278539,
+    "mainGalleryRun": 31289439209,
+    "mainChecks": "pass"
+  },
+  "realRuntime": {
+    "products": 7,
+    "images": 56,
+    "uniqueObjects": 56,
+    "productsWithImages": 6,
+    "productsWithoutImages": 1,
+    "indexCovers": 6,
+    "automaticCovers": 3,
+    "manualOverrideCovers": 3,
+    "apex": {
+      "localImages": 0,
+      "safeHttp404FailureRecords": 3
+    },
+    "runtimeTrackedByGit": false
+  },
+  "humanCoverReview": {
+    "reviewed": 6,
+    "passed": 6,
+    "criteria": [
+      "correct product",
+      "complete overall pose",
+      "front or near-front",
+      "not a back-only view",
+      "not a detail-only crop",
+      "no severe subject crop",
+      "useful for shooting reference"
+    ],
+    "limitations": [
+      "One product has only one local official composite candidate; its complete central figure was retained after review."
+    ]
+  },
+  "systemChrome": {
+    "status": "pass",
+    "product": "Google Chrome",
+    "version": "150.0.7871.187",
+    "systemStable": true,
+    "headed": true,
+    "temporaryCleanProfile": true,
+    "temporaryProfileDeleted": true,
+    "extensionsLoaded": 0,
+    "index": {
+      "productCards": 7,
+      "coverImages": 6,
+      "noImagePlaceholders": 1,
+      "detailTiles": 0,
+      "imageRequests": 6,
+      "managementCollapsed": true
+    },
+    "detailSamples": [
+      { "images": 18, "imageRequests": 18, "status": "pass" },
+      { "images": 8, "imageRequests": 8, "status": "pass" },
+      { "images": 9, "imageRequests": 9, "status": "pass" }
+    ],
+    "responsiveColumns": {
+      "desktop1280": 4,
+      "tablet900": 3,
+      "mobile600": 2
+    },
+    "interactions": {
+      "productFilters": "pass",
+      "productDetail": "pass",
+      "lightbox": "pass",
+      "productScopedNavigation": "pass",
+      "zoom": "pass",
+      "fit": "pass",
+      "escapeClose": "pass",
+      "preferredCoverReloadPersistence": "pass"
+    },
+    "network": {
+      "externalRequests": 0,
+      "hpoiRequests": 0,
+      "firecrawlRequests": 0,
+      "officialSourceRequests": 0
+    },
+    "artifacts": {
+      "screenshots": 0,
+      "videos": 0,
+      "traces": 0
+    }
+  },
+  "gates": [
+    { "id": "REF-01", "status": "pass" },
+    { "id": "REF-02", "status": "pass" },
+    { "id": "REF-03", "status": "pass" },
+    { "id": "REF-04", "status": "pass" },
+    { "id": "REF-05", "status": "pass" },
+    { "id": "REF-06", "status": "pass" },
+    { "id": "REF-07", "status": "pass" },
+    { "id": "REF-08", "status": "pass" },
+    { "id": "REF-09", "status": "pass" },
+    { "id": "REF-10", "status": "pass" },
+    { "id": "REF-11", "status": "pass" },
+    { "id": "REF-12", "status": "pass" },
+    { "id": "REF-13", "status": "pass" },
+    { "id": "REF-14", "status": "pass" },
+    { "id": "REF-15", "status": "pass" }
+  ],
+  "collection": {
+    "cheshireRecrawled": false,
+    "productsAdded": 0,
+    "hpoiRequests": 0,
+    "firecrawlRequests": 0,
+    "allowlistChanged": false
+  },
+  "outOfScope": {
+    "perceptualDeduplication": false,
+    "prototypeOrSkuMerge": false,
+    "formalPayloadWrite": false,
+    "deployment": false,
+    "secondCharacter": false,
+    "formalPr02Started": false
+  }
+}

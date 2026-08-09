@@ -10,57 +10,99 @@
     <main class="shell gallery-shell">
       <nav class="top-nav"><a href="/">← 返回收集首页</a></nav>
       <header class="gallery-header">
-        <p class="eyebrow">PRIVATE LOCAL GALLERY</p>
+        <p class="eyebrow">PRIVATE SHOOTING REFERENCE</p>
         <h1 id="gallery-title">正在读取图库…</h1>
         <p id="gallery-meta" class="muted"></p>
-        <a id="recollect-link" class="button-link" href="/">重新运行官方来源收集</a>
       </header>
 
-      <aside id="source-status" class="source-status panel" aria-label="来源状态">
-        <strong>来源模式：<span id="source-mode">Official sources</span></strong>
-        <span id="official-source-badge" class="source-badge">公开官方商品页</span>
-        <p id="hpoi-source-status">Hpoi 状态：Blocked by captcha · 实时来源已停用，不会自动重试。</p>
-      </aside>
+      <p id="gallery-error" class="error-message hidden" role="alert"></p>
 
-      <section class="panel filter-panel" aria-label="图库过滤">
-        <label>
-          类型
-          <select id="classification-filter">
-            <option value="default">比例 / 景品 / unknown</option>
-            <option value="all">全部类型</option>
-            <option value="likely_scale">likely scale</option>
-            <option value="likely_prize">likely prize</option>
-            <option value="unknown">unknown</option>
-            <option value="other">other</option>
-          </select>
-        </label>
-        <label>
-          厂商
-          <select id="manufacturer-filter"><option value="all">全部厂商</option></select>
-        </label>
-        <label>
-          造型
-          <select id="design-filter"><option value="all">全部造型</option></select>
-        </label>
-        <label>
-          比例
-          <select id="scale-filter"><option value="all">全部比例</option></select>
-        </label>
-        <label class="inline-check">
-          <input id="show-excluded" type="checkbox" />
-          显示已排除
-        </label>
+      <section id="reference-index" aria-label="角色手办拍摄参考索引">
+        <section class="panel filter-panel" aria-label="图库过滤">
+          <label>
+            类型
+            <select id="classification-filter">
+              <option value="default">比例 / 景品 / unknown</option>
+              <option value="all">全部类型</option>
+              <option value="likely_scale">likely scale</option>
+              <option value="likely_prize">likely prize</option>
+              <option value="unknown">unknown</option>
+              <option value="other">other</option>
+            </select>
+          </label>
+          <label>
+            厂商
+            <select id="manufacturer-filter"><option value="all">全部厂商</option></select>
+          </label>
+          <label>
+            造型
+            <select id="design-filter"><option value="all">全部造型</option></select>
+          </label>
+          <label>
+            比例
+            <select id="scale-filter"><option value="all">全部比例</option></select>
+          </label>
+          <label class="inline-check">
+            <input id="show-excluded" type="checkbox" />
+            显示已排除
+          </label>
+        </section>
+
+        <section id="product-grid" class="product-grid reference-grid" aria-live="polite"></section>
+        <p id="empty-state" class="empty-state hidden">当前过滤条件下没有手办。</p>
+
+        <details id="management-status" class="panel management-panel">
+          <summary>管理 / 收集状态</summary>
+          <div class="management-content">
+            <aside id="source-status" class="source-status" aria-label="来源状态">
+              <strong>来源模式：<span id="source-mode">Official sources</span></strong>
+              <span id="official-source-badge" class="source-badge">公开官方商品页</span>
+              <p id="hpoi-source-status">Hpoi 状态：Blocked by captcha · 实时来源已停用，不会自动重试。</p>
+            </aside>
+            <dl id="gallery-metrics" class="metrics gallery-metrics"></dl>
+            <a id="recollect-link" class="button-link" href="/">重新运行官方来源收集</a>
+            <div class="failures-panel">
+              <strong>失败项目（<span id="failure-count">0</span>）</strong>
+              <ul id="failure-list"></ul>
+            </div>
+          </div>
+        </details>
       </section>
 
-      <dl id="gallery-metrics" class="metrics gallery-metrics"></dl>
-      <p id="gallery-error" class="error-message hidden" role="alert"></p>
-      <section id="product-grid" class="product-grid" aria-live="polite"></section>
-      <p id="empty-state" class="empty-state hidden">当前过滤条件下没有图片。</p>
-
-      <details class="panel failures-panel">
-        <summary>查看失败项目（<span id="failure-count">0</span>）</summary>
-        <ul id="failure-list"></ul>
-      </details>
+      <section id="product-detail" class="product-detail hidden" aria-label="手办详情">
+        <nav class="detail-back"><a id="detail-back-link" href="/gallery/characters/cheshire">← 返回柴郡</a></nav>
+        <header class="detail-header">
+          <p class="eyebrow">FIGURE REFERENCE SET</p>
+          <h2 id="product-title"></h2>
+          <p id="product-meta" class="muted"></p>
+          <p id="product-source-meta" class="muted"></p>
+        </header>
+        <div class="detail-overview panel">
+          <div id="current-cover" class="current-cover"></div>
+          <div class="detail-facts">
+            <p><strong>当前封面：</strong><span id="cover-selection"></span></p>
+            <p><strong>本地图片：</strong><span id="detail-image-count">0</span></p>
+            <p><strong>失败图片：</strong><span id="detail-failure-count">0</span></p>
+            <p id="product-note" class="product-note hidden"></p>
+            <div id="detail-actions" class="detail-actions"></div>
+          </div>
+        </div>
+        <section>
+          <div class="section-heading">
+            <h3>全部参考图片</h3>
+            <label class="inline-check">
+              <input id="detail-show-excluded" type="checkbox" />
+              显示已排除图片
+            </label>
+          </div>
+          <div id="detail-image-grid" class="detail-image-grid"></div>
+          <p id="detail-no-images" class="empty-state hidden">暂无可用图片；保留商品记录与失败状态。</p>
+        </section>
+        <details id="detail-failures" class="panel failures-panel">
+          <summary>图片失败记录（<span id="detail-failure-summary-count">0</span>）</summary>
+          <ul id="detail-failure-list"></ul>
+        </details>
+      </section>
     </main>
 
     <div id="lightbox" class="lightbox hidden" role="dialog" aria-modal="true" aria-label="候选图片灯箱">
