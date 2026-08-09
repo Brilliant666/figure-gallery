@@ -1,0 +1,298 @@
+{
+  "schemaVersion": 1,
+  "auditDate": "2026-08-10",
+  "basis": {
+    "datasetGeneratedAt": "2026-08-09T12:03:45+00:00",
+    "datasetSha256": "e4d15b4f6e1c7e67f9f593c4d256cbd23d69bac7aae7bccc7daf3fbb48e54267",
+    "analysisScriptSha256": "5b2433c3f599367e15b8d1c08a78212ef3106a9d6ba03a07b719be75b44bc5a5",
+    "collectorPySha256": "b8389c6da309cb61ad71e1eb955c276f6c71d4046f3fea14aa89c980c334909e",
+    "collectorReportSha256": "d1ebaaeab6793843cc2a64fdd0be6d4a4d095854e9282d07bf96f4661f091144",
+    "collectorReadmeSha256": "abc445b7972b9815c495098d5d3e4f2bc1f472c474d648a476dd59943f76ed86",
+    "galleryHtmlSha256": "014928837c8a7941d3b608ac31d44b819a0cff1e73aec3566d4055deecc9dc23",
+    "currentSnapshotRecomputed": true,
+    "collectorReportUsedForDiscardedAndRawCounts": true,
+    "analysisScriptNetworkRequests": 0,
+    "collectorSourceRequestsThisReview": 0,
+    "hpoiRequests": 0,
+    "containsItemRecords": false
+  },
+  "funnel": {
+    "wideCatalog": {
+      "count": 330,
+      "status": "collector_report_claim",
+      "reconstructableFromRetainedSnapshot": false
+    },
+    "poseEligible": {
+      "count": 285,
+      "status": "retained_snapshot_count_verified_eligibility_inherited_from_collector_rules_and_report"
+    },
+    "excluded": {
+      "count": 45,
+      "status": "collector_report_claim",
+      "reconstructableFromRetainedSnapshot": false
+    },
+    "coreQsdDeformedExcluded": {
+      "count": 28,
+      "status": "collector_report_claim",
+      "reconstructableFromRetainedSnapshot": false
+    }
+  },
+  "dataset": {
+    "declaredCount": 285,
+    "actualCount": 285,
+    "uniqueIds": 285
+  },
+  "types": {
+    "methodology": "Mutually exclusive review buckets use prize first, then explicit scale evidence, POP UP PARADE, explicit Non-Scale Figure, and remaining collector-retained unclassified records. Limited/exclusive is overlapping.",
+    "primaryBuckets": {
+      "prize": 186,
+      "scale": 81,
+      "popUpParade": 3,
+      "staticNonScale": 1,
+      "otherCollectorRetainedUnclassified": 14
+    },
+    "overlappingFlags": {
+      "prize": 186,
+      "scaleEvidenceBeforePrizePrecedence": 85,
+      "popUpParade": 3,
+      "limitedOrExclusive": 48
+    }
+  },
+  "manufacturers": {
+    "rawDistinct": 42,
+    "normalizedDistinct": 35,
+    "normalizedTop15": [
+      ["Taito", 70],
+      ["FuRyu", 61],
+      ["Bandai Spirits / Banpresto", 44],
+      ["SEGA", 38],
+      ["KADOKAWA", 21],
+      ["Good Smile family", 5],
+      ["FREEing", 5],
+      ["elCOCO", 4],
+      ["Phat!", 3],
+      ["eStream", 3],
+      ["Chara-Ani", 2],
+      ["SOUYOKUSHA", 2],
+      ["Revolve", 2],
+      ["Design Coco", 2],
+      ["Alpha Satellite", 2]
+    ]
+  },
+  "sources": {
+    "memberships": {
+      "Solaris Japan": 280,
+      "Good Smile Company": 5,
+      "Good Smile Company (legacy catalog)": 27,
+      "Japan Figure": 19
+    },
+    "rollup": {
+      "solaris": 280,
+      "goodSmileCurrentOrLegacy": 32,
+      "japanFigure": 19,
+      "crossSourceItems": 45,
+      "singleSourceItems": 240
+    },
+    "uniqueByExactSource": {
+      "Solaris Japan": 235,
+      "Good Smile Company": 1,
+      "Good Smile Company (legacy catalog)": 2,
+      "Japan Figure": 2
+    },
+    "marginalAgainstSolarisSet": {
+      "goodSmileCurrentOrLegacy": 3,
+      "japanFigure": 2
+    },
+    "combinations": [
+      {"sources": ["Solaris Japan"], "items": 235},
+      {"sources": ["Good Smile Company (legacy catalog)", "Solaris Japan"], "items": 25},
+      {"sources": ["Japan Figure", "Solaris Japan"], "items": 16},
+      {"sources": ["Good Smile Company", "Solaris Japan"], "items": 3},
+      {"sources": ["Good Smile Company (legacy catalog)"], "items": 2},
+      {"sources": ["Japan Figure"], "items": 2},
+      {"sources": ["Good Smile Company", "Japan Figure", "Solaris Japan"], "items": 1},
+      {"sources": ["Good Smile Company"], "items": 1}
+    ],
+    "reportedRawAndMarginal": {
+      "solarisRawRecords": {
+        "count": null,
+        "status": "not_reconstructable_from_final_snapshot"
+      },
+      "goodSmileRawRecords": {
+        "count": null,
+        "status": "not_reconstructable_from_final_snapshot"
+      },
+      "japanFigure": {
+        "raw": 26,
+        "figureLike": 25,
+        "poseEligibleBeforeSiteDedup": 20,
+        "finalMembers": 19,
+        "overlap": 17,
+        "marginalAdditions": 2,
+        "status": "collector_report_claim_corroborated_by_final_membership"
+      },
+      "hlj": {
+        "raw": 12,
+        "manuallyReviewed": 6,
+        "poseEligible": 6,
+        "overlap": 6,
+        "marginalAdditions": 0,
+        "status": "collector_report_claim_not_present_in_final_sources"
+      }
+    }
+  },
+  "images": {
+    "withPrimary": 284,
+    "withAtLeast1": 284,
+    "withAtLeast2": 171,
+    "withAtLeast4": 111,
+    "withAtLeast8": 69,
+    "urlReferences": 1258,
+    "uniqueUrlStrings": 1258,
+    "hosts": {
+      "cdn.shopify.com": 1001,
+      "images.goodsmile.info": 206,
+      "www.goodsmile.com": 51
+    },
+    "coverageBySourceMembership": {
+      "warning": "Groups overlap and contain merged image lists; counts are not native per-source image contributions and must not be added.",
+      "solaris": {
+        "items": 280,
+        "withPrimary": 279,
+        "urlReferences": 1223,
+        "withAtLeast2": 168,
+        "withAtLeast4": 108,
+        "withAtLeast8": 66
+      },
+      "goodSmileCurrentOrLegacy": {
+        "items": 32,
+        "withPrimary": 32,
+        "urlReferences": 453,
+        "withAtLeast2": 32,
+        "withAtLeast4": 32,
+        "withAtLeast8": 31
+      },
+      "japanFigure": {
+        "items": 19,
+        "withPrimary": 19,
+        "urlReferences": 70,
+        "withAtLeast2": 17,
+        "withAtLeast4": 4,
+        "withAtLeast8": 3
+      }
+    },
+    "attributedByHostOrStorePrefix": {
+      "warning": "This is aggregate URL attribution inferred from known hosts/store prefixes, not a stored SourceRecord relationship.",
+      "goodSmile": {"urlReferences": 257, "records": 32},
+      "solaris": {"urlReferences": 981, "records": 279},
+      "japanFigure": {"urlReferences": 20, "records": 19}
+    },
+    "aggregateHostPrefixAttributionRecoverable": true,
+    "explicitPerImageSourceRecordRelationPresent": false,
+    "exactNativeContributionRecoverable": false,
+    "contentHashDedupPerformed": false
+  },
+  "metadataCompleteness": {
+    "title": 285,
+    "manufacturer": 285,
+    "category": 284,
+    "scale": 41,
+    "height_mm": 32,
+    "release": 32,
+    "price_jpy": 32,
+    "source_price": 163,
+    "sculptor": 28,
+    "source_product_id": 282,
+    "source_sku": 19,
+    "published_at": 280
+  },
+  "provenanceMix": {
+    "goodSmileLabeledRecords": 32,
+    "withSolarisOnlyFields": 29,
+    "withJapanFigureOnlySku": 1,
+    "withGenericSourceProductId": 29,
+    "exactImageAttributionRecoverable": false,
+    "reason": "The current merge flattens source scalar fields and image URLs. Known hosts/store prefixes support aggregate attribution, but field-level and image-level SourceRecord relationships are absent."
+  },
+  "manualVisualAudit": {
+    "browser": "system_google_chrome_profile_5",
+    "galleryOrigin": "http://127.0.0.1:8765",
+    "fixedSample": {
+      "totalCards": 129,
+      "frontCards": 42,
+      "middleCards": 42,
+      "rearCards": 45,
+      "randomSeed": 20260810,
+      "selection": {
+        "front": "sequential indices 0-41",
+        "middleRandomRows": [14, 15, 19, 21, 23, 24, 27],
+        "rearRandomRows": [34, 35, 40, 41, 43, 45, 46, 47],
+        "cardsPerFullRow": 6
+      },
+      "clearlyUsefulPoseCards": 128,
+      "indeterminateCards": 0,
+      "clearlyLowValueCards": 1,
+      "obviousNonFigureLeaks": 0,
+      "brokenImages": 0,
+      "scopeCaveat": "Card-cover review only; it does not prove every image or every unreviewed catalog item is useful."
+    },
+    "additionalTargetedReview": {
+      "brokenOrNoImageCards": 1,
+      "example": "Nekomimi Maid Renewal",
+      "insideFixedSample": false
+    },
+    "hpoiRequests": 0
+  },
+  "variantSample": {
+    "selection": "30 title-prefiltered high-probability variant families; enriched non-random sample",
+    "groups": 30,
+    "catalogRecords": 68,
+    "classes": {
+      "A": 6,
+      "B": 18,
+      "C": 1,
+      "D": 4,
+      "E": 0,
+      "F": 1
+    },
+    "candidateSamePrototypeGroups": 25,
+    "candidateFamilyHitRatePercent": 83.3,
+    "rateIsGeneralizableToFullDataset": false,
+    "candidateSampleProbablePrototypesLow": 34,
+    "candidateSampleProbablePrototypesHigh": 35,
+    "directlySupportedAdditionalVersionOrDuplicateRecordsLow": 33,
+    "directlySupportedAdditionalVersionOrDuplicateRecordsHigh": 34,
+    "probableDistinctCommercialVersionRecords": {
+      "low": 279,
+      "expected": 282,
+      "high": 285,
+      "confidence": "low",
+      "status": "sensitivity_assumption_not_extrapolated_from_candidate_hit_rate"
+    },
+    "additionalVersionOrDuplicateRecordsScenario": {
+      "low": 33,
+      "expected": 50,
+      "high": 65
+    },
+    "probableUniquePrototypes": {
+      "low": 220,
+      "expected": 235,
+      "high": 252,
+      "status": "research_estimate_not_full_library_grouping"
+    },
+    "largestVariantPatterns": [
+      "original_renewal_rerelease",
+      "standard_recolor_special_pearl_pastel_antique",
+      "standard_online_crane_or_channel_color",
+      "a_prize_last_one",
+      "duplicate_listing_or_small_expression_accessory_state"
+    ]
+  },
+  "unreconstructable": [
+    "discarded item ledger and per-item exclusion reasons from the final retained snapshot",
+    "native raw record totals for Solaris and Good Smile from the final retained snapshot",
+    "native per-source image contributions after cross-source merge",
+    "content-level image duplicate count without downloading and hashing",
+    "exact full-library FigurePrototype or pose count without complete grouping review"
+  ]
+}
