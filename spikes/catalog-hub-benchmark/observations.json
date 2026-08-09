@@ -1,0 +1,307 @@
+{
+  "schemaVersion": 1,
+  "task": "DISCOVERY-RESEARCH-01R",
+  "generatedAt": "2026-08-09T18:19:04+08:00",
+  "baseline": {
+    "branch": "research/catalog-hub-discovery-6h",
+    "startSha": "ad5f04127f13da5ec23b714afaf65e3854346c76",
+    "existingFgRemProducts": 11,
+    "existingFgRemImages": 89,
+    "externalCollectorPath": "<outside-repository>/rem-figure-collector",
+    "externalCollectorLocationRedacted": true,
+    "externalCollectorModified": false
+  },
+  "safety": {
+    "hpoiRequests": 0,
+    "thirdCharacterUsed": false,
+    "credentialsUsed": false,
+    "cookiesUsed": false,
+    "accessRestrictionsBypassed": false,
+    "realHtmlTracked": false,
+    "realImagesTracked": false
+  },
+  "auditEvidence": {
+    "path": "research/evidence/catalog-hub-discovery/goodsmile-audit.json",
+    "records": 41,
+    "imageSamples": 12,
+    "containsRawHtmlOrImages": false
+  },
+  "goodSmile": {
+    "recordsByPrimaryCatalog": {
+      "current": 7,
+      "legacy": 34
+    },
+    "manufacturerLabels": {
+      "allRaw": 14,
+      "allNormalized": 13,
+      "inScopeRaw": 13,
+      "inScopeNormalized": 12
+    },
+    "coverage": {
+      "sourceRecords": 41,
+      "catalogOfferings": 41,
+      "probableVersions": 41,
+      "explicitReleaseEventsMin": 46,
+      "inScopeRecords": 33,
+      "outOfScopeRecords": 7,
+      "ambiguousRecords": 1,
+      "probableUniquePrototypesAll": 35,
+      "probableUniquePrototypesInScope": 27,
+      "existingFgPrototypes": 11,
+      "intersectionPrototypes": 8,
+      "marginalPrototypeCandidates": 19,
+      "unionPrototypes": 30,
+      "possibleStaticPupUpside": 1
+    },
+    "seedDependency": {
+      "configuredSeeds": 4,
+      "nonDirectSeedRecords": 37,
+      "guaranteedTextQueryReachableViaLegacy": 35,
+      "seedlessUnprovenCurrentRecordsRange": [
+        4,
+        6
+      ],
+      "actualRecommendationDepth": null,
+      "isolatedRecordCount": null,
+      "provenanceEdgesPersisted": false,
+      "assessment": "legacy_low_current_high_unobservable"
+    },
+    "media": {
+      "candidateImageUrls": 326,
+      "minimumUrlsPerRecord": 4,
+      "maximumUrlsPerRecord": 14,
+      "medianUrlsPerRecord": 7,
+      "uniqueUrlCount": 326,
+      "sample": {
+        "products": 3,
+        "requestedImages": 12,
+        "downloadedImages": 12,
+        "httpSuccess": 12,
+        "sha256Unique": 12,
+        "exactDuplicates": 0,
+        "fullFigureImages": 6,
+        "productsWithFrontAndRearCoverage": 2,
+        "poseOrDetailUsefulImages": 12,
+        "persistedToRepository": false
+      }
+    },
+    "technicalStability": "medium",
+    "permission": "unclear",
+    "permissionNotes": [
+      "Current-site robots.txt disallows /*/search.",
+      "The legacy site has no robots policy at the tested path; absence is not permission.",
+      "No public catalog API or durable automation licence was found.",
+      "Product-media rights require separate rights-holder analysis."
+    ]
+  },
+  "hubLandscape": {
+    "externalCandidateCount": 12,
+    "totalSourcesIncludingGoodSmileBaseline": 13,
+    "topFour": [
+      "HobbySearch / 1999",
+      "CDJapan authorized RSS or bulk feed",
+      "Rakuten Product Search API",
+      "MyFigureList partnership or licensed feed"
+    ],
+    "permissionReadyProductionConnectors": 0,
+    "marketCoveragePercent": null,
+    "marketCoverageStatus": "not_established_without_authorized_union_benchmark"
+  },
+  "liveBenchmarks": [
+    {
+      "source": "HobbySearch / 1999",
+      "status": "permission_blocked",
+      "roles": [
+        "Rem",
+        "Cheshire"
+      ],
+      "requests": 2,
+      "elapsedMs": null,
+      "rawProducts": null,
+      "inScope": null,
+      "manufacturerCount": null,
+      "janCount": null,
+      "imageCount": null,
+      "existingOverlap": null,
+      "marginalCandidates": null,
+      "historicalProducts": null,
+      "errors": 2,
+      "evidence": "Both low-frequency search requests returned HTTP 403; no retry or bypass was attempted."
+    },
+    {
+      "source": "Rakuten Product Search API",
+      "status": "credential_and_permission_blocked",
+      "roles": [
+        "Rem",
+        "Cheshire"
+      ],
+      "requests": 0,
+      "elapsedMs": 0,
+      "rawProducts": null,
+      "inScope": null,
+      "manufacturerCount": null,
+      "janCount": null,
+      "imageCount": null,
+      "existingOverlap": null,
+      "marginalCandidates": null,
+      "historicalProducts": null,
+      "errors": 0,
+      "evidence": "No applicationId/accessKey was available, and the retention terms require written clarification for this private persistent catalog."
+    },
+    {
+      "source": "MyFigureList",
+      "status": "completed_limited",
+      "roles": [
+        "Rem",
+        "Cheshire"
+      ],
+      "requests": 6,
+      "elapsedMs": 23523,
+      "rawProducts": 38,
+      "reportedCharacterTotals": {
+        "Rem": 490,
+        "Cheshire": 26
+      },
+      "renderedFirstPageRecords": {
+        "Rem": 22,
+        "Cheshire": 16
+      },
+      "inScope": 25,
+      "inScopeMethod": "title_only_conservative_sample",
+      "probablePrototypeCandidates": 23,
+      "manufacturerCount": null,
+      "janCount": null,
+      "imageCount": null,
+      "existingOverlap": 4,
+      "existingOverlapScope": "Rem sample against the current 11 Rem prototypes only",
+      "marginalCandidates": 9,
+      "marginalCandidatesScope": "Rem rendered sample only; Cheshire marginal was not claimed without a full identity crosswalk",
+      "historicalProducts": true,
+      "errors": 0,
+      "evidence": "Two series pages and two character pages were read once, followed by one repeat of each character page to extract aggregate link counts. No detail page or image was fetched."
+    }
+  ],
+  "economics": {
+    "assumption": "Planning ranges, not production benchmarks",
+    "catalogHubModel": {
+      "historical100Roles": {
+        "requests": [
+          600,
+          3000
+        ],
+        "wallClockHours": [
+          0.5,
+          3
+        ],
+        "paidCredits": 0,
+        "manualReviewHours": [
+          4,
+          83
+        ]
+      },
+      "historical1000Roles": {
+        "requests": [
+          6000,
+          30000
+        ],
+        "wallClockHours": [
+          4,
+          20
+        ],
+        "paidCredits": 0,
+        "manualReviewHours": [
+          42,
+          833
+        ]
+      },
+      "dailyGlobalIncremental": {
+        "requests": [
+          11,
+          85
+        ],
+        "wallClockMinutes": [
+          5,
+          30
+        ],
+        "gapFirecrawlCreditsPerDay": [
+          5,
+          25
+        ]
+      }
+    },
+    "currentFirecrawlSearchModel": {
+      "creditsPerRole": [
+        26,
+        120
+      ],
+      "historical100RolesCredits": [
+        2600,
+        12000
+      ],
+      "historical100RolesWallClockHours": [
+        50,
+        150
+      ],
+      "historical1000RolesCredits": [
+        26000,
+        120000
+      ],
+      "historical1000RolesWallClockHours": [
+        500,
+        1500
+      ]
+    },
+    "connectorPortfolio": {
+      "thirtyMakerConnectors": {
+        "initialHours": [
+          480,
+          1440
+        ],
+        "yearlyMaintenanceHours": [
+          240,
+          960
+        ],
+        "breakageEventsPerYear": [
+          15,
+          60
+        ]
+      },
+      "threeHubsPlusFiveGaps": {
+        "initialHours": [
+          176,
+          480
+        ],
+        "yearlyMaintenanceHours": [
+          88,
+          304
+        ],
+        "breakageEventsPerYear": [
+          3,
+          13
+        ]
+      }
+    }
+  },
+  "decision": {
+    "catalogHubRoute": "promising_but_permission_gated_and_partial",
+    "historicalCombination": "licensed specialist historical catalog + permission-cleared Good Smile legacy + authorized CDJapan bulk backfill",
+    "incrementalCombination": "global CDJapan RSS/bulk + authorized update-sorted retail API + five to eight direct maker gaps",
+    "minimumConnectorPlan": {
+      "primaryHubConnectors": 3,
+      "directMakerGapConnectors": [
+        5,
+        8
+      ],
+      "nominalTotal": 8,
+      "condition": "Only after each source passes written permission and persistence gates."
+    },
+    "nextSingleValidation": "Obtain and validate authorized CDJapan RSS/bulk-database access, including persistent private-catalog rights, before writing a production connector."
+  },
+  "limitations": [
+    "No authorized source union was enumerable, so no market-coverage percentage is claimed.",
+    "MyFigureList scope classification used titles from a limited rendered-page sample and did not inspect product details.",
+    "Good Smile prototype grouping is a research candidate grouping and was not written to formal data.",
+    "The image sample is 12 files from three products and cannot establish long-term URL availability or media rights.",
+    "Blocked and credentialed sources remain unmeasured rather than being represented as zero coverage."
+  ]
+}
