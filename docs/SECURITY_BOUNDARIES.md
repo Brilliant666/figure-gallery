@@ -4,7 +4,7 @@
 
 本文件定义第一阶段正式系统的认证、授权、数据隔离、媒体和外部网络边界。安全控制必须由服务端、数据库约束和领域服务共同执行；隐藏按钮、仅监听 loopback、客户端约定或 Payload 默认 Admin 均不能代替授权。
 
-硬不变量：候选身份不能写正式数据或主图；Client A 不能读写 Client B 的非公开候选；所有正式变化均经过领域服务、原子事务、乐观锁和 `OperationLog`；来源或候选变化不能删除正式主图；上传失败不能产生正式记录或虚假成功日志；Hpoi 自动请求必须为 0。任一不变量失败即停止对应 PR。
+硬不变量：候选身份不能写正式数据或主图；Client A 不能读写 Client B 的非公开候选；所有正式变化均经过领域服务、原子事务、乐观锁和 `OperationLog`；来源或候选变化不能删除正式主图；上传失败不能产生正式记录或虚假成功日志；Hpoi direct HTTP/HEAD/DNS/scrape/API/图片/浏览器请求必须为 0。第三方公开搜索索引返回 Hpoi URL 文本必须与 direct transport 分开计数。任一不变量失败即停止对应 PR。
 
 ## 2. 资产、信任区与参与者
 
@@ -17,7 +17,7 @@
 | 匿名访客 | 无会话 | 读取服务端过滤后的公开搜索、图库和允许媒体 | 候选、来源、版本、审计、设置、原始导出和成人隐藏内容 |
 | CandidateClient | 独立 bearer token；服务端只存 hash | 自己 owner 下的 candidate upsert、候选媒体 multipart 上传和幂等结果查询 | 正式实体、主图、审核、设置、他人候选、通用 CRUD |
 | Admin | Payload 管理员会话；首版只有一个 Admin 角色，可有多个独立同角色账号 | 在审核、目录维护、设置和运维动作上下文中调用各自受控服务 | 任意目标写入、通用正式保存、绕过事务/日志、读取明文 client token |
-| 后台任务 | 工作负载身份和单一用途权限 | 派生图、完整性审计等明确任务 | 自动选择主图、自动发布、自动删除正式对象、外部采集 |
+| 后台任务 | 工作负载身份和单一用途权限 | 派生图、完整性审计等明确任务；未来获授权的来源任务只能产候选 | 自动选择主图、自动发布、自动删除正式对象、未授权外部采集 |
 
 ## 3. 认证与授权要求
 
@@ -65,11 +65,11 @@
 
 ## 7. Hpoi 与外部来源硬门禁
 
-**SEC-019 — Manual-only。** Hpoi 及其所有子域只能由项目所有者在普通浏览器中人工参考；正式应用、后台任务、测试、链接预览、图片代理、健康检查和 Source Adapter 均不得请求。人工粘贴 Hpoi URL 只保存文本，不解析、不 unfurl、不 DNS 解析、不下载图片。
+**SEC-019 — Discovery/transport separation。** Hpoi 是 discovery/coverage benchmark，但正式应用、后台任务、测试、链接预览、图片代理、健康检查和 Source Adapter 均不得直接请求 Hpoi 及其子域。人工粘贴或第三方公开搜索索引返回的 Hpoi URL 只能保存为文本证据，不解析、不 unfurl、不 DNS 解析、不生成 favicon/预取、不下载图片、不提供自动导航。索引标题和摘要是非权威 hint，不能直接成为正式字段或媒体。
 
-**SEC-020 — Network guard。** 应用 HTTP 客户端、DNS/URL 验证、测试 transport 与可控网络出口共同拒绝 `hpoi.net`、任意子域、大小写/尾点/IDN/重定向和解析后地址绕过；发现尝试立即失败并记录不含 URL 查询秘密的安全事件。未经明确书面许可、独立任务和安全评审，不得解除。
+**SEC-020 — Network guard。** 应用 HTTP 客户端、DNS/URL 验证、测试 transport、浏览器路由与可控网络出口共同拒绝 `hpoi.net`、任意子域、大小写/尾点/IDN/重定向和解析后地址绕过；发现尝试立即失败并记录不含 URL 查询秘密的安全事件。第三方 Search 调用只能传 `site:hpoi.net` 查询与 domain filter，不得调用 scrape/crawl/browser/agent；运行报告必须同时证明 indexed candidates > 0 与四项 Hpoi direct 计数为 0。未经明确书面许可、独立任务和安全评审，不得解除 direct 门禁。
 
-其他外部来源同样不得使用 Cookie、私人 Token、验证码规避或反自动化绕过。第一阶段自动外联默认关闭；只有明确许可的离线文件或未来授权 adapter 才能进入候选池。
+其他外部来源同样不得使用 Cookie、登录身份、验证码规避或反自动化绕过。第一阶段正式应用自动外联默认关闭；隔离 personal gallery 的明确任务可访问受审非 Hpoi 公开来源，但只能进入本地过渡记录，不能写正式 Payload。
 
 ## 8. 威胁模型
 
@@ -81,7 +81,7 @@
 | 审核越界/并发覆盖 | 篡改 target、重复提交、旧 lock version | allowed targets、乐观锁、幂等命令、409 冲突 | 复杂多人操作链 |
 | 主图丢失 | 来源/候选删除、清理任务、对象故障 | 正式引用保护、延迟清理、manifest、恢复合同 | 跨区域灾难未在首阶段验证 |
 | 恶意上传 | 伪 MIME、巨图、脚本、多格式文件 | magic/decode/limits、私有对象、nosniff、资源隔离 | 图像库新漏洞 |
-| SSRF/自动采集 | 粘贴 URL、预览、重定向、DNS rebinding | 不自动取 URL、域名/解析 guard、出口策略 | 新增插件暗含网络请求 |
+| SSRF/自动采集 | 索引 URL、粘贴 URL、预览、重定向、DNS rebinding | Hpoi URL 只作 inert text、域名/解析 guard、出口策略 | 新增插件暗含预取或 favicon 请求 |
 | 审计篡改 | generic save/delete、日志缺失 | append-only 权限、同事务写、备份、完整性测试 | 高权限数据库人工操作 |
 | 数据泄露 | 导出、错误日志、备份、签名 URL | 字段 allowlist、短期 URL、脱敏、访问审计 | 运维误配置 |
 | 供应链 | npm Action/包、构建脚本 | lockfile、固定 Action SHA、依赖审查、最小 workflow 权限 | 上游受信包被攻陷 |
@@ -105,6 +105,7 @@
 | ATK-13 | URL 混淆、重定向、DNS/子域形式尝试访问 Hpoi | transport 前拒绝；实际 Hpoi 请求为 0 | PR-00 起持续 |
 | ATK-14 | 匿名绕过 adult/publicRead server filter 或缓存污染 | 隐藏内容不返回；设置维度缓存隔离 | PR-06 |
 | ATK-15 | 恢复后重复 ATK-01—14 核心攻击 | 与恢复前相同拒绝；数据/关系/主图差异 0 | PR-07/PR-08 |
+| ATK-16 | 用 Hpoi indexed URL 触发详情预览、favicon、图片、重定向或浏览器导航 | 候选仍可保存；Hpoi direct 四项计数均为 0；UI 不生成 Hpoi 链接 | MVP-05 起持续 |
 
 每个攻击测试必须同时比较正式数据 digest、主图引用和成功 `OperationLog`；仅断言 HTTP 状态不足以证明安全。
 

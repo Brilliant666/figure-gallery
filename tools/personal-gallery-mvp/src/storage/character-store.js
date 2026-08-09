@@ -259,6 +259,8 @@ export async function ensureCharacterStorage(root, input) {
   await atomicWriteJson(preferencesPath, preferences)
 
   const previousIndex = await readJson(characterIndexPath(root, character.slug), {})
+  const matchingRunIds = matchingRuns.map(({ runId }) => runId)
+  const matchingRunIdSet = new Set(matchingRunIds)
   const index = {
     schemaVersion: 1,
     characterId: character.characterId,
@@ -266,7 +268,13 @@ export async function ensureCharacterStorage(root, input) {
     displayName: character.displayName,
     aliases: [...character.aliases],
     workNames: [...character.workNames],
-    runs: unique([...(matchingRuns.map(({ runId }) => runId)), ...(previousIndex?.runs || [])]),
+    // Preserve the explicit newest-first ordering written by addCharacterRun().
+    // Re-sorting directory names here breaks caller-supplied run IDs and can
+    // make an older completed run shadow the latest gallery snapshot.
+    runs: unique([
+      ...(previousIndex?.runs || []).filter((runId) => matchingRunIdSet.has(runId)),
+      ...matchingRunIds,
+    ]),
   }
   await atomicWriteJson(characterIndexPath(root, character.slug), index)
   return { character, directory, index, preferences }

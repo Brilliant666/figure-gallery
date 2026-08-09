@@ -1,12 +1,12 @@
 # Figure Gallery（手办图库）
 
-Figure Gallery 是一个以“角色—官方手办原型—主图”为核心的 Cos 动作参考图库：多来源资料先进入候选池，经人工审核后，才成为可审计、可迁移的正式数据和公开只读图库。
+Figure Gallery 是一个以角色为入口、以独立手办造型为核心实体的二次元拍摄姿势数据库：系统尽可能自动发现正版手办、静态完成品和景品，再以“一种独立造型一张完整参考封面”的方式提供多角度拍摄参考。完整手办数据库与拍摄姿势资料库是同一产品能力。
 
 ## 当前状态
 
 PR-00 正式工程基线和 PR-01 核心目录模型均已进入 `main`，对应 Formal web CI 已通过。来源/候选池、审核工作流、正式媒体与主图、merge/split/undo、公开搜索和图库仍未实现。
 
-**personal gallery MVP-04 多角色复用验收已完成**：`tools/personal-gallery-mvp/` 是一个可删除、只在本机运行、与正式应用完全隔离的个人拍摄参考工具。柴郡和蕾姆现在使用同一套角色配置、收集器、存储、路由与图库 renderer；当前本地基线分别为柴郡 7 款/65 图、蕾姆 11 款/89 图。每个商品在角色首页只显示一张封面，详情页保留全部图片；系统 Google Chrome 已在 loopback-only 网络守卫下验证双角色路由、4/3/2 布局、筛选、详情、灯箱、缩放和人工封面持久化。正式 PR-02—PR-08 路线继续暂停但不删除；MVP 没有做感知去重，不是正式 Candidate、Review 或 Media 实现，也不会把数据写入正式目录。
+**personal gallery MVP-05 自动发现覆盖验证已完成**：`tools/personal-gallery-mvp/` 仍是可删除、只在本机运行、与正式应用完全隔离的个人拍摄参考工具。第三方搜索索引自动得到柴郡 3 个、蕾姆 35 个 Hpoi indexed candidates，并完成范围判断、已有商品匹配和非 Hpoi 官方来源反查；Hpoi 直连请求为 0。真实索引信号精度和官方解析命中率不足，本轮未增加商品，图库保持柴郡 7 款/65 图、蕾姆 11 款/89 图；Hpoi-index 当前是补充 coverage 信号，不能单独替代 broad official search。每个临时 ProductRecord 仍只是一条来源级展示记录，**不等于最终 `FigurePrototype`**；本轮不自动合并普通版、再版或重复来源。
 
 已接受的技术底座：
 
@@ -44,6 +44,7 @@ PR-00 正式工程基线和 PR-01 核心目录模型均已进入 `main`，对应
 ## 权威文档
 
 - [产品需求](docs/PRODUCT_REQUIREMENTS.md)
+- [产品北极星](docs/PROJECT_NORTH_STAR.md)
 - [系统架构](docs/SYSTEM_ARCHITECTURE.md)
 - [领域模型](docs/DOMAIN_MODEL.md)
 - [安全边界](docs/SECURITY_BOUNDARIES.md)
@@ -58,13 +59,14 @@ PR-00 正式工程基线和 PR-01 核心目录模型均已进入 `main`，对应
 - [MVP-02 柴郡官方来源图库](docs/MVP02_CHESHIRE_OFFICIAL_GALLERY.md)
 - [MVP-03A 柴郡拍摄参考索引](docs/MVP03A_SHOOTING_REFERENCE_INDEX.md)
 - [MVP-04 多角色图库泛化](docs/MVP04_MULTI_CHARACTER_GENERALIZATION.md)
+- [MVP-05 Hpoi 搜索索引发现](docs/MVP05_HPOI_INDEX_DISCOVERY.md)
 - [需求追踪矩阵](docs/TRACEABILITY_MATRIX.md)
 - [技术决策 ADR](research/TECH_STACK_DECISION.md)
 
 ## 来源与 Hpoi 边界
 
-Hpoi 当前只可作为人工参考；在 personal gallery MVP 中也已经冻结为 `blocked_by_source`，`retryAllowed=false`。工具不重试 Hpoi、不访问缓存或镜像，也不尝试规避；正式应用、personal gallery 和 CI 的 Hpoi 请求数必须保持 0。个人图库仅在项目所有者主动开启独立官方来源实时门禁后，使用 Firecrawl v2 Search（明确排除 Hpoi）和 `scrape` 访问受审查 allowlist 内的公开厂商商品页；角色专属 seed 不能跨角色复用，retailer 只允许明确逐页审核，搜索结果不会自动扩展来源边界。工具不使用 crawl、Agent、浏览器动作、增强代理、Cookie 或登录。会员购仍只作人工补充与核验，不自动访问。所有未来正式来源数据必须先进入候选池，不能自动覆盖正式数据或正式主图。
+Hpoi 的正式角色是自动发现信号与覆盖率基准，而不是图片或事实权威。经明确授权的 personal gallery 可以让第三方 Firecrawl Search 返回已索引 Hpoi 结果的 URL、标题和摘要文本，但不会请求、解析、预览或跳转这些 URL；Hpoi 的 HTTP、HEAD、DNS、scrape、API、图片和浏览器请求必须全部为 0。正式商品事实与图片只来自受审的非 Hpoi 厂商、品牌、发行方或明确允许的 distributor/retailer。正式 Payload 应用仍没有 Hpoi adapter，未取得明确书面许可前不得建立 Direct Hpoi adapter。工具不使用 crawl、Agent、浏览器动作、增强代理、Cookie、登录或验证码处理。
 
 ## 开发状态
 
-PR-00、PR-01 与 personal gallery MVP-01—MVP-04 均已完成对应门禁；MVP-04 的多角色、蕾姆真实收集、柴郡回归和系统 Chrome 脱敏摘要以 `research/evidence/mvp04/multi-character-results.json` 为准，不能由合成 CI fixture 代替。项目所有者可先把两个本地图库用于拍摄准备；正式 PR-02—PR-08 仍暂停，正式 PR-02 尚未开始。正式变化必须使用任务独立分支和独立 PR；未经明确授权不得合并或部署。恢复任何路线仍需新的明确授权。
+PR-00、PR-01 与 personal gallery MVP-01—MVP-05 均已完成对应门禁；MVP-05 的真实候选、零直连、效率限制与 Chrome 结果见 `research/evidence/mvp05/`。当前近期优先级依次是自动发现覆盖率、柴郡/蕾姆补收录、candidate→official source 解析、FigurePrototype 去重证据、图片完整度和封面质量；第三个角色与公网部署暂缓。正式 PR-02—PR-08 仍保留但暂停，正式 PR-02 尚未开始。正式变化必须使用任务独立分支和独立 PR；未经明确授权不得合并或部署。

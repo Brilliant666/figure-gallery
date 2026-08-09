@@ -1,0 +1,310 @@
+{
+  "schemaVersion": 1,
+  "task": "MVP-05",
+  "status": "MVP-05 ready for coverage review",
+  "recordedAt": "2026-08-09",
+  "baseline": {
+    "pr17Head": "b880b7818bfaf201821a8b70cbb0887db0f528f2",
+    "mergeStrategy": "squash",
+    "mergeCommit": "ad5f04127f13da5ec23b714afaf65e3854346c76",
+    "mainSha": "ad5f04127f13da5ec23b714afaf65e3854346c76",
+    "mainFormalRun": 31297794568,
+    "mainFormalConclusion": "success",
+    "mainGalleryRun": 31297845500,
+    "mainGalleryConclusion": "success"
+  },
+  "northStar": {
+    "canonicalDocument": "docs/PROJECT_NORTH_STAR.md",
+    "primaryEntity": "FigurePrototype",
+    "hpoiRole": [
+      "discovery_index",
+      "coverage_benchmark"
+    ],
+    "hpoiIsFactAuthority": false,
+    "hpoiIsMediaAuthority": false,
+    "productRecordEqualsFigurePrototype": false,
+    "prototypeAutoMergeImplemented": false
+  },
+  "accessBoundary": {
+    "provider": "Firecrawl Search v2 web results",
+    "hpoiIndexedUrlsStoredAsInertText": true,
+    "hpoiDirectHttpRequests": 0,
+    "hpoiDirectBrowserNavigations": 0,
+    "hpoiScrapeRequests": 0,
+    "hpoiApiRequests": 0,
+    "hpoiImagesDownloaded": 0,
+    "hpoiResultUrlsCommitted": 0,
+    "captchaBypassUsed": false,
+    "proxyRotationUsed": false,
+    "enhancedProxyUsed": false
+  },
+  "realCoverage": {
+    "scope": "current_hpoi_search_index_candidate_set_not_absolute_hpoi_database_coverage",
+    "cheshire": {
+      "baseline": {
+        "products": 7,
+        "images": 65
+      },
+      "firstCompletedRun": {
+        "runId": "2026-08-09T06-41-54-983Z-af51d044-b2b9-4e7c-a5be-339dc35ef6ee",
+        "queryCount": 25,
+        "rawResults": 45,
+        "duplicateResults": 3,
+        "rejectedResults": 39,
+        "indexedCandidates": 3,
+        "candidateCreated": 2,
+        "candidateCreatedByEarlierPartialRun": 1,
+        "inScope": 0,
+        "alreadyCollected": 0,
+        "newTargets": 0,
+        "officialResolved": 0,
+        "collected": 0,
+        "unresolved": 0,
+        "outOfScope": 0,
+        "ambiguous": 3,
+        "hpoiIndexSearchRequests": 25,
+        "officialResolutionSearchRequests": 0,
+        "scrapeRequests": 0,
+        "estimatedCredits": 50
+      },
+      "idempotencyRun": {
+        "runId": "2026-08-09T07-01-06-901Z-476633d9-1fe6-442b-91ad-2fe91732776f",
+        "candidateCreated": 0,
+        "productsNew": 0,
+        "objectsNew": 0,
+        "productsChanged": 0,
+        "preferencesPreserved": true
+      },
+      "finalCoverageRun": {
+        "runId": "2026-08-09T07-15-38-150Z-bb19f63c-b002-437f-91fe-8ba1203ba3ab",
+        "indexedCandidates": 3,
+        "inScope": 0,
+        "alreadyCollected": 0,
+        "newTargets": 0,
+        "officialResolved": 0,
+        "collected": 0,
+        "unresolved": 0,
+        "outOfScope": 0,
+        "ambiguous": 3,
+        "afterProducts": 7,
+        "afterImages": 65,
+        "candidateCreated": 0,
+        "productsNew": 0,
+        "objectsNew": 0,
+        "preferencesPreserved": true
+      }
+    },
+    "rem": {
+      "baseline": {
+        "products": 11,
+        "images": 89
+      },
+      "firstCompletedRun": {
+        "runId": "2026-08-09T06-47-15-213Z-fa538219-cf3f-486c-86ff-af6f901cb177",
+        "queryCount": 30,
+        "rawResults": 124,
+        "duplicateResults": 65,
+        "rejectedResults": 24,
+        "indexedCandidates": 35,
+        "candidateCreated": 35,
+        "inScope": 14,
+        "alreadyCollected": 0,
+        "newTargets": 14,
+        "officialResolutionAttempts": 28,
+        "officialResolved": 0,
+        "collected": 0,
+        "unresolved": 14,
+        "outOfScope": 9,
+        "ambiguous": 12,
+        "hpoiIndexSearchRequests": 30,
+        "officialResolutionSearchRequests": 28,
+        "scrapeRequests": 0,
+        "estimatedCredits": 116
+      },
+      "idempotencyRun": {
+        "runId": "2026-08-09T07-04-22-220Z-5ae2ba31-052a-408c-9ba8-3b3cfdff2bb9",
+        "candidateCreated": 0,
+        "productsNew": 0,
+        "objectsNew": 0,
+        "productsChanged": 0,
+        "preferencesPreserved": true
+      },
+      "finalCoverageRun": {
+        "runId": "2026-08-09T07-09-45-059Z-579c1ffb-0be7-4ebf-aaca-d4c79370367d",
+        "indexedCandidates": 35,
+        "inScope": 14,
+        "alreadyCollected": 0,
+        "newTargets": 12,
+        "officialResolved": 0,
+        "collected": 0,
+        "unresolved": 12,
+        "outOfScope": 9,
+        "ambiguous": 14,
+        "ambiguousBreakdown": {
+          "scopeAmbiguous": 12,
+          "inScopeButIdentityAmbiguous": 2
+        },
+        "afterProducts": 11,
+        "afterImages": 89,
+        "candidateCreated": 0,
+        "productsNew": 0,
+        "objectsNew": 0,
+        "preferencesPreserved": true,
+        "unresolvedReason": "no_reviewed_official_result"
+      }
+    }
+  },
+  "idempotency": {
+    "existingCandidatesDuplicated": 0,
+    "secondRoundNewCandidates": 0,
+    "secondRoundNewProducts": 0,
+    "secondRoundNewObjects": 0,
+    "candidateStatusesPersisted": true,
+    "cheshirePreferencesDigest": "774b16f3beb0460d435d96444d0033e659d6d30f5f4c41fb5eff2153fbdc83e1",
+    "remPreferencesDigest": "107aee64cd4ec3358fb6ae3b9c650335716e3aff99710abc1eddff3a7d9055c2",
+    "preferredCoversPreserved": true,
+    "exclusionsPreserved": true,
+    "notesPreserved": true
+  },
+  "firecrawlUsage": {
+    "creditSource": "estimated_upper_bound",
+    "creditReason": "The SDK response did not expose creditsUsed; normalized using the documented 2 credits for each Search request returning at most 10 results.",
+    "primaryFirstPass": {
+      "hpoiIndexSearchRequests": 55,
+      "officialResolutionSearchRequests": 28,
+      "scrapeRequests": 0,
+      "totalRequests": 83,
+      "estimatedCredits": 166
+    },
+    "idempotencyPair": {
+      "searchRequests": 55,
+      "scrapeRequests": 0,
+      "estimatedCredits": 110
+    },
+    "postFixCoverageCalibration": {
+      "searchRequests": 55,
+      "scrapeRequests": 0,
+      "estimatedCredits": 110
+    },
+    "rateLimitObservation": {
+      "searchRequests": 11,
+      "terminalStatus": 429,
+      "continuedAfterTerminal": false,
+      "retryOrBypassUsed": false
+    },
+    "diagnosticSearchRequests": 3,
+    "taskTotals": {
+      "hpoiIndexSearchRequests": 176,
+      "officialResolutionSearchRequests": 28,
+      "diagnosticSearchRequests": 3,
+      "searchRequests": 207,
+      "scrapeRequests": 0,
+      "normalizedEstimatedCredits": 414
+    }
+  },
+  "efficiencyComparison": {
+    "mvp04": {
+      "searchRequests": 15,
+      "scrapeRequests": 33,
+      "totalRequests": 48,
+      "credits": 108,
+      "resolvedNewTargets": 11,
+      "requestsPerResolvedNewTarget": 4.36,
+      "creditsPerResolvedNewTarget": 9.82
+    },
+    "mvp05PrimaryFirstPass": {
+      "searchRequests": 83,
+      "scrapeRequests": 0,
+      "estimatedCredits": 166,
+      "resolvedNewTargets": 0,
+      "requestsPerResolvedNewTarget": null,
+      "creditsPerResolvedNewTarget": null,
+      "ratioReason": "not_computable_when_resolved_new_targets_is_zero"
+    },
+    "finding": "The third-party Hpoi index signal is safe and automatic but had poor precision and official-source resolution yield for these two real characters. It is a supplemental coverage signal, not yet an efficient sole discovery layer."
+  },
+  "systemChrome": {
+    "status": "pass",
+    "product": "Google Chrome",
+    "version": "150.0.7871.187",
+    "systemChrome": true,
+    "headed": true,
+    "temporaryCleanProfile": true,
+    "temporaryProfileDeleted": true,
+    "cheshireProducts": 7,
+    "cheshireImages": 65,
+    "cheshireCoverageCandidates": 3,
+    "remProducts": 11,
+    "remImages": 89,
+    "remCoverageCandidates": 35,
+    "responsiveColumns": {
+      "desktop1280": 4,
+      "tablet900": 3,
+      "mobile600": 2
+    },
+    "detail": true,
+    "lightbox": true,
+    "zoom": true,
+    "preferencesPreserved": true,
+    "externalRequests": 0,
+    "hpoiRequests": 0,
+    "screenshots": 0,
+    "videos": 0,
+    "traces": 0
+  },
+  "verification": {
+    "unitTests": {
+      "tests": 179,
+      "pass": 179,
+      "fail": 0
+    },
+    "sourceAndGovernanceCheck": "pass",
+    "documentation": {
+      "markdownFilesChecked": 69,
+      "brokenLinks": 0,
+      "utf8ReplacementCharacters": 0,
+      "unclosedCodeFences": 0
+    },
+    "playwrightSyntheticGallery": {
+      "tests": 1,
+      "pass": 1,
+      "fail": 0,
+      "externalRequests": 0
+    },
+    "systemChrome": "pass",
+    "npmAudit": {
+      "high": 0,
+      "critical": 0,
+      "totalVulnerabilities": 0,
+      "registry": "official_npm_registry_command_override"
+    },
+    "offlineCiNetworkRequests": 0
+  },
+  "gates": [
+    { "id": "HIDX-01", "status": "pass", "evidence": "PR #17 merged; both main workflows succeeded." },
+    { "id": "HIDX-02", "status": "pass", "evidence": "Canonical Product North Star added and governance documents aligned." },
+    { "id": "HIDX-03", "status": "pass", "evidence": "Hpoi is discovery/coverage only; non-Hpoi reviewed sources remain authoritative." },
+    { "id": "HIDX-04", "status": "pass", "evidence": "Two-character Firecrawl Search v2 index discovery completed automatically." },
+    { "id": "HIDX-05", "status": "pass", "evidence": "All four direct-access counters are zero." },
+    { "id": "HIDX-06", "status": "pass", "evidence": "All 3 Cheshire candidates received an automatic status and reason." },
+    { "id": "HIDX-07", "status": "pass", "evidence": "All 35 Rem candidates received an automatic status and reason." },
+    { "id": "HIDX-08", "status": "pass", "evidence": "URL, official ID, title, manufacturer, scale, and variant matching is covered offline; no unsafe real match was forced." },
+    { "id": "HIDX-09", "status": "pass", "evidence": "28 targeted official-resolution searches ran for the initial high-confidence new targets." },
+    { "id": "HIDX-10", "status": "pass", "evidence": "Synthetic end-to-end contract proves resolved allowlisted products enter the gallery; the real runs yielded no valid resolution and therefore added no fabricated data." },
+    { "id": "HIDX-11", "status": "pass", "evidence": "All unresolved and ambiguous candidates retain explicit states and reasons." },
+    { "id": "HIDX-12", "status": "pass", "evidence": "Second-round candidate, product, and object creation were all zero." },
+    { "id": "HIDX-13", "status": "pass", "evidence": "Both character preference digests, covers, exclusions, and notes were preserved." },
+    { "id": "HIDX-14", "status": "pass", "evidence": "System Google Chrome passed both galleries and coverage pages with zero external requests." },
+    { "id": "HIDX-15", "status": "pass", "evidence": "Runtime data, Hpoi result URL lists, images, and browser artifacts remain untracked." }
+  ],
+  "outOfScope": {
+    "thirdCharacter": false,
+    "hpoiDirectAdapter": false,
+    "hpoiBrowserAutomation": false,
+    "perceptualHash": false,
+    "prototypeAutoMerge": false,
+    "formalPayloadWrite": false,
+    "formalPr02Started": false,
+    "deployment": false
+  }
+}

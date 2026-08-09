@@ -3,10 +3,10 @@
 ## 1. 文档状态、产品目标与定位
 
 - 状态：Product blueprint，作为第一阶段产品范围的权威说明；
-- 技术边界：已接受 Payload CMS + Next.js、PostgreSQL 16 与 S3 兼容对象存储，但正式应用尚未初始化；
-- 实施边界：本文件不授权开始 PR-00、复制 `spikes/`、部署或访问外部站点。
+- 技术边界：已接受 Payload CMS + Next.js、PostgreSQL 16 与 S3 兼容对象存储；PR-00/PR-01 已建立正式工程与核心目录，后续正式路线暂停；
+- 实施边界：本文件不授权开始 PR-02、复制 `spikes/` 或 personal gallery、部署或访问未获授权的外部站点。
 
-**PRD-001 — 精确定位。** Figure Gallery 是一个以“角色—官方手办原型—主图”为核心的 Cos 动作参考图库。系统通过候选采集、人工审核、正式发布和公开只读图库，将多来源的手办资料整理成稳定、可审计、可迁移的数据资产。
+**PRD-001 — 精确定位。** Figure Gallery 是一个以角色为入口、以独立 `FigurePrototype` 造型为核心实体的二次元拍摄姿势数据库。系统尽可能自动发现某角色已有的正版手办、静态完成品和景品，再通过来源证据、候选处理、人工正式确认和公开只读图库，把完整手办数据库转化为“一种造型一张封面、详情保留全部角度”的拍摄参考能力。
 
 第一阶段不是通用手办社区，也不是商品交易平台；产品只服务于管理员维护资料和公开访客按角色浏览 Cos 动作参考图这两类核心用途。
 
@@ -15,6 +15,8 @@
 **PRD-003 — 原型与版本。** 不同厂商或不同造型原型即使动作相似也分别建档；同一原型的普通版、豪华版、再版、特典版和纯异色版归入同一 `FigurePrototype`，以多个 `FigureVersion` 表达，不在公开图库重复出卡。
 
 **PRD-004 — 不可变业务原则。** 候选数据不得直接创建、覆盖或删除正式数据；正式变化必须由有权人工确认并写入审计；现有正式主图不得被采集、重采集、来源失效、候选删除或后台通用保存自动替换。
+
+**PRD-005 — 发现与权威分离。** Hpoi 是 discovery/coverage benchmark，不是事实或图片权威。系统可在明确授权的隔离流程中读取第三方公开搜索索引返回的 Hpoi URL/标题/摘要文本，但 Hpoi direct request 必须为 0；正式商品事实和图片只能来自受审的非 Hpoi 来源。`ProductRecord` 是来源级过渡记录，不等于最终 `FigurePrototype`，不得自动 merge。
 
 ## 2. 用户与核心场景
 
@@ -45,7 +47,7 @@
 - 前台手办详情页、版本卡片、下载按钮、原图批量导出或独立第三方/开发者下载 API；前端所需的公开只读接口保留；
 - 点赞、TTS、自动视频生成、AI 图片生成、自动主图选择、自动授权判断、自动实体合并或相似图自动删除；
 - 原画图库、真人 Cos 图库或其他内容产品；
-- Hpoi 或厂商/会员购的自动采集、登录采集、Cookie、验证码规避或定时抓取；
+- Hpoi direct crawler/scrape/API/图片/浏览器自动化，厂商/会员购的未授权自动采集，登录采集、Cookie、验证码规避或定时抓取；第三方公开搜索索引的 Hpoi candidate discovery 不属于 direct Hpoi access，但仍不能提供正式事实或图片；
 - 生产云部署、真实域名、商业监控或跨区灾备采购。
 
 ### 3.3 未来预留但不承诺
@@ -74,6 +76,17 @@
 | CAND-004 | candidate upsert 与 multipart 文件上传必须支持客户端候选 ID、幂等键和重试 | 同请求重复执行返回同一身份；同 URL 内容变化形成明确新内容或差异 |
 | CAND-005 | 候选保存原始字段、来源快照摘要、采集/录入时间、匹配和审核状态及字段差异 | 重采集只产生候选差异，不改正式字段或主图 |
 | CAND-006 | 候选客户端没有 Character、Manufacturer、Prototype、Version、Setting、发布或主图写方法 | REST/GraphQL/Local API/Admin/custom endpoint 绕过均被拒绝 |
+
+### 4.2A 发现与覆盖方向
+
+| ID | 要求 | 验收要点 |
+| --- | --- | --- |
+| DISC-001 | 从角色 aliases、作品名和产品类别生成确定性、有限的 `site:hpoi.net` 搜索矩阵 | 每角色最多 30 query、每 query 最多 10 result、原始结果最多 200；相同 URL 幂等 |
+| DISC-002 | 搜索 provider 只返回索引 URL、标题、摘要、查询和排名；应用不得请求这些 Hpoi URL | `hpoiDirectHttpRequests`、`hpoiDirectBrowserNavigations`、`hpoiScrapeRequests`、`hpoiApiRequests` 全部为 0 |
+| DISC-003 | `DiscoveryCandidate` 自动判断角色/作品/首期类型，不能确定时保留 `ambiguous` | 小柴郡与柴郡、Ram 与 Rem 分离；黏土/可动/GK 等明确非范围项可标为 out_of_scope |
+| DISC-004 | 候选先匹配已有 ProductRecord；新目标用标题、厂商、角色和作品生成定向 official resolution 查询 | 成功来源必须在受审非 Hpoi allowlist；未解决项保持原因，不造数据 |
+| DISC-005 | 本地 coverage 显示候选、范围、已有、新目标、解析、收录和未解决指标 | 明示“相对于本次搜索索引候选集”；第二轮 candidate/product/SHA-256 对象均幂等 |
+| DISC-006 | `prototypeHint` 只提供疑似同造型提示 | 不使用 pHash，不自动 merge，不写正式 Payload |
 
 ### 4.3 审核工作流
 
@@ -157,19 +170,20 @@
 5. 每次正式变化的 OperationLog 覆盖率 100%，并发静默覆盖为 0，关系断裂为 0；
 6. 恢复前后业务计数、关系 digest、正式主图、来源状态和成人设置差异为 0；对象缺失/孤儿均被报告；
 7. 内部试用中，审核员处理一个含 3 张候选图和 3 个候选字段的标准工作项，中位完成时间目标不高于 3 分钟；该指标用于优化，不得以降低安全或审计步骤达成；
-8. 未授权外部自动请求、Hpoi 请求、提交秘密、真实生产数据和未审计正式写入均为 0。
+8. 未授权外部自动请求、Hpoi direct 请求、提交秘密、真实生产数据和未审计正式写入均为 0；索引候选数与 Hpoi direct 四项计数分开报告。
 
 ## 7. 总体验收与停止条件
 
 - 每项需求必须在 [需求追踪矩阵](TRACEABILITY_MATRIX.md) 映射到实体/服务、API 或 UI、交付 PR、测试和风险；
 - 实施严格遵循 [PR-00—PR-08 交付路线](DELIVERY_ROADMAP.md)，一个 PR 达到停止条件后不得自动开始下一项；
 - 正式项目从官方脚手架干净初始化，研究与 spike 不作为运行时输入；
-- Hpoi 保持仅人工参考和网络硬禁令，具体见 [安全边界](SECURITY_BOUNDARIES.md)；
+- Hpoi direct automation 保持网络硬禁令；第三方公开搜索索引只提供 discovery/coverage 文本信号，具体见 [产品北极星](PROJECT_NORTH_STAR.md)与[安全边界](SECURITY_BOUNDARIES.md)；
 - 本蓝图完成后停止：不初始化应用、不部署、不导入真实图片、不开始原画图库。
 
 ## 8. 依据与关联文档
 
 - [技术底座 ADR](../research/TECH_STACK_DECISION.md)
+- [产品北极星](PROJECT_NORTH_STAR.md)
 - [Hpoi 真实传输门禁](../research/HPOI_TRANSPORT_GATE.md)
 - [系统架构](SYSTEM_ARCHITECTURE.md)
 - [领域模型](DOMAIN_MODEL.md)

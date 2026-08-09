@@ -4,7 +4,7 @@ import http from 'node:http'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-import { officialLiveGate, TOOL_ROOT } from '../config.js'
+import { hpoiIndexLiveGate, officialLiveGate, TOOL_ROOT } from '../config.js'
 import { resolveMediaObject } from '../gallery/read-model.js'
 import { createDefaultRuntime } from './runtime-adapter.js'
 import { normalizeCharacterSlug, resolveBuiltinCharacter } from '../characters/registry.js'
@@ -15,6 +15,7 @@ const STATIC_FILES = new Map([
   ['/assets/styles.css', ['styles.css', 'text/css; charset=utf-8']],
   ['/assets/home.js', ['home.js', 'text/javascript; charset=utf-8']],
   ['/assets/gallery.js', ['gallery.js', 'text/javascript; charset=utf-8']],
+  ['/assets/discovery.js', ['discovery.js', 'text/javascript; charset=utf-8']],
 ])
 
 function securityHeaders(contentType = null) {
@@ -115,13 +116,14 @@ export function createJobManager(config, runtime) {
       runId: job.runId,
       query: job.query,
       characterSlug: job.characterSlug || null,
-      sourceMode: 'official_sources',
+      sourceMode: job.sourceMode || 'hpoi_search_index',
       status: job.status,
       startedAt: job.startedAt,
       completedAt: job.completedAt || null,
       progress: job.progress,
       stopReason: job.stopReason || null,
       galleryUrl: job.galleryUrl || null,
+      discoveryUrl: job.discoveryUrl || null,
       disambiguationCandidates: job.disambiguationCandidates || [],
     }
   }
@@ -150,18 +152,24 @@ export function createJobManager(config, runtime) {
       }
     }
 
-    if (input.characterUrl || (input.sourceMode && input.sourceMode !== 'official_sources')) {
+    const sourceMode = input.sourceMode || 'hpoi_search_index'
+    if (input.characterUrl || !['hpoi_search_index', 'official_sources'].includes(sourceMode)) {
       return {
         accepted: false,
         statusCode: 410,
         error: 'hpoi_live_source_disabled',
-        notice: 'Hpoi live access is permanently disabled; use official_sources.',
+        notice: 'Direct Hpoi live access is permanently disabled; use hpoi_search_index or official_sources.',
       }
     }
 
-    const gate = officialLiveGate(config, {
-      interactiveConfirmation: input.confirmOfficialSourceAccess === true,
-    })
+    const gate = sourceMode === 'hpoi_search_index'
+      ? hpoiIndexLiveGate(config, {
+          interactiveIndexConfirmation: input.confirmHpoiIndexDiscovery === true,
+          interactiveOfficialConfirmation: input.confirmOfficialSourceAccess === true,
+        })
+      : officialLiveGate(config, {
+          interactiveConfirmation: input.confirmOfficialSourceAccess === true,
+        })
     if (!gate.allowed) {
       last = {
         runId: null,
@@ -189,20 +197,39 @@ export function createJobManager(config, runtime) {
       runId: runIdFor(query),
       query,
       characterSlug: character.slug,
-      sourceMode: 'official_sources',
+      sourceMode,
       status: 'running',
       startedAt: new Date().toISOString(),
       progress: { pages: 0, products: 0, images: 0, failures: 0 },
       controller,
     }
     job.galleryUrl = `/gallery/characters/${encodeURIComponent(character.slug)}`
+    job.discoveryUrl = `/discovery/${encodeURIComponent(character.slug)}`
     active = job
     last = job
     const options = {
       query,
       characterConfig: character,
-      sourceMode: 'official_sources',
+      sourceMode,
       limits: {
+        maxIndexQueries: boundedInteger(
+          input.maxIndexQueries,
+          config.hpoiIndexMaxQueries,
+          1,
+          config.hpoiIndexMaxQueries,
+        ),
+        maxIndexResultsPerQuery: boundedInteger(
+          input.maxIndexResultsPerQuery,
+          config.hpoiIndexMaxResultsPerQuery,
+          1,
+          config.hpoiIndexMaxResultsPerQuery,
+        ),
+        maxIndexRawResults: boundedInteger(
+          input.maxIndexRawResults,
+          config.hpoiIndexMaxRawResults,
+          1,
+          config.hpoiIndexMaxRawResults,
+        ),
         searchLimit: boundedInteger(
           input.maxSearchResults,
           config.officialMaxSearchResultsPerQuery,
@@ -239,7 +266,11 @@ export function createJobManager(config, runtime) {
       },
     }
 
-    Promise.resolve(runtime.runCollector(options))
+    const run = sourceMode === 'hpoi_search_index'
+      ? runtime.runIndexDiscovery?.bind(runtime)
+      : runtime.runCollector?.bind(runtime)
+    if (!run) return { accepted: false, statusCode: 501, error: 'source_mode_not_supported' }
+    Promise.resolve(run(options))
       .then((result = {}) => {
         if (result.runId && result.runId !== job.runId) {
           throw new Error('Collector returned a run ID different from the requested stable run ID.')
@@ -305,6 +336,9 @@ export function createPersonalGalleryServer({ config, runtime = createDefaultRun
       if (method === 'GET' && (url.pathname.startsWith('/gallery/') || url.pathname === '/gallery')) {
         return sendFile(response, path.join(STATIC_ROOT, 'gallery.html'), 'text/html; charset=utf-8')
       }
+      if (method === 'GET' && url.pathname.startsWith('/discovery/')) {
+        return sendFile(response, path.join(STATIC_ROOT, 'discovery.html'), 'text/html; charset=utf-8')
+      }
       if (method === 'GET' && STATIC_FILES.has(url.pathname)) {
         const [name, contentType] = STATIC_FILES.get(url.pathname)
         return sendFile(response, path.join(STATIC_ROOT, name), contentType)
@@ -318,6 +352,9 @@ export function createPersonalGalleryServer({ config, runtime = createDefaultRun
           : []
         const characters = await Promise.all(characterConfigs.map(async (character) => {
           const gallery = await runtime.loadGalleryByQuery(character.slug)
+          const discovery = typeof runtime.loadDiscovery === 'function'
+            ? await runtime.loadDiscovery(character.slug)
+            : null
           return {
             characterId: character.characterId,
             slug: character.slug,
@@ -326,6 +363,7 @@ export function createPersonalGalleryServer({ config, runtime = createDefaultRun
             workNames: character.workNames,
             hasGallery: Boolean(gallery?.products?.length),
             summary: gallery?.summary || null,
+            coverage: discovery?.coverage || null,
           }
         }))
         return sendJson(response, 200, {
@@ -366,6 +404,13 @@ export function createPersonalGalleryServer({ config, runtime = createDefaultRun
         return gallery
           ? sendJson(response, 200, gallery)
           : sendJson(response, 404, { error: 'gallery_not_found' })
+      }
+      if (method === 'GET' && url.pathname.startsWith('/api/discovery/')) {
+        const query = decodeURIComponent(url.pathname.slice('/api/discovery/'.length))
+        const discovery = typeof runtime.loadDiscovery === 'function' ? await runtime.loadDiscovery(query) : null
+        return discovery
+          ? sendJson(response, 200, discovery)
+          : sendJson(response, 404, { error: 'discovery_not_found' })
       }
       if (method === 'POST' && url.pathname.startsWith('/api/preferences/')) {
         const characterSlug = decodeURIComponent(url.pathname.slice('/api/preferences/'.length))

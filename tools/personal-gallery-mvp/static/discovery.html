@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>收录覆盖 · Personal Figure Gallery</title>
+    <link rel="stylesheet" href="/assets/styles.css" />
+  </head>
+  <body>
+    <main class="shell discovery-shell">
+      <header class="section-heading discovery-heading">
+        <div>
+          <p class="eyebrow">LOCAL COVERAGE · HPOI SEARCH INDEX</p>
+          <h1 id="character-name">收录覆盖</h1>
+          <p class="muted">这些指标只相对于本次第三方搜索索引返回的候选集，不代表 Hpoi 完整数据库的绝对覆盖率。</p>
+        </div>
+        <div class="inline-actions">
+          <a class="button-link secondary" href="/">返回收集页</a>
+          <a id="gallery-link" class="button-link" href="/gallery">打开拍摄图库</a>
+        </div>
+      </header>
+
+      <aside class="source-notice">
+        <strong>HPOI-DIRECT-0</strong>
+        <p>这里只保存第三方 Search 返回的 Hpoi 商品 URL 文本作为发现证据。页面不会请求、预览、解析或跳转到 Hpoi，正式商品事实与图片来自受审的非 Hpoi 来源。</p>
+      </aside>
+
+      <section class="panel">
+        <h2>覆盖指标</h2>
+        <dl id="coverage-metrics" class="metrics coverage-metrics"></dl>
+        <p id="coverage-rates" class="muted">尚无索引发现记录。</p>
+      </section>
+
+      <section class="panel">
+        <div class="section-heading">
+          <h2>自动处理候选</h2>
+          <span id="candidate-count" class="status-pill">0</span>
+        </div>
+        <div class="table-scroll">
+          <table class="candidate-table">
+            <thead>
+              <tr>
+                <th>候选</th>
+                <th>推断厂商 / 类型</th>
+                <th>状态</th>
+                <th>本地匹配</th>
+                <th>正式来源解析</th>
+                <th>原因</th>
+              </tr>
+            </thead>
+            <tbody id="candidate-rows"></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+    <script type="module" src="/assets/discovery.js"></script>
+  </body>
+</html>

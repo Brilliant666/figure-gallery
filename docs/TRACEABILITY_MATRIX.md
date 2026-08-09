@@ -6,7 +6,7 @@
 
 第一阶段只有两类人类用户类型：公开访客和 Admin；首版可有多个独立 Admin 账号，但只有一个角色，审核、目录维护、设置及运维是动作上下文，不是首版可配置 RBAC。`CandidateClient` 是非人集成身份。
 
-当前交付状态：PR-00 已合并；PR-01 在 `feat/pr-01-core-catalog` 作为 Draft 候选实现，尚待最终 CI 与人工审查；PR-02—PR-08 未开始。PR-01 的 `CAT-01`—`CAT-21` 状态真值只存在于最终 Head 对应的 `research/evidence/pr01/catalog-results.json`，本矩阵只做需求/测试路由，不预先标记 pass。
+当前交付状态：PR-00 与 PR-01 已合并，`CAT-01`—`CAT-21` 和 main Formal web CI 已通过；PR-02—PR-08 未开始并暂缓。当前隔离 MVP-05 只验证 discovery/coverage，不写正式 Payload。其真实状态真值在 `research/evidence/mvp05/hpoi-index-discovery-results.json`，不能用合成 CI 代替。
 
 ## 2. PR 边界
 
@@ -39,6 +39,7 @@
 | R-11 | 搜索、响应式、可访问性或性能不达标 |
 | R-12 | Admin/REST/GraphQL/Local API 绕过领域服务和审计 |
 | R-13 | secret、供应链、运行形态、观测或清理失败 |
+| R-14 | 搜索索引召回不完整、hint 误分类、official resolution 错配或把 ProductRecord 当作 FigurePrototype |
 
 ## 4. 产品与功能需求映射
 
@@ -48,6 +49,7 @@
 | PRD-002 | FigurePrototype category/authorization/inclusion、FigureVersion gray completeness、Manufacturer evidence、publication state | Admin 收录审核与发布 service | PR-01, PR-03 | CAT-07、CAT-11—14；T-PUBLISH-PRECONDITION | R-01 |
 | PRD-003 | FigurePrototype/FigureVersion 唯一与归属 | Admin 版本归入；公开投影去重 | PR-01, PR-03, PR-06 | T-PROTOTYPE-VERSION、T-PUB-NO-VERSION-CARDS | R-01 |
 | PRD-004 | Candidate/Formal aggregate、OperationLog、mainImage | candidate API、review/领域 service | PR-01—PR-05 | T-CANDIDATE-ISOLATION、T-MAIN-IMMUTABLE | R-02, R-05, R-12 |
+| PRD-005 | DiscoveryCandidate→SourceEvidence→ProductRecord→future FigurePrototype | personal gallery coverage/official resolver；future candidate service | MVP-05；future PR-02/PR-03 | HIDX-03—12、HPOI-DIRECT-0 | R-10, R-14 |
 | CAT-001 | Work、soft state（WorkAlias 不在 PR-01） | Admin Work commands | PR-01 | CAT-02—04、CAT-15—19 | R-01, R-12 |
 | CAT-002 | Character、CharacterAlias、可选 Work；Prototype↔Character M:N | Admin Character/Prototype commands；future public search | PR-01, PR-06 | CAT-02、CAT-05、CAT-06、CAT-08、CAT-16—19；T-HOMONYM | R-01, R-11, R-12 |
 | CAT-003 | Manufacturer、verification/status | Admin Manufacturer commands | PR-01 | CAT-02、CAT-07、CAT-13、CAT-16—19 | R-01, R-12 |
@@ -59,6 +61,11 @@
 | CAND-004 | CandidateRecord、upload receipt/idempotency | candidate upsert、multipart upload | PR-02 | T-CANDIDATE-REPLAY-10X、T-UPLOAD-RETRY | R-03, R-04 |
 | CAND-005 | raw fields/snapshot digest/diff/status | Admin candidate view | PR-02, PR-03 | T-RECOLLECT-DIFF、T-NO-FORMAL-MUTATION | R-02, R-06 |
 | CAND-006 | CandidateClient scope allowlist | REST/GraphQL/Local/Admin/custom surfaces | PR-02 | ATK-03、ATK-04、ATK-05、ATK-06 | R-02, R-12 |
+| DISC-001—002 | deterministic query matrix、Hpoi indexed inert text | Firecrawl Search v2 only | MVP-05 | HIDX-04—05、ATK-13/16 | R-10, R-14 |
+| DISC-003 | DiscoveryCandidate scope/character/work status | local discovery classifier | MVP-05 | HIDX-06—08；Little Cheshire/Ram/GK/Nendoroid fixtures | R-01, R-14 |
+| DISC-004 | existing matcher、official resolver、reviewed source allowlist | local collector/resolver | MVP-05 | HIDX-08—11 | R-01, R-10, R-14 |
+| DISC-005 | coverage metrics/candidate view/idempotency | `/discovery/<slug>`、local manifests | MVP-05 | HIDX-12—14 | R-11, R-13, R-14 |
+| DISC-006 | prototypeHint only | local candidate metadata | MVP-05；future dedicated prototype task | no-auto-merge assertion | R-01, R-14 |
 | REV-001 | ReviewWorkItem、allowedTargets、reviewer、lockVersion | Admin review commands | PR-03 | T-WORKITEM-SCHEMA、ATK-07/08 | R-06 |
 | REV-002 | FieldDecision、reason、candidate images | Admin review view | PR-03 | T-REVIEW-ACCEPT-REJECT-E2E | R-06 |
 | REV-003 | defer/ignore/complete/reopen state machine | Admin review commands | PR-03 | T-WORKITEM-STATE、T-REOPEN-AUDIT | R-06, R-12 |
@@ -114,7 +121,7 @@
 | SEC-006、SEC-007、SEC-008、SEC-009、SEC-010 | CandidateClient credential digest/status/scope/owner | provision/rotate/revoke、candidate API | PR-02 | ATK-01、ATK-02、T-CLIENT-LIFECYCLE | R-03 |
 | SEC-011、SEC-012、SEC-013、SEC-014 | Candidate/Formal、ReviewWorkItem、mainImage、lock/transaction | review/formal commands | PR-03—PR-05 | ATK-03、ATK-06、ATK-07、ATK-08、ATK-09 | R-02, R-05, R-06, R-07 |
 | SEC-015、SEC-016、SEC-017、SEC-018 | UploadReceipt、MediaAsset、storageKey/compensation | multipart/S3/media read | PR-02, PR-04 | ATK-10、ATK-11、ATK-12 | R-04, R-05 |
-| SEC-019、SEC-020 | manual-only policy、network guard | URL input、HTTP/DNS/redirect transport | PR-00 起持续 | ATK-13，Hpoi requests=0 | R-10 |
+| SEC-019、SEC-020 | index/transport separation、network guard | indexed URL text、HTTP/DNS/redirect/browser transport | PR-00 起持续；MVP-05 | ATK-13/16，Hpoi direct 四项=0 | R-10, R-14 |
 | ATK-01、ATK-02 | auth/owner attacks | candidate API | PR-02 | 同 ID 自动化，恢复后 ATK-15 | R-03 |
 | ATK-03、ATK-04、ATK-05、ATK-06 | 正式写和通用 surface bypass | 全写入 surface | PR-01—PR-05, PR-08 | 正式 digest/主图/成功日志三不变量 | R-02, R-12 |
 | ATK-07、ATK-08、ATK-09 | target、并发、dependency undo | Admin domain commands | PR-03, PR-05 | PostgreSQL 双连接/事务测试 | R-06, R-07 |
@@ -122,6 +129,7 @@
 | ATK-13 | Hpoi URL/DNS/重定向绕过 | network guard | PR-00—PR-08 | transport call=0、request=0 | R-10 |
 | ATK-14 | public/adult/cache 绕过 | public query/cache | PR-06 | 匿名浏览器/API 攻击 | R-08 |
 | ATK-15 | 恢复后完整攻击重放 | restored standalone | PR-07, PR-08 | 恢复前后相同拒绝与 digest | R-03, R-05, R-09, R-12 |
+| ATK-16 | indexed URL 的预览/favicon/导航旁路 | personal gallery discovery UI/runtime | MVP-05 起持续 | UI 无 Hpoi anchor；Chrome external/Hpoi=0 | R-10 |
 
 ## 7. PR-01 机器验收追踪
 

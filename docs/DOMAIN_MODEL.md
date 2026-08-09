@@ -2,7 +2,7 @@
 
 ## 1. 文档状态与适用范围
 
-本文是正式产品的规范性领域模型。PR-00 已从官方脚手架建立并合并；PR-01 Draft 正在把核心目录部分映射为 Payload Collection、PostgreSQL migration、领域服务和最小审计，但最终门禁仍以对应 CI 机器证据为准。PR-01 的实际字段、约束与临时边界见 [核心目录实现](PR01_CORE_CATALOG_IMPLEMENTATION.md)，业务身份映射见 [PR-01 业务身份实现](PR01_IDENTITY_IMPLEMENTATION.md)。技术底座及运行边界见 [技术选型 ADR](../research/TECH_STACK_DECISION.md)，媒体对象的跨存储生命周期见 [媒体生命周期](MEDIA_LIFECYCLE.md)。
+本文是正式产品的规范性领域模型。PR-00 和 PR-01 已合并，核心目录已映射为 Payload Collection、PostgreSQL migration、领域服务和最小审计；后续正式 PR-02—PR-08 当前暂停。PR-01 的实际字段、约束与临时边界见 [核心目录实现](PR01_CORE_CATALOG_IMPLEMENTATION.md)，业务身份映射见 [PR-01 业务身份实现](PR01_IDENTITY_IMPLEMENTATION.md)。最高层产品方向见 [产品北极星](PROJECT_NORTH_STAR.md)。
 
 本文使用以下规范词：
 
@@ -25,6 +25,9 @@
 8. 展示查询只读取 published 且未软删除的正式记录；成人内容还必须服从 SystemSetting 和记录级分级。
 9. SHA-256 是媒体内容的精确身份；感知哈希仅用于提示人工查重，不能自动合并或证明版权、授权或相同原型。
 10. storage_key、bucket/profile 和公开 URL 分离；公开 URL、签名 URL、来源 URL 都不得成为业务主键。
+11. 领域方向是 `Work → Character → FigurePrototype → FigureVersion → SourceEvidence → Media`；角色图库最终每个 FigurePrototype 只出一张卡。
+12. personal gallery 的 ProductRecord 和 DiscoveryCandidate 都是来源/发现层记录，不等于 FigurePrototype；`prototypeHint` 只提示疑似重复，不能自动 merge、发布或选择主图。
+13. Hpoi 只提供第三方搜索索引中的 discovery/coverage 文本信号；Hpoi direct transport 为 0，正式事实和媒体必须来自受审非 Hpoi 来源。
 
 ## 3. 通用约定
 
@@ -196,6 +199,24 @@ FigureImage 是正式原型与媒体内容的关联，不与 CandidateImage 复�
 main_media_asset_id 不是 FigureImage.is_main 的第二份真相；主图只有 FigurePrototype 上一个权威引用。查询时通过 prototype_id + media_asset_id 验证关联有效。
 
 ### 4.3 来源、候选与身份（PR-02 以后计划，PR-01 未实现）
+
+#### DiscoveryCandidate（方向模型；MVP-05 本地验证，正式 PR-02 未实现）
+
+DiscoveryCandidate 表示第三方公开搜索索引返回的“可能存在某手办”的发现信号，不是 `SourceRecord`、`CandidateRecord`、`ProductRecord` 或 `FigurePrototype`。personal gallery 当前只在 `.local` 保存以下最小字段；正式实现若吸收该能力，必须在独立 PR 中重新建模：
+
+| 字段 | 要求 | 含义 |
+| --- | --- | --- |
+| candidateId / characterId | 稳定、非空 | 角色范围内的幂等候选身份 |
+| discoverySource | `hpoi_search_index` | 明确它来自第三方索引而非 Hpoi 页面读取 |
+| indexedUrl / indexedProductId | 文本证据 | 可规范化和比较，但不得请求、解析、预览或导航 |
+| titleHint / snippetHint / discoveryQuery / rank | 可空/有界 | 搜索索引提示，不作为正式事实 |
+| manufacturerHint / categoryHint / scaleHint / workHint | 可空 | 确定性推断；无法判断则为空 |
+| status | discovered、in_scope、out_of_scope、already_collected、needs_resolution、official_resolved、collected、ambiguous | 自动处理阶段；未解决不造数据 |
+| matchedProductId | 可空 | 当前 personal gallery 来源记录匹配，不是正式原型关系 |
+| resolutionEvidence | 非 Hpoi 受审来源摘要 | 找到正式来源后仍须由确定性 parser 验证 |
+| prototypeHint | 可空、非权威 | 厂商、规范标题、比例、造型词组合；只作重复提示和 coverage 统计 |
+
+Hpoi URL 不得进入会触发 fetch、unfurl、DNS、favicon 或浏览器预取的字段/组件。`official_resolved` 只表示找到受审非 Hpoi 页面，`collected` 只表示进入隔离 personal gallery；两者都不等于正式发布。
 
 #### CandidateClient
 

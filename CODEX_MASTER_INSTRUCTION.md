@@ -45,10 +45,19 @@
 
 ## Hpoi 与来源边界
 
-- Hpoi 当前只允许作为人工参考；禁止自动访问 Hpoi 及其任何子域名。
-- 未取得明确书面许可前，不得编写、测试或运行正式 Hpoi adapter。
-- 第一阶段来源只可人工录入、人工粘贴 URL、从明确允许的离线文件导入，或由未来经授权的 Source Adapter 接入。
+- Hpoi 被定义为 discovery index 和 coverage benchmark，不是正式商品事实、图片资产或 FigurePrototype 身份的权威来源。
+- **Hpoi direct automation 当前仍禁止**：任何代码、浏览器、预览器、代理、健康检查或 adapter 均不得向 Hpoi 及其子域发起 GET、HEAD、DNS、scrape、API、图片或浏览器访问。
+- 经当前任务明确授权时，隔离的 personal gallery 工具可以通过第三方公开搜索索引自动取得 Hpoi indexed result 的 URL、标题、摘要、查询和排名文本，用于候选发现与覆盖统计；不得随后请求、解析、预览或跳转该 Hpoi URL。
+- Hpoi 索引候选只有解析到受审的非 Hpoi 官方厂商、品牌、发行方或明确允许的 distributor/retailer 证据后，才可进入个人图库。索引信号本身不能提供正式事实或图片。
+- 未取得明确书面许可前，不得编写、测试或运行正式 Direct Hpoi adapter；不得把上述索引例外扩展到正式 Payload 应用。
+- 第一阶段正式来源只可人工录入、人工粘贴 URL、从明确允许的离线文件导入，或由未来经授权的 Source Adapter 接入；personal gallery 的索引验证仍与正式应用隔离。
 - 所有来源数据只能写入候选聚合，必须经过人工审核；不得直接创建、覆盖或删除正式数据与正式主图。
+
+## 当前产品优先级
+
+- 产品北极星以 `docs/PROJECT_NORTH_STAR.md` 为准：完整手办数据库是拍摄姿势资料库的底层能力，最终首页核心单位是 `FigurePrototype`。
+- 近期顺序为自动发现覆盖率、柴郡/蕾姆补收录、candidate 到 official source 解析、FigurePrototype 层去重、图片完整度、封面质量、更多角色。
+- 正式 Payload PR-02—PR-08 路线保留但暂停；不得因 personal gallery 验证而把工具数据或源码写入正式应用，也不得自动开始第三个角色、原型自动合并或正式 PR-02。
 
 ## 范围控制
 

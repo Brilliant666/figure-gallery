@@ -1,0 +1,64 @@
+{
+  "fixture": "synthetic Hpoi search-index result set; no page content or real product data",
+  "cheshire": [
+    {
+      "url": "https://www.hpoi.net/hobby/9901001?utm_source=synthetic",
+      "title": "Azur Lane Cheshire Synthetic Existing 1/7 scale figure [Good Smile Company] - Hpoi手办维基",
+      "description": "Synthetic indexed description for 碧蓝航线 柴郡 比例人形。"
+    },
+    {
+      "url": "https://hpoi.net/hobby/9901001",
+      "title": "Duplicate Cheshire synthetic result",
+      "description": "Azur Lane 柴郡 比例手办 synthetic duplicate。"
+    },
+    {
+      "url": "https://www.hpoi.net/hobby/9901002",
+      "title": "Azur Lane Cheshire Synthetic New 1/8 scale figure [APEX] - Hpoi手办维基",
+      "description": "Synthetic indexed description for 碧蓝航线 柴郡 比例人形。"
+    },
+    {
+      "url": "https://www.hpoi.net/hobby/9901003",
+      "title": "碧蓝航线 小柴郡 1/7 比例手办 - Hpoi手办维基",
+      "description": "Synthetic different-character result for Little Cheshire。"
+    },
+    {
+      "url": "https://www.hpoi.net/hobby/9901004",
+      "title": "Azur Lane Cheshire Nendoroid 黏土人 - Hpoi手办维基",
+      "description": "Synthetic excluded category。"
+    },
+    {
+      "url": "https://www.hpoi.net/hobby/9901005",
+      "title": "Azur Lane Cheshire Garage Kit GK - Hpoi手办维基",
+      "description": "Synthetic excluded unauthorized kit。"
+    }
+  ],
+  "rem": [
+    {
+      "url": "https://www.hpoi.net/hobby/9902001",
+      "title": "Re:Zero Rem Synthetic Existing 1/7 scale figure [KADOKAWA] - Hpoi手办维基",
+      "description": "Synthetic 蕾姆 比例人形 indexed result。"
+    },
+    {
+      "url": "https://www.hpoi.net/hobby/9902002",
+      "title": "Re:Zero Rem Synthetic Prize Figure [SEGA] - Hpoi手办维基",
+      "description": "Synthetic 蕾姆 景品 indexed result。"
+    },
+    {
+      "url": "https://www.hpoi.net/hobby/9902003",
+      "title": "Re:Zero Ram Synthetic 1/7 scale figure - Hpoi手办维基",
+      "description": "Synthetic 拉姆 result that must not match Rem。"
+    }
+  ],
+  "officialResolution": [
+    {
+      "url": "https://apex-toys.com/productinfo/9901002.html",
+      "title": "Azur Lane Cheshire Synthetic New",
+      "description": "APEX official synthetic 1/8 scale figure product result。"
+    },
+    {
+      "url": "https://www.amiami.jp/top/detail/detail?gcode=SYNTHETIC-9901002",
+      "title": "Azur Lane Cheshire Synthetic New retailer listing",
+      "description": "Synthetic reviewed retailer fallback result。"
+    }
+  ]
+}

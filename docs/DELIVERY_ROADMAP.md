@@ -4,7 +4,7 @@
 
 本路线把正式产品拆成九个可独立审核、验证和回滚的 PR。顺序是依赖顺序，不是自动执行许可；每个 PR 都必须由单独任务明确授权、从最新 `main` 创建独立分支，并默认以 Draft PR 交付。达到当前 PR 的停止条件后立即停止。
 
-当前状态：PR-00 与 PR-01 已合并，PR-01 的 CAT-01—CAT-21 和最新 `main` Formal web CI 已通过。为优先验证第一个个人可用图库，正式 PR-02—PR-08 暂停但不取消；独立 MVP 的范围和隔离边界见 [MVP-01 个人自动手办图库](MVP01_PERSONAL_AUTO_GALLERY.md)。恢复 PR-02 仍需新的明确授权，此状态不改变任何后续 PR 的原定范围。
+当前状态：PR-00 与 PR-01 已合并，PR-01 的 CAT-01—CAT-21 和最新 `main` Formal web CI 已通过。正式 PR-02—PR-08 暂停但不取消；当前优先用隔离 personal gallery 验证自动发现覆盖、柴郡/蕾姆补收录与 official source resolution。恢复 PR-02 仍需新的明确授权，MVP 源码和运行数据不得复制到正式应用。
 
 共同规则：
 
@@ -12,10 +12,22 @@
 - `apps/web` 只能由 PR-00 使用 Payload 官方脚手架干净生成；不得复制或迁移 `spikes/`。
 - 每个 PR 必须说明 migration、测试、回滚和数据兼容性；关键一致性不能只由 Admin UI 保证。
 - 正式变更必须经过领域 service、数据库事务和 `OperationLog`；候选入口不能写正式聚合。
-- Hpoi 只作人工参考，不得自动访问；任何 Source Adapter 都需要独立授权和明确书面许可。
+- Hpoi 是 discovery/coverage benchmark；direct Hpoi automation 仍禁止。明确授权的隔离工具可读取第三方公开搜索索引返回的 Hpoi URL/标题/摘要文本，但不得对 Hpoi 发起任何网络或浏览器访问；正式 Direct Hpoi Adapter 仍需独立授权和明确书面许可。
 - 合并、部署和后续 PR 均需要另行授权。
 
 ## 2. 总览
+
+在恢复正式 PR 路线前，近期产品价值顺序为：
+
+1. 自动发现覆盖率；
+2. 柴郡/蕾姆补收录；
+3. candidate → official source 自动解析；
+4. FigurePrototype 层去重；
+5. 图片完整度；
+6. 封面质量；
+7. 更多角色。
+
+第三个角色、公网部署、继续堆正式后台功能和无直接用户价值的基础设施优化均暂缓。详见 [产品北极星](PROJECT_NORTH_STAR.md) 与 [MVP-05 Hpoi 搜索索引发现](MVP05_HPOI_INDEX_DISCOVERY.md)。
 
 | PR | 状态 | 主题 | 主要交付 | 依赖 |
 | --- | --- | --- | --- | --- |
@@ -119,7 +131,7 @@
 
 ### 非目标
 
-- 不自动访问 Hpoi 或其他外部站点，不实现正式数据写入与主图选择。
+- 不直接访问 Hpoi，不把 personal gallery 的索引发现实现复制进正式应用；其他外部 adapter 仍需独立许可与任务。不实现正式数据写入与主图选择。
 - 不实现完整人工审核 UI、thumbnail/preview、正式媒体关系、正式提升、主图、完整 S3 生命周期或来源定时任务。
 
 ### 数据迁移

@@ -2,7 +2,7 @@
 
 ## 1. 文档状态与边界
 
-本文是正式产品的**规划蓝图**，不是已经存在的应用、基础设施或部署说明。仓库当前只包含研究结论和可丢弃 spike；本文中的目录、接口、组件和运行拓扑只有在后续获得明确授权后才可创建。
+本文是正式产品的**规范蓝图**。PR-00/PR-01 已建立正式 Payload/Next.js 工程与核心目录，但来源、候选、正式媒体、审核、公开图库和部署仍只是后续设计；personal gallery 是隔离工具，不属于正式运行拓扑。
 
 技术决策以 [`TECH_STACK_DECISION.md`](../research/TECH_STACK_DECISION.md) 为准，生产门禁证据见 [`PAYLOAD_CI_PRODUCTION_GATE.md`](../research/PAYLOAD_CI_PRODUCTION_GATE.md)。本蓝图不得被解释为：
 
@@ -22,6 +22,7 @@
 - 不同厂商或不同原型即使动作相似也分别建模；同一原型的普通版、豪华版、再版、特典版和纯异色版归入同一 FigurePrototype，并以 FigureVersion 表达；
 - 每个原型可以保存多张候选图，由人工选一张正式主图；公开端每个原型只展示该主图；
 - 外部来源只用于发现、补充和核验，任何来源都不是在线产品的强依赖，也不能绕过候选审核。
+- Hpoi 只作为 discovery/coverage benchmark；第三方搜索索引可给出 Hpoi URL 文本信号，但 direct Hpoi transport 必须为 0，正式事实和媒体来自受审非 Hpoi 来源。
 
 第一版公开交互范围：
 
@@ -41,6 +42,7 @@
 6. Merge、split 和 undo 使用稳定 operation ID、作用域、版本和依赖，不允许“撤销全局最近一次”或静默覆盖。
 7. 候选客户端使用独立、可撤销、可归因凭据；服务端只保存凭据哈希，并强制 owner 隔离。
 8. 图片内容身份以 SHA-256 为准，感知哈希只辅助相似性判断；公开 URL 不作为业务身份。
+9. 最终公开卡片单位是 FigurePrototype；来源级 ProductRecord、DiscoveryCandidate 和多个 FigureVersion 不得永久重复占卡。
 
 ## 3. 已接受技术边界
 
@@ -106,7 +108,9 @@ flowchart LR
     client["候选采集客户端"]
     adapter["未来 Source Adapter\n当前未实现"]
     source["书面允许的公开来源\n有限、低频、只读"]
-    hpoi["Hpoi\n仅人工参考，不是系统集成"]
+    searchIndex["第三方公开搜索索引\n只返回 Hpoi URL/标题/摘要文本"]
+    hpoi["Hpoi\ndirect transport 禁止"]
+    personal["隔离 personal gallery\n当前 discovery 验证"]
     system["手办图库系统"]
 
     coser -->|"角色搜索、图库、灯箱"| system
@@ -114,10 +118,34 @@ flowchart LR
     client -->|"候选 upsert、候选媒体上传"| system
     adapter -->|"候选数据"| system
     adapter -->|"仅在书面授权后读取"| source
-    admin -.->|"人工参考；遵守访问规则"| hpoi
+    searchIndex -->|"inert discovery evidence"| personal
+    personal -->|"受审非 Hpoi 来源证据"| source
+    personal -.->|"无 GET/HEAD/DNS/scrape/API/导航"| hpoi
+    admin -.->|"可选人工参考；遵守访问规则"| hpoi
 ```
 
-外部来源不是系统可信边界的一部分。图中不存在系统或 Source Adapter 到 Hpoi 的自动读取路径：Hpoi 只允许人工参考；没有明确书面许可时不得为 Hpoi 创建或启用 adapter。其他 Source Adapter 也只有在未来任务明确授权具体来源、频率和字段后才能实现，并且只能低频、只读地产生候选数据。系统不保存或使用外部账号 Cookie、私人 Token，也不绕过反自动化或访问控制机制。
+外部来源不是系统可信边界的一部分。图中不存在正式系统、Source Adapter 或 personal gallery 到 Hpoi 的读取路径。第三方公开搜索索引只提供 URL/标题/摘要文本，personal gallery 不解析、预览、跳转或请求 Hpoi；Hpoi direct 四项运行计数必须为 0。没有明确书面许可时不得为 Hpoi 创建或启用 Direct Adapter。其他 Source Adapter 也只有在未来任务明确授权具体来源、频率和字段后才能实现，并且只能低频、只读地产生候选数据。系统不使用外部账号 Cookie，也不绕过反自动化或访问控制机制。
+
+### 5.1 当前索引发现验证流（非正式运行时）
+
+```mermaid
+flowchart LR
+    character["Character aliases + Work + product terms"]
+    search["Firecrawl Search v2\nsite:hpoi.net · bounded"]
+    candidate["DiscoveryCandidate\n.local only"]
+    classify["角色/作品/范围判断\nexisting match"]
+    resolver["Official resolver\n受审非 Hpoi allowlist"]
+    product["ProductRecord\n过渡来源记录"]
+    media["SHA-256 本地媒体"]
+    coverage["Coverage dashboard"]
+
+    character --> search --> candidate --> classify
+    classify --> coverage
+    classify --> resolver --> product --> media
+    product --> coverage
+```
+
+该流只存在于 `tools/personal-gallery-mvp/`。它不读正式 Payload、不写 PostgreSQL/S3、不自动形成 FigurePrototype；未来正式路线只能吸收经过重新设计的合同，不能复制工具实现或 `.local` 运行数据。
 
 ## 6. 容器视图（Container diagram）
 
