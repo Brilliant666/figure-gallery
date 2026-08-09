@@ -53,13 +53,18 @@ export function normalizeCanonicalUrl(input) {
 
 export function productIdentity(product) {
   const sourceType = product.sourceType || product.sourceKind || 'hpoi'
-  let sourceScope = sourceType
+  const characterId = String(product.characterId || '').trim().toLowerCase()
+  let sourceScope = characterId ? `${characterId}:${sourceType}` : sourceType
   if (product.sourceDomain) {
     const normalizedDomain = String(product.sourceDomain)
       .trim()
       .toLowerCase()
       .replace(/^www\./, '')
-    if (normalizedDomain) sourceScope = `${sourceType}:${normalizedDomain}`
+    if (normalizedDomain) {
+      sourceScope = characterId
+        ? `${characterId}:${sourceType}:${normalizedDomain}`
+        : `${sourceType}:${normalizedDomain}`
+    }
   }
   const sourceItemId = product.officialProductId
     ?? product.sourceItemId
@@ -70,6 +75,7 @@ export function productIdentity(product) {
     const normalizedId = String(sourceItemId).trim()
     return {
       key: `${sourceScope}-id-${normalizedId}`.replace(/[^a-zA-Z0-9._-]/g, '_'),
+      ...(characterId ? { characterId } : {}),
       kind: 'source_id',
       sourceItemId: normalizedId,
       sourceType: sourceScope,
@@ -81,6 +87,7 @@ export function productIdentity(product) {
   const normalizedUrl = normalizeCanonicalUrl(rawUrl)
   return {
     key: `${sourceScope}-url-${sha256(normalizedUrl)}`.replace(/[^a-zA-Z0-9._-]/g, '_'),
+    ...(characterId ? { characterId } : {}),
     kind: 'normalized_url',
     normalizedUrl,
     sourceItemId: null,

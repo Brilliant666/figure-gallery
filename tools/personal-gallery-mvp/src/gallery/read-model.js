@@ -2,6 +2,12 @@ import { promises as fs } from 'node:fs'
 import path from 'node:path'
 
 import { HPOI_FROZEN_STATUS, readSourceStatus } from '../storage/source-status.js'
+import {
+  characterPreferencesPath,
+  ensureCharacterStorage,
+  listCharacterRunIds,
+  resolveCharacterConfig,
+} from '../storage/character-store.js'
 
 const DEFAULT_PREFERENCES = Object.freeze({
   schemaVersion: 2,
@@ -268,7 +274,7 @@ function normalizeProduct(product, preferences, imageObjects = {}, failures = []
     series: cleanText(fields.series || fields.work || fields.rawWorkName),
     manufacturer: cleanText(fields.manufacturer || fields.rawManufacturer, 'unknown'),
     distributor: cleanText(fields.distributor),
-    classification: ['likely_scale', 'likely_prize', 'other', 'unknown'].includes(classification)
+    classification: ['likely_scale', 'likely_prize', 'likely_static', 'other', 'unknown'].includes(classification)
       ? classification
       : 'unknown',
     category: cleanText(fields.category || fields.rawCategory, 'unknown'),
@@ -299,7 +305,7 @@ function normalizeProduct(product, preferences, imageObjects = {}, failures = []
 }
 
 function summarize(products, failures) {
-  const buckets = { likely_scale: 0, likely_prize: 0, unknown: 0, other: 0 }
+  const buckets = { likely_scale: 0, likely_prize: 0, likely_static: 0, unknown: 0, other: 0 }
   let images = 0
   let officialImages = 0
   for (const product of products) {
@@ -353,15 +359,26 @@ async function loadProductReference(root, value) {
 }
 
 export async function loadRunGallery(root, requestedRunId = null) {
-  const preferences = normalizePreferences(
-    await readJson(path.join(root, 'preferences.json'), DEFAULT_PREFERENCES),
-  )
   const runIds = await listRunIds(root)
   const runId = requestedRunId || runIds[0] || null
   if (!runId || !runIds.includes(runId)) return null
 
   const runDirectory = path.join(root, 'runs', runId)
-  const run = (await readJson(path.join(runDirectory, 'run.json'), {}) ) || {}
+  let run = (await readJson(path.join(runDirectory, 'run.json'), {}) ) || {}
+  const character = await resolveCharacterConfig(
+    root,
+    run.characterId || run.characterSlug || run.query || run.characterName || run.input?.query,
+  )
+  if (character) {
+    await ensureCharacterStorage(root, character)
+    run = (await readJson(path.join(runDirectory, 'run.json'), run)) || run
+  }
+  const preferences = normalizePreferences(
+    await readJson(
+      character ? characterPreferencesPath(root, character.slug) : path.join(root, 'preferences.json'),
+      DEFAULT_PREFERENCES,
+    ),
+  )
   const imageIndex =
     (await readJson(path.join(root, 'image-index.json'), { objects: {} })) || { objects: {} }
   const failureDocument = await readJson(path.join(runDirectory, 'failures.json'), [])
@@ -374,13 +391,21 @@ export async function loadRunGallery(root, requestedRunId = null) {
     .filter(Boolean)
   const sourceStatus = await readSourceStatus(root)
 
-  const query = cleanText(run.query || run.characterName || run.input?.query, 'Unknown character')
+  const query = cleanText(character?.displayName || run.query || run.characterName || run.input?.query, 'Unknown character')
   const querySlug = normalizeQuery(query)
   const characterSlug = normalizeQuery(run.characterSlug || query)
 
   return {
     runId,
     query,
+    characterId: character?.characterId || cleanText(run.characterId),
+    character: character ? {
+      characterId: character.characterId,
+      slug: character.slug,
+      displayName: character.displayName,
+      aliases: [...character.aliases],
+      workNames: [...character.workNames],
+    } : null,
     querySlug,
     characterSlug,
     sourceMode: cleanText(run.sourceMode, 'legacy_hpoi'),
@@ -397,11 +422,17 @@ export async function loadRunGallery(root, requestedRunId = null) {
 }
 
 export async function loadGalleryByQuery(root, query) {
-  const normalized = normalizeQuery(query)
+  const character = await resolveCharacterConfig(root, query)
+  const normalized = character?.slug || normalizeQuery(query)
   const matches = []
-  for (const runId of await listRunIds(root)) {
+  const runIds = character ? await listCharacterRunIds(root, character) : await listRunIds(root)
+  for (const runId of runIds) {
     const gallery = await loadRunGallery(root, runId)
-    if (gallery && (gallery.characterSlug === normalized || gallery.querySlug === normalized)) matches.push(gallery)
+    if (gallery && (
+      (character && gallery.characterId === character.characterId) ||
+      gallery.characterSlug === normalized ||
+      gallery.querySlug === normalized
+    )) matches.push(gallery)
   }
   return matches.find((gallery) =>
     ['running', 'stopping'].includes(gallery.status) && gallery.products.length > 0,
@@ -425,10 +456,13 @@ export async function listRecentRuns(root, limit = 10) {
   return output
 }
 
-export async function savePreferences(root, value) {
+export async function savePreferences(root, characterSlug, value) {
+  const character = await resolveCharacterConfig(root, characterSlug)
+  if (!character) throw new Error('Unknown character for preferences.')
+  await ensureCharacterStorage(root, character)
   const preferences = normalizePreferences(value)
-  await fs.mkdir(root, { recursive: true })
-  const target = path.join(root, 'preferences.json')
+  const target = characterPreferencesPath(root, character.slug)
+  await fs.mkdir(path.dirname(target), { recursive: true })
   const temporary = `${target}.${process.pid}.${Date.now()}.tmp`
   await fs.writeFile(temporary, `${JSON.stringify(preferences, null, 2)}\n`, {
     encoding: 'utf8',

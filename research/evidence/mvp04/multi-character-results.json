@@ -1,0 +1,210 @@
+{
+  "schemaVersion": 1,
+  "task": "MVP-04",
+  "status": "MVP-04 ready for personal use review",
+  "baseline": {
+    "pr16Head": "800f87e0fa77685a7c2cde3ab205f2bba71d0d44",
+    "mergeStrategy": "squash",
+    "mergeCommit": "47d85275e1d01734a53806d1243a33696ddf756a",
+    "mainSha": "47d85275e1d01734a53806d1243a33696ddf756a",
+    "mainFormalRun": 31294125028,
+    "mainFormalConclusion": "success",
+    "mainGalleryRun": 31294187431,
+    "mainGalleryConclusion": "success"
+  },
+  "characterModel": {
+    "characters": 2,
+    "slugs": ["cheshire", "rem"],
+    "sharedSchema": true,
+    "sharedRenderer": true,
+    "routePattern": "/gallery/characters/<character-slug>",
+    "productRoutePattern": "/gallery/characters/<character-slug>/products/<product-id>",
+    "remQueryMatrix": 30,
+    "queryLimit": 30,
+    "resultLimitPerQuery": 10,
+    "candidateLimit": 80,
+    "requestConcurrency": 1,
+    "remRamConflictProtection": "pass"
+  },
+  "realCollection": {
+    "mode": "Firecrawl Cloud v2 Search web plus v2 scrape",
+    "preliminaryDiscovery": {
+      "configuredQueries": 16,
+      "physicalSearchRequests": 11,
+      "successfulSearchRequests": 10,
+      "scrapeRequests": 0,
+      "credits": 55,
+      "status": "blocked",
+      "stopReason": "http_429",
+      "retryOrBypassUsed": false
+    },
+    "emptyPreSeedRun": {
+      "searchRequests": 1,
+      "scrapeRequests": 0,
+      "credits": 5,
+      "products": 0
+    },
+    "initialImport": {
+      "searchRequests": 1,
+      "scrapeRequests": 11,
+      "credits": 16,
+      "productsNew": 11,
+      "imagesDownloaded": 89,
+      "newSha256Objects": 89,
+      "imageFailures": 0
+    },
+    "parserNormalizationRun": {
+      "searchRequests": 1,
+      "scrapeRequests": 11,
+      "credits": 16,
+      "productsNew": 0,
+      "productsUnchanged": 9,
+      "productsChanged": 2,
+      "newSha256Objects": 0,
+      "reason": "expected scale-text and non-scale static classification normalization"
+    },
+    "finalIdempotencyRun": {
+      "searchRequests": 1,
+      "scrapeRequests": 11,
+      "credits": 16,
+      "productsNew": 0,
+      "productsUnchanged": 11,
+      "productsChanged": 0,
+      "imagesDownloaded": 89,
+      "newSha256Objects": 0,
+      "duplicateImages": 89,
+      "imageFailures": 0,
+      "preferencesPreserved": true,
+      "runHistoryPreserved": true
+    },
+    "taskTotals": {
+      "physicalSearchRequests": 15,
+      "scrapeRequests": 33,
+      "firecrawlRequests": 48,
+      "credits": 108,
+      "hpoiRequests": 0
+    },
+    "sourceBoundary": {
+      "uniqueReviewedAllowlistHits": 11,
+      "newReviewedOfficialDomains": 0,
+      "allowlistChanged": false,
+      "retailerSeeds": 0,
+      "unreviewedDomainsInFinalRun": 5,
+      "unreviewedDomainsVisited": 0
+    }
+  },
+  "realRuntime": {
+    "characters": 2,
+    "cheshire": {
+      "products": 7,
+      "images": 65,
+      "uniqueObjects": 65,
+      "indexCovers": 7,
+      "automaticCovers": 2,
+      "manualCovers": 5,
+      "classification": {
+        "scale": 7,
+        "prize": 0,
+        "static": 0,
+        "unknown": 0,
+        "other": 0
+      },
+      "regression": "pass"
+    },
+    "rem": {
+      "products": 11,
+      "images": 89,
+      "uniqueObjects": 89,
+      "manufacturers": 7,
+      "indexCovers": 11,
+      "automaticCovers": 10,
+      "manualCovers": 1,
+      "productsWithoutImages": 0,
+      "classification": {
+        "scale": 10,
+        "prize": 0,
+        "static": 1,
+        "unknown": 0,
+        "other": 0
+      }
+    },
+    "unionSha256Objects": 154,
+    "crossCharacterReusedObjects": 0,
+    "characterPreferencesIsolated": true,
+    "legacyCheshireMigrationIdempotent": true,
+    "runtimeTrackedByGit": false
+  },
+  "systemChrome": {
+    "status": "pass",
+    "product": "Google Chrome",
+    "version": "150.0.7871.187",
+    "systemStable": true,
+    "headed": true,
+    "temporaryCleanProfile": true,
+    "temporaryProfileDeleted": true,
+    "extensionsLoaded": 0,
+    "charactersOnHome": 2,
+    "distinctRoutes": true,
+    "responsiveColumns": {
+      "desktop1280": 4,
+      "tablet900": 3,
+      "mobile600": 2
+    },
+    "interactions": {
+      "oneCoverPerProduct": "pass",
+      "productDetail": "pass",
+      "lightbox": "pass",
+      "zoom": "pass",
+      "filters": "pass",
+      "manualCoverReloadPersistence": "pass",
+      "cheshireCoversPreserved": "pass"
+    },
+    "network": {
+      "loopbackRequests": 69,
+      "externalRequests": 0,
+      "hpoiRequests": 0,
+      "firecrawlRequests": 0,
+      "officialSourceRequests": 0
+    },
+    "artifacts": {
+      "screenshots": 0,
+      "videos": 0,
+      "traces": 0
+    }
+  },
+  "offlineFixtures": {
+    "characterA": { "products": 7, "images": 56 },
+    "characterB": { "products": 10, "images": 40 },
+    "routeIsolation": "pass",
+    "storageIsolation": "pass",
+    "preferencesIsolation": "pass",
+    "sharedObjectStore": "pass",
+    "sameTitleDifferentCharacter": "pass",
+    "crossCharacterContamination": 0,
+    "externalRequests": 0
+  },
+  "gates": [
+    { "id": "GEN-01", "status": "pass" },
+    { "id": "GEN-02", "status": "pass" },
+    { "id": "GEN-03", "status": "pass" },
+    { "id": "GEN-04", "status": "pass" },
+    { "id": "GEN-05", "status": "pass" },
+    { "id": "GEN-06", "status": "pass" },
+    { "id": "GEN-07", "status": "pass" },
+    { "id": "GEN-08", "status": "pass" },
+    { "id": "GEN-09", "status": "pass" },
+    { "id": "GEN-10", "status": "pass" },
+    { "id": "GEN-11", "status": "pass" },
+    { "id": "GEN-12", "status": "pass" },
+    { "id": "GEN-13", "status": "pass" },
+    { "id": "GEN-14", "status": "pass" },
+    { "id": "GEN-15", "status": "pass" }
+  ],
+  "outOfScope": {
+    "perceptualDeduplication": false,
+    "formalPayloadWrite": false,
+    "deployment": false,
+    "thirdCharacter": false,
+    "formalPr02Started": false
+  }
+}

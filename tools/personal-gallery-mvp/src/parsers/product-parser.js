@@ -85,16 +85,23 @@ export function classifyProduct({ title, rawCategory, rawScale }) {
   const combined = [title, rawCategory, rawScale].filter(Boolean).join(' ').normalize('NFKC')
   const explicitOther = [
     [/未授权\s*(?:gk|garage\s*kit)|(?:gk|garage\s*kit)\s*未授权/i, 'unauthorized_gk'],
+    [/(?:^|\W)(?:gk|garage\s*kit)(?:$|\W)/i, 'garage_kit'],
     [/黏土人|粘土人|nendoroid/i, 'nendoroid'],
     [/可动人偶|可动手办|action\s*figure|\bfigma\b/i, 'action_figure'],
     [/盲盒|blind\s*box/i, 'blind_box'],
-    [/周边|merchandise|keychain|挂件|徽章/i, 'merchandise'],
-    [/非实体|digital\s*(?:item|product)|电子商品/i, 'non_physical'],
+    [/\bq[- ]?posket\b|chibi|デフォルメ|q版/i, 'chibi'],
+    [/抱き枕|抱枕|dakimakura|body\s*pillow/i, 'body_pillow'],
+    [/cosplay|コスプレ|服装|costume|apparel|t-?shirt/i, 'apparel'],
+    [/周边|周邊|merchandise|keychain|挂件|掛件|徽章|acrylic\s*stand|アクリルスタンド|カード|\bcard\b/i, 'merchandise'],
+    [/非实体|非實體|digital\s*(?:item|product)|电子商品|電子商品|software|\bapp\b/i, 'non_physical'],
   ]
   for (const [pattern, reason] of explicitOther) {
     if (pattern.test(combined)) return { classification: 'other', excludedReason: reason }
   }
   if (/景品|prize/i.test(combined)) return { classification: 'likely_prize', excludedReason: null }
+  if (/pop\s*up\s*parade|painted[^\n]{0,40}non[- ]?scale[^\n]{0,40}(?:complete|finished)|(?:non[- ]?scale|ノンスケール)[^\n]{0,40}(?:完成品|フィギュア|figure)/i.test(combined)) {
+    return { classification: 'likely_static', excludedReason: null }
+  }
   if (/比例|\bscale\b|\b1\s*[:/]\s*\d{1,3}\b/i.test(combined)) {
     return { classification: 'likely_scale', excludedReason: null }
   }

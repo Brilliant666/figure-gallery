@@ -142,6 +142,13 @@ test('classification preserves uncertainty and excludes only explicit non-target
   assert.equal(classifyProduct({ title: '黏土人 合成版', rawCategory: null, rawScale: null }).classification, 'other')
 })
 
+test('classification recognizes public non-scale completed figures without calling them prizes', () => {
+  assert.deepEqual(classifyProduct({
+    title: 'POP UP PARADE Rem L Size',
+    rawCategory: 'Painted plastic non-scale complete product',
+  }), { classification: 'likely_static', excludedReason: null })
+})
+
 test('product parser rejects non-allowlisted page URLs', () => {
   assert.throws(
     () => parseProductPage({ rawHtml: '<title>x</title>', url: 'https://example.test/hobby/1' }),

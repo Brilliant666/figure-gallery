@@ -3,7 +3,6 @@ import path from 'node:path'
 import test from 'node:test'
 
 import {
-  DEFAULT_CHESHIRE_OFFICIAL_SEED_URLS,
   DEFAULT_RUNTIME_ROOT,
   liveGate,
   officialLiveGate,
@@ -12,6 +11,7 @@ import {
   validateFirecrawlBaseUrl,
   validateRuntimeRoot,
 } from '../src/config.js'
+import { resolveBuiltinCharacter } from '../src/characters/registry.js'
 
 test('Hpoi gate is permanently closed while official live access requires all local prerequisites', () => {
   const hpoi = liveGate({
@@ -41,7 +41,7 @@ test('Hpoi gate is permanently closed while official live access requires all lo
 })
 
 test('reviewed Cheshire fallback seeds stay limited to verified manufacturer and seed-only distributor pages', () => {
-  assert.deepEqual(DEFAULT_CHESHIRE_OFFICIAL_SEED_URLS, [
+  assert.deepEqual(resolveBuiltinCharacter('cheshire').reviewedSeeds.map((seed) => seed.url), [
     'https://www.goodsmile.com/en/product/36232/Cheshire%2BSummery%2BDate%2B',
     'https://www.goodsmile.com/en/product/36234/Cheshire%2BCait%2BSith%2BCrooner',
     'https://apex-toys.com/productinfo/3727461.html',

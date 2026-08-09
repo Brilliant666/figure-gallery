@@ -6,6 +6,12 @@ import { businessFields, changedFields, fieldDigest, productIdentity } from './i
 import { ensureRuntimeMarker } from './runtime-root.js'
 import { ensureSourceStatus } from './source-status.js'
 import { isCharacterUrl, normalizePageUrl, sanitizeUrlForRecord } from '../parsers/urls.js'
+import {
+  addCharacterRun,
+  characterPreferencesPath,
+  ensureCharacterStorage,
+} from './character-store.js'
+import { validateCharacterConfig } from '../characters/registry.js'
 
 const EMPTY_INDEX = Object.freeze({ schemaVersion: 1, runs: [], queries: {} })
 const EMPTY_IMAGE_INDEX = Object.freeze({ schemaVersion: 1, objects: {}, urlHistory: {} })
@@ -49,14 +55,17 @@ function sanitizeManifestRecord(value) {
 }
 
 export class GalleryStore {
-  constructor(root, { clock = () => new Date(), idFactory = randomUUID } = {}) {
+  constructor(root, { clock = () => new Date(), idFactory = randomUUID, characterConfig = null } = {}) {
     if (!root) throw new Error('GalleryStore requires a runtime root.')
     this.root = path.resolve(root)
     this.clock = clock
     this.idFactory = idFactory
+    this.characterConfig = characterConfig ? validateCharacterConfig(characterConfig) : null
     this.indexPath = path.join(this.root, 'index.json')
     this.imageIndexPath = path.join(this.root, 'image-index.json')
-    this.preferencesPath = path.join(this.root, 'preferences.json')
+    this.preferencesPath = this.characterConfig
+      ? characterPreferencesPath(this.root, this.characterConfig.slug)
+      : path.join(this.root, 'preferences.json')
   }
 
   async initialize() {
@@ -67,6 +76,7 @@ export class GalleryStore {
     ])
     await ensureRuntimeMarker(this.root)
     await ensureSourceStatus(this.root)
+    if (this.characterConfig) await ensureCharacterStorage(this.root, this.characterConfig)
     if ((await readJson(this.indexPath)) === null) await atomicWriteJson(this.indexPath, EMPTY_INDEX)
     if ((await readJson(this.imageIndexPath)) === null) await atomicWriteJson(this.imageIndexPath, EMPTY_IMAGE_INDEX)
     if ((await readJson(this.preferencesPath)) === null) await atomicWriteJson(this.preferencesPath, EMPTY_PREFERENCES)
@@ -92,7 +102,10 @@ export class GalleryStore {
   async createRun({
     query,
     characterUrl = null,
+    characterId = this.characterConfig?.characterId || null,
     characterSlug = null,
+    characterDisplayName = this.characterConfig?.displayName || null,
+    characterConfig = this.characterConfig,
     discoveryQueries = [],
     limits = {},
     requestedRunId = null,
@@ -116,7 +129,9 @@ export class GalleryStore {
       runId,
       query,
       characterUrl,
+      characterId,
       characterSlug,
+      characterDisplayName,
       discoveryQueries: [...new Set(discoveryQueries.filter((value) => typeof value === 'string' && value.trim()))],
       sourceMode,
       status: 'running',
@@ -165,7 +180,15 @@ export class GalleryStore {
       index.queries[query] = { latestRunId: runId, lastCollectedAt: timestamp }
       return index
     })
+    if (characterConfig) await addCharacterRun(this.root, validateCharacterConfig(characterConfig), runId)
     return run
+  }
+
+  async writeCoverage(characterSlug, value) {
+    if (!/^[a-z0-9][a-z0-9-]{0,63}$/u.test(characterSlug)) throw new Error('Coverage character slug is invalid.')
+    const directory = path.join(this.root, 'coverage')
+    await mkdir(directory, { recursive: true })
+    await atomicWriteJson(path.join(directory, `${characterSlug}.json`), sanitizeManifestRecord(value))
   }
 
   async readRun(runId) {

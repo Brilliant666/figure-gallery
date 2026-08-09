@@ -46,7 +46,7 @@ test('normalizes local gallery manifests and preserves exclusions', async (t) =>
   )
   await writeFile(path.join(runDirectory, 'failures.json'), JSON.stringify([{ reason: 'synthetic failure' }]))
   await writeFile(path.join(objectDirectory, `${SHA}.png`), Buffer.from('synthetic'))
-  await savePreferences(root, {
+  await savePreferences(root, 'cheshire', {
     excludedProductIds: ['synthetic-990001'],
     excludedImageSha256: [SHA],
     preferredCoverImage: { 'synthetic-990001': SHA },
@@ -147,7 +147,7 @@ test('seven-product fixture keeps 56 detail images but exposes only six index co
   await writeFile(path.join(runDirectory, 'failures.json'), JSON.stringify(
     products[6].imageUrls.map((url) => ({ kind: 'image', code: 'http_404', status: 404, url })),
   ))
-  await savePreferences(root, {
+  await savePreferences(root, 'cheshire', {
     products: { 'synthetic-product-1': { preferredCoverImageId: products[0].images[1].sha256 } },
   })
 
@@ -203,7 +203,7 @@ test('resolves GalleryStore product summaries, product fields, and image index o
 
   const gallery = await loadRunGallery(root, runId)
   assert.equal(gallery.products.length, 1)
-  assert.equal(gallery.products[0].id, 'hpoi-id-synthetic-990002')
+  assert.match(gallery.products[0].id, /^azur-lane_cheshire_hpoi-url-/u)
   assert.equal(gallery.products[0].title, 'Synthetic stored product')
   assert.equal(gallery.products[0].classification, 'likely_prize')
   assert.equal(gallery.products[0].images[0].sha256, SHA)

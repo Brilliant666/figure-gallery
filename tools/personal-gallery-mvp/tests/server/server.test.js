@@ -7,6 +7,16 @@ import test from 'node:test'
 
 import { createJobManager, createPersonalGalleryServer } from '../../src/server/server.js'
 import { createDefaultRuntime, summarizeRequestRecords } from '../../src/server/runtime-adapter.js'
+import { validateCharacterConfig } from '../../src/characters/registry.js'
+
+const syntheticCheshire = validateCharacterConfig({
+  characterId: 'synthetic:cheshire',
+  slug: 'synthetic-cheshire',
+  displayName: 'Synthetic Cheshire',
+  aliases: ['Synthetic Cheshire', 'Cheshire'],
+  workNames: ['Azur Lane'],
+  reviewedSeeds: [],
+})
 
 function config(root, overrides = {}) {
   return {
@@ -27,10 +37,12 @@ function config(root, overrides = {}) {
     writtenPermissionConfirmed: false,
     officialLiveFetchEnabled: false,
     officialMaxSearchResultsPerQuery: 10,
+    officialMaxQueries: 30,
     officialMaxCandidates: 20,
     officialMaxProducts: 20,
     officialMaxImagesPerProduct: 10,
     officialRequestDelayMs: 1_000,
+    officialImageRequestDelayMs: 1_000,
     officialMaxRetries: 2,
     ...overrides,
   }
@@ -57,7 +69,7 @@ function runtime(calls) {
     async loadGalleryByQuery() {
       return null
     },
-    async savePreferences(value) {
+    async savePreferences(_characterSlug, value) {
       preferences = value
       return preferences
     },
@@ -111,18 +123,18 @@ test('two independent runtimes cannot overlap provider-backed collection', async
   }
   const firstRuntime = createDefaultRuntime(localConfig, runtimeOptions)
   const secondRuntime = createDefaultRuntime(localConfig, runtimeOptions)
-  const first = firstRuntime.runCollector({ gate: { allowed: true }, query: 'synthetic-one' })
+  const first = firstRuntime.runCollector({ gate: { allowed: true }, query: 'synthetic-one', characterConfig: syntheticCheshire })
   await started
 
   await assert.rejects(
-    secondRuntime.runCollector({ gate: { allowed: true }, query: 'synthetic-two' }),
+    secondRuntime.runCollector({ gate: { allowed: true }, query: 'synthetic-two', characterConfig: syntheticCheshire }),
     { code: 'COLLECTION_ALREADY_ACTIVE' },
   )
   assert.equal(providerConstructions, 1)
 
   allowFirstToFinish()
   await first
-  const afterRelease = await secondRuntime.runCollector({ gate: { allowed: true }, query: 'synthetic-three' })
+  const afterRelease = await secondRuntime.runCollector({ gate: { allowed: true }, query: 'synthetic-three', characterConfig: syntheticCheshire })
   assert.equal(afterRelease.status, 'completed')
   assert.equal(providerConstructions, 2)
 })
@@ -165,6 +177,7 @@ test('default runtime passes an ASCII requested run ID through the official coll
   const result = await runtime.runCollector({
     gate: { allowed: true, missing: [] },
     query: '柴郡',
+    characterConfig: syntheticCheshire,
     sourceMode: 'official_sources',
     requestedRunId,
     limits: {
@@ -297,7 +310,7 @@ test('serves the local UI and blocks collection before constructing network work
   assert.equal((await start.json()).job.status, 'environment_blocked')
   assert.equal(calls.collector, 0)
 
-  const preferences = await fetch(`${base}/api/preferences`, {
+  const preferences = await fetch(`${base}/api/preferences/cheshire`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ excludedProductIds: ['synthetic'] }),
@@ -324,7 +337,7 @@ test('same-origin JSON stop request stops an active HTTP job', async (t) => {
       async listRecentRuns() { return [] },
       async loadRunGallery() { return null },
       async loadGalleryByQuery() { return null },
-      async savePreferences(value) { return value },
+      async savePreferences(_characterSlug, value) { return value },
     },
   })
   t.after(async () => {

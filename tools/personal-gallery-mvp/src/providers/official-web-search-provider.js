@@ -1,4 +1,5 @@
 import Firecrawl from '@mendable/firecrawl-js'
+import { buildCharacterDiscoveryQueries, validateCharacterConfig } from '../characters/registry.js'
 
 import {
   classifyOfficialSearchResult,
@@ -16,14 +17,6 @@ const BLOCK_PATTERNS = [
   ['login_required', /login\s*required|please\s*log\s*in|登录后(?:访问|查看)|请(?:先)?登录/iu],
   ['robots_denied', /robots\.txt[^\n]{0,80}(?:disallow|denied|blocked|forbid)|crawl(?:ing)?[^\n]{0,80}(?:denied|blocked|forbid)/iu],
 ]
-
-export const OFFICIAL_DISCOVERY_QUERIES = Object.freeze([
-  '"Azur Lane" Cheshire figure',
-  '"Azur Lane" Cheshire scale figure',
-  'アズールレーン チェシャー フィギュア',
-  '碧蓝航线 柴郡 手办',
-  '碧蓝航线 柴郡 比例手办',
-])
 
 export const OFFICIAL_FIRECRAWL_METHODS = Object.freeze(['search', 'scrape'])
 
@@ -48,12 +41,8 @@ export class OfficialProviderRequestError extends Error {
   }
 }
 
-export function buildOfficialDiscoveryQueries(query = '柴郡') {
-  const normalized = String(query || '').normalize('NFKC').trim().toLocaleLowerCase('zh-CN')
-  if (!['柴郡', 'cheshire', 'チェシャー'].includes(normalized)) {
-    throw new Error('MVP-02 official discovery is limited to Cheshire.')
-  }
-  return [...OFFICIAL_DISCOVERY_QUERIES]
+export function buildOfficialDiscoveryQueries(characterConfig, { maxQueries = 30 } = {}) {
+  return buildCharacterDiscoveryQueries(validateCharacterConfig(characterConfig), { maxQueries })
 }
 
 function throwIfAborted(signal) {

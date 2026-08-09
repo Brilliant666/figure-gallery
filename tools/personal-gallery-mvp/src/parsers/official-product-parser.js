@@ -8,6 +8,12 @@ import {
 import { classifyProduct } from './product-parser.js'
 import { normalizeImageUrl } from './urls.js'
 import {
+  conflictingCharacterMatch,
+  matchesCharacterText,
+  matchesCharacterWork,
+  validateCharacterConfig,
+} from '../characters/registry.js'
+import {
   canonicalOfficialDomain,
   isAllowedOfficialProductUrl,
   isOfficialDistributorDomain,
@@ -15,10 +21,7 @@ import {
   officialUrlIdentity,
 } from './official-urls.js'
 
-export const OFFICIAL_PRODUCT_PARSER_VERSION = 'official-deterministic-v3'
-
-const CHESHIRE = /(?:\bcheshire\b|チェシャー|柴郡)/iu
-const AZUR_LANE = /(?:\bazur\s+lane\b|アズールレーン|碧蓝航线|碧藍航線)/iu
+export const OFFICIAL_PRODUCT_PARSER_VERSION = 'official-deterministic-v4'
 const RELATED_SELECTOR = [
   '[data-related-products]',
   '.related',
@@ -240,7 +243,7 @@ function imageValues(value) {
   return []
 }
 
-function collectGalleryImages($, pageUrl, firecrawlImages = [], structuredProduct = null) {
+function collectGalleryImages($, pageUrl, firecrawlImages = [], structuredProduct = null, characterConfig) {
   const found = []
   const add = (value, kind, selector) => {
     const url = normalizedImage(value, pageUrl)
@@ -295,7 +298,7 @@ function collectGalleryImages($, pageUrl, firecrawlImages = [], structuredProduc
         item.parent().attr('id'),
       ].filter(Boolean).join(' ')
       const alt = `${item.attr('alt') || ''} ${item.attr('title') || ''}`
-      if (/(?:gallery|image|photo|picture|slide|swiper|thumb|visual|product)/iu.test(marker) || CHESHIRE.test(alt) || firecrawlSet.has(url)) {
+      if (/(?:gallery|image|photo|picture|slide|swiper|thumb|visual|product)/iu.test(marker) || matchesCharacterText(alt, characterConfig) || firecrawlSet.has(url)) {
         add(url, 'product', 'primary-product-content')
       }
     })
@@ -327,17 +330,30 @@ function sameOfficialSite(left, right) {
   return canonicalOfficialDomain(new URL(left).hostname) === canonicalOfficialDomain(new URL(right).hostname)
 }
 
-export function validateOfficialProductPage({ title, primaryText, series, manufacturerEvidence, specificationEvidence, descriptionEvidence }) {
+export function validateOfficialProductPage({
+  title,
+  primaryText,
+  series,
+  manufacturerEvidence,
+  specificationEvidence,
+  descriptionEvidence,
+  figureEvidence,
+  characterConfig,
+}) {
+  const character = validateCharacterConfig(characterConfig)
+  const conflictingAlias = conflictingCharacterMatch(title || '', character)
   const evidence = {
-    characterMatched: CHESHIRE.test(title || ''),
-    seriesMatched: AZUR_LANE.test(`${series || ''} ${primaryText || ''}`),
+    characterMatched: matchesCharacterText(title || '', character),
+    seriesMatched: matchesCharacterWork(`${series || ''} ${primaryText || ''}`, character),
+    conflictingAlias,
     manufacturerEvidence: Boolean(manufacturerEvidence),
     specificationEvidence: Boolean(specificationEvidence),
     descriptionEvidence: Boolean(descriptionEvidence),
+    figureEvidence: Boolean(figureEvidence),
   }
   const evidenceCount = [evidence.manufacturerEvidence, evidence.specificationEvidence, evidence.descriptionEvidence]
     .filter(Boolean).length
-  const accepted = evidence.characterMatched && evidence.seriesMatched && evidenceCount >= 2
+  const accepted = evidence.characterMatched && !evidence.conflictingAlias && evidence.seriesMatched && evidence.figureEvidence && evidenceCount >= 2
   return {
     accepted,
     evidenceCount,
@@ -346,9 +362,15 @@ export function validateOfficialProductPage({ title, primaryText, series, manufa
       ? null
       : !evidence.characterMatched
         ? 'character_not_in_primary_product_title'
+        : evidence.conflictingAlias
+          ? 'conflicting_character_in_primary_product_title'
         : !evidence.seriesMatched
           ? 'series_not_confirmed'
-          : 'insufficient_official_product_evidence',
+          : evidenceCount < 2
+            ? 'insufficient_official_product_evidence'
+            : !evidence.figureEvidence
+              ? 'figure_product_not_confirmed'
+              : 'insufficient_official_product_evidence',
   }
 }
 
@@ -361,7 +383,9 @@ export function parseOfficialProductPage({
   discoveryQuery = null,
   discoveryMethod = 'firecrawl_search',
   parsedAt = new Date().toISOString(),
+  characterConfig,
 } = {}) {
+  const characterDefinition = validateCharacterConfig(characterConfig)
   const requestedUrl = normalizeOfficialPageUrl(url)
   if (!requestedUrl || !isAllowedOfficialProductUrl(requestedUrl)) {
     throw new OfficialPageValidationError('Product URL is outside the official source allowlist.', { code: 'official_url_not_allowed' })
@@ -422,8 +446,8 @@ export function parseOfficialProductPage({
   const primaryText = searchableDocumentText(primary)
   const scale = field(fields, ['scale', '比例', 'スケール'])
     || firstTextMatch(primaryText, [
-      /(?:スケール|scale|比例)[^\p{Number}]{0,20}(1\s*\/\s*\d+)/iu,
-      /\b(1\s*\/\s*\d+)\s*(?:scale|スケール|比例)/iu,
+      /(?:スケール|scale|比例)[^\p{Number}]{0,20}(1\s*\/\s*\d+)(?:st|nd|rd|th)?/iu,
+      /\b(1\s*\/\s*\d+)(?:st|nd|rd|th)?\s*(?:scale|スケール|比例)/iu,
     ])?.replace(/\s+/g, '')
   const height = field(fields, ['height', '全高', '尺寸', 'サイズ'])
     || firstTextMatch(primaryText, [
@@ -444,10 +468,12 @@ export function parseOfficialProductPage({
       || structuredProduct?.mpn,
   ) || sourceIdFromUrl(sourceUrl, sourceDomain)
   // Join text nodes explicitly so adjacent HTML elements retain word
-  // boundaries (for example, </h1><p>Azur Lane). Cheerio's `.text()`
-  // concatenates those nodes without a separator and can otherwise turn a
-  // valid series marker into `CheshireAzur Lane`.
+  // boundaries between adjacent elements. Cheerio's `.text()` concatenates
+  // those nodes without a separator and can otherwise hide valid work-name
+  // evidence inside a joined character/title token.
   const specificationEvidence = [category, scale, height, releaseDate, price, sculptor, paintwork].some(Boolean)
+  const figureEvidence = /(?:figure|フィギュア|手办|手辦|完成品|painted\s+(?:plastic|pvc)|pvc\s*(?:&|and)?\s*abs|景品|scale|スケール|比例)/iu
+    .test([title, category, primaryText].filter(Boolean).join(' '))
   const validation = validateOfficialProductPage({
     title,
     primaryText,
@@ -455,6 +481,8 @@ export function parseOfficialProductPage({
     manufacturerEvidence: explicitManufacturer || knownManufacturer,
     specificationEvidence,
     descriptionEvidence: description && description.length >= 20,
+    figureEvidence,
+    characterConfig: characterDefinition,
   })
   if (!validation.accepted) {
     throw new OfficialPageValidationError(`Official page rejected: ${validation.rejectedReason}.`, {
@@ -466,10 +494,10 @@ export function parseOfficialProductPage({
   const distributorSource = isOfficialDistributorDomain(new URL(sourceUrl).hostname)
   const sourceKind = distributorSource ? 'official_distributor' : 'official_manufacturer'
   const distributor = distributorSource ? 'AmiAmi' : null
-  const candidateImages = collectGalleryImages(full, sourceUrl, images, structuredProduct)
+  const candidateImages = collectGalleryImages(full, sourceUrl, images, structuredProduct, characterDefinition)
   const classification = classifyProduct({ title, rawCategory: category, rawScale: scale })
-  const character = characterField || (CHESHIRE.test(title || '') ? 'Cheshire' : null)
-  const normalizedSeries = series || (AZUR_LANE.test(primaryText) ? 'Azur Lane' : null)
+  const character = characterField || (matchesCharacterText(title || '', characterDefinition) ? characterDefinition.displayName : null)
+  const normalizedSeries = series || (matchesCharacterWork(primaryText, characterDefinition) ? characterDefinition.workNames[0] : null)
   const needsReview = []
   for (const [name, value] of Object.entries({ officialProductId, manufacturer, scale, releaseDate })) {
     if (!value) needsReview.push(name)
@@ -478,6 +506,8 @@ export function parseOfficialProductPage({
 
   return {
     sourceType: 'official',
+    characterId: characterDefinition.characterId,
+    characterSlug: characterDefinition.slug,
     sourceKind,
     sourceDomain,
     discoveryQuery: cleanText(discoveryQuery),

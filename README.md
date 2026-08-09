@@ -6,7 +6,7 @@ Figure Gallery 是一个以“角色—官方手办原型—主图”为核心�
 
 PR-00 正式工程基线和 PR-01 核心目录模型均已进入 `main`，对应 Formal web CI 已通过。来源/候选池、审核工作流、正式媒体与主图、merge/split/undo、公开搜索和图库仍未实现。
 
-**personal gallery MVP-03A 柴郡拍摄参考索引已完成本机验收**：`tools/personal-gallery-mvp/` 是一个可删除、只在本机运行、与正式应用完全隔离的个人拍摄参考工具。当前柴郡图库保留 7 个第一阶段比例手办商品记录和 65 个本地图片对象；角色首页按商品只显示一张经人工复核的完整造型封面，点击后进入该商品的全部图片详情。APEX `Dating Summer！Ver.` 现在保留 1 张适合作封面的发行方合成图，并补入官方商品页正常浏览器会话实际加载的 3 张纵向商品长图；ALTER 官方页当前 6 张候选图均已解析，其中正面全身图被人工选为封面。类型筛选只显示实际存在的“比例手办/景品”等中文类别，不再显示 `unknown`。系统 Google Chrome 的真实 loopback-only 验收已通过。本轮只做这两款的定向图片修复，没有增加物理商品、没有做感知去重或 prototype/SKU 合并。正式 PR-02—PR-08 路线继续暂停但不删除；MVP 不是正式 Candidate、Review 或 Media 实现，也不会把数据写入正式目录。
+**personal gallery MVP-04 多角色复用验收已完成**：`tools/personal-gallery-mvp/` 是一个可删除、只在本机运行、与正式应用完全隔离的个人拍摄参考工具。柴郡和蕾姆现在使用同一套角色配置、收集器、存储、路由与图库 renderer；当前本地基线分别为柴郡 7 款/65 图、蕾姆 11 款/89 图。每个商品在角色首页只显示一张封面，详情页保留全部图片；系统 Google Chrome 已在 loopback-only 网络守卫下验证双角色路由、4/3/2 布局、筛选、详情、灯箱、缩放和人工封面持久化。正式 PR-02—PR-08 路线继续暂停但不删除；MVP 没有做感知去重，不是正式 Candidate、Review 或 Media 实现，也不会把数据写入正式目录。
 
 已接受的技术底座：
 
@@ -57,13 +57,14 @@ PR-00 正式工程基线和 PR-01 核心目录模型均已进入 `main`，对应
 - [MVP-01 个人自动手办图库](docs/MVP01_PERSONAL_AUTO_GALLERY.md)
 - [MVP-02 柴郡官方来源图库](docs/MVP02_CHESHIRE_OFFICIAL_GALLERY.md)
 - [MVP-03A 柴郡拍摄参考索引](docs/MVP03A_SHOOTING_REFERENCE_INDEX.md)
+- [MVP-04 多角色图库泛化](docs/MVP04_MULTI_CHARACTER_GENERALIZATION.md)
 - [需求追踪矩阵](docs/TRACEABILITY_MATRIX.md)
 - [技术决策 ADR](research/TECH_STACK_DECISION.md)
 
 ## 来源与 Hpoi 边界
 
-Hpoi 当前只可作为人工参考；在 personal gallery MVP 中也已经因连续 captcha 阻塞而冻结为 `blocked_by_source`，`retryAllowed=false`。MVP-02 不重试 Hpoi、不访问缓存或镜像，也不尝试规避；正式应用、MVP-02 和 CI 的 Hpoi 请求数必须保持 0。MVP-02 仅在项目所有者主动开启独立官方来源实时门禁后，使用 Firecrawl v2 Search（明确排除 Hpoi）和 `scrape` 访问受审查 allowlist 内的公开厂商商品页；AmiAmi 只允许明确、逐页审核的 seed，不会由搜索结果自动扩展。工具不使用 crawl、Agent、浏览器动作、增强代理、Cookie 或登录。会员购仍只作人工补充与核验，不自动访问。所有未来正式来源数据必须先进入候选池，不能自动覆盖正式数据或正式主图。
+Hpoi 当前只可作为人工参考；在 personal gallery MVP 中也已经冻结为 `blocked_by_source`，`retryAllowed=false`。工具不重试 Hpoi、不访问缓存或镜像，也不尝试规避；正式应用、personal gallery 和 CI 的 Hpoi 请求数必须保持 0。个人图库仅在项目所有者主动开启独立官方来源实时门禁后，使用 Firecrawl v2 Search（明确排除 Hpoi）和 `scrape` 访问受审查 allowlist 内的公开厂商商品页；角色专属 seed 不能跨角色复用，retailer 只允许明确逐页审核，搜索结果不会自动扩展来源边界。工具不使用 crawl、Agent、浏览器动作、增强代理、Cookie 或登录。会员购仍只作人工补充与核验，不自动访问。所有未来正式来源数据必须先进入候选池，不能自动覆盖正式数据或正式主图。
 
 ## 开发状态
 
-PR-00、PR-01、personal gallery MVP-01、MVP-02 柴郡覆盖补齐与 MVP-03A 拍摄参考索引均已完成本机验证；MVP-02 的真实收集证据继续以 `research/evidence/mvp02/personal-gallery-results.json` 为准，MVP-03A 的索引、详情和系统 Chrome 证据以 `research/evidence/mvp03a/reference-index-results.json` 为准，均不能由合成 CI fixture 代替。项目所有者可先把本地图库用于拍摄准备；正式 PR-02—PR-08 仍暂停，正式 PR-02 尚未开始。正式变化必须使用任务独立分支和独立 PR；未经明确授权不得合并或部署。恢复任何路线仍需新的明确授权。
+PR-00、PR-01 与 personal gallery MVP-01—MVP-04 均已完成对应门禁；MVP-04 的多角色、蕾姆真实收集、柴郡回归和系统 Chrome 脱敏摘要以 `research/evidence/mvp04/multi-character-results.json` 为准，不能由合成 CI fixture 代替。项目所有者可先把两个本地图库用于拍摄准备；正式 PR-02—PR-08 仍暂停，正式 PR-02 尚未开始。正式变化必须使用任务独立分支和独立 PR；未经明确授权不得合并或部署。恢复任何路线仍需新的明确授权。
