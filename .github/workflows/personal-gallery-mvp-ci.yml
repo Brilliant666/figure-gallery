@@ -6,6 +6,7 @@ on:
     branches:
       - feat/mvp-01-personal-auto-gallery
       - feat/mvp-02-cheshire-official-gallery
+      - feat/mvp-03a-shooting-reference-index
   workflow_dispatch:
 
 permissions:

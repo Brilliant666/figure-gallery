@@ -1,0 +1,181 @@
+{
+  "schemaVersion": 1,
+  "task": "MVP-03A",
+  "status": "MVP-03A ready for personal use review",
+  "baseline": {
+    "pr14Head": "0e5b6774a062d5c42105f8e396e124d22587af48",
+    "mergeStrategy": "squash",
+    "mergeCommit": "d3c92eef5461c58e82b8f93afce02da68d109771",
+    "mainFormalRun": 31289278539,
+    "mainGalleryRun": 31289439209,
+    "mainChecks": "pass"
+  },
+  "realRuntime": {
+    "latestRunId": "2026-08-09T03-26-22-481Z-2dfbabb9-af22-4a55-8ef2-18cb485e9a36",
+    "products": 7,
+    "images": 65,
+    "uniqueObjects": 65,
+    "productsWithImages": 7,
+    "productsWithoutImages": 0,
+    "indexCovers": 7,
+    "automaticCovers": 2,
+    "manualOverrideCovers": 5,
+    "classificationCounts": {
+      "likelyScale": 7,
+      "likelyPrize": 0,
+      "unknown": 0,
+      "other": 0
+    },
+    "apex": {
+      "localImages": 4,
+      "officialCompositeFiles": 3,
+      "officialCompositeDimensions": [
+        "1000x5680",
+        "1000x1970",
+        "1000x7660"
+      ],
+      "retainedDistributorCover": true,
+      "activeFailureRecords": 0,
+      "sourceDomain": "apex-toys.com",
+      "directHttpStatus": 404,
+      "browserLoadedOriginals": true,
+      "historicalHttp404FailureRecordsPreservedInOldRun": 3
+    },
+    "alter": {
+      "localImages": 6,
+      "manualFullFrontCover": true
+    },
+    "runtimeTrackedByGit": false
+  },
+  "humanCoverReview": {
+    "reviewed": 7,
+    "passed": 7,
+    "criteria": [
+      "correct product",
+      "complete overall pose",
+      "front or near-front",
+      "not a back-only view",
+      "not a detail-only crop",
+      "no severe subject crop",
+      "useful for shooting reference"
+    ],
+    "limitations": [
+      "The APEX official page exposes three long composite image files in its rendered DOM. Plain direct HTTP requests returned 404, so this repair imported only the exact resources already loaded by a normal browser page session; it did not forge headers, change URLs, rotate proxies, or bypass the response.",
+      "A fresh unattended run can parse the APEX rendered gallery, but it must record image download failures if the CDN still rejects the tool's ordinary request path."
+    ]
+  },
+  "systemChrome": {
+    "status": "pass",
+    "product": "Google Chrome",
+    "version": "150.0.7871.187",
+    "systemStable": true,
+    "headed": true,
+    "temporaryCleanProfile": true,
+    "temporaryProfileDeleted": true,
+    "extensionsLoaded": 0,
+    "index": {
+      "productCards": 7,
+      "coverImages": 7,
+      "noImagePlaceholders": 0,
+      "detailTiles": 0,
+      "imageRequests": 7,
+      "managementCollapsed": true
+    },
+    "detailSamples": [
+      { "images": 18, "imageRequests": 18, "status": "pass" },
+      { "images": 8, "imageRequests": 8, "status": "pass" },
+      { "images": 9, "imageRequests": 9, "status": "pass" }
+    ],
+    "apex": {
+      "localImages": 4,
+      "safeFailureRecords": 0,
+      "sourceDomain": "apex-toys.com"
+    },
+    "responsiveColumns": {
+      "desktop1280": 4,
+      "tablet900": 3,
+      "mobile600": 2
+    },
+    "interactions": {
+      "productFilters": "pass",
+      "productDetail": "pass",
+      "lightbox": "pass",
+      "productScopedNavigation": "pass",
+      "zoom": "pass",
+      "fit": "pass",
+      "escapeClose": "pass",
+      "preferredCoverReloadPersistence": "pass",
+      "classificationLabels": "pass",
+      "unknownOptionAbsent": "pass"
+    },
+    "network": {
+      "loopbackRequests": 88,
+      "externalRequests": 0,
+      "hpoiRequests": 0,
+      "firecrawlRequests": 0,
+      "officialSourceRequests": 0
+    },
+    "artifacts": {
+      "screenshots": 0,
+      "videos": 0,
+      "traces": 0
+    }
+  },
+  "gates": [
+    { "id": "REF-01", "status": "pass" },
+    { "id": "REF-02", "status": "pass" },
+    { "id": "REF-03", "status": "pass" },
+    { "id": "REF-04", "status": "pass" },
+    { "id": "REF-05", "status": "pass" },
+    { "id": "REF-06", "status": "pass" },
+    { "id": "REF-07", "status": "pass" },
+    { "id": "REF-08", "status": "pass" },
+    { "id": "REF-09", "status": "pass" },
+    { "id": "REF-10", "status": "pass" },
+    { "id": "REF-11", "status": "pass" },
+    { "id": "REF-12", "status": "pass" },
+    { "id": "REF-13", "status": "pass" },
+    { "id": "REF-14", "status": "pass" },
+    { "id": "REF-15", "status": "pass" }
+  ],
+  "collection": {
+    "cheshireRecrawled": false,
+    "productsAdded": 0,
+    "targetedOfficialImageRepair": true,
+    "activeSourceIdentityRestoredToManufacturer": true,
+    "imageUrlsProcessed": 10,
+    "ordinaryImageDownloads": 7,
+    "browserPageAssetsImported": 3,
+    "imagesValidatedAndStored": 10,
+    "uniqueObjectsAdded": 9,
+    "duplicateObjects": 1,
+    "activeImageFailures": 0,
+    "hpoiRequests": 0,
+    "firecrawlRequests": 0,
+    "allowlistChanged": false
+  },
+  "officialPageInspection": {
+    "productUrl": "https://apex-toys.com/productinfo/3727461.html",
+    "pageShape": "script-backed shell with rendered product body",
+    "renderedProductImages": 3,
+    "browserLoadedResources": 3,
+    "dimensions": [
+      "1000x5680",
+      "1000x1970",
+      "1000x7660"
+    ],
+    "plainDirectHttpStatus": 404,
+    "forgedHeaders": false,
+    "proxyOrBypassUsed": false,
+    "hpoiRequests": 0,
+    "firecrawlRequests": 0
+  },
+  "outOfScope": {
+    "perceptualDeduplication": false,
+    "prototypeOrSkuMerge": false,
+    "formalPayloadWrite": false,
+    "deployment": false,
+    "secondCharacter": false,
+    "formalPr02Started": false
+  }
+}

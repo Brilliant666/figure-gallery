@@ -4,8 +4,10 @@ import path from 'node:path'
 import { HPOI_FROZEN_STATUS, readSourceStatus } from '../storage/source-status.js'
 
 const DEFAULT_PREFERENCES = Object.freeze({
+  schemaVersion: 2,
   excludedProductIds: [],
   excludedImageSha256: [],
+  products: {},
   preferredCoverImage: {},
   manualNote: {},
 })
@@ -63,36 +65,153 @@ export function normalizeQuery(value) {
 }
 
 export function normalizePreferences(raw = {}) {
+  const legacyCovers =
+    raw.preferredCoverImage && typeof raw.preferredCoverImage === 'object'
+      ? raw.preferredCoverImage
+      : {}
+  const legacyNotes = raw.manualNote && typeof raw.manualNote === 'object' ? raw.manualNote : {}
+  const rawProducts = raw.products && typeof raw.products === 'object' ? raw.products : {}
+  const products = {}
+  const productIds = new Set([
+    ...Object.keys(rawProducts),
+    ...Object.keys(legacyCovers),
+    ...Object.keys(legacyNotes),
+  ])
+  for (const productId of productIds) {
+    if (typeof productId !== 'string' || !productId) continue
+    const source = rawProducts[productId] && typeof rawProducts[productId] === 'object'
+      ? rawProducts[productId]
+      : {}
+    const preferredCoverImageId = cleanText(
+      source.preferredCoverImageId || legacyCovers[productId],
+    ).toLowerCase()
+    const manualNote = cleanText(source.manualNote || legacyNotes[productId])
+    const entry = {}
+    if (/^[a-f\d]{64}$/.test(preferredCoverImageId)) entry.preferredCoverImageId = preferredCoverImageId
+    if (manualNote) entry.manualNote = manualNote
+    if (Object.keys(entry).length > 0) products[productId] = entry
+  }
+  const preferredCoverImage = Object.fromEntries(
+    Object.entries(products)
+      .filter(([, value]) => value.preferredCoverImageId)
+      .map(([productId, value]) => [productId, value.preferredCoverImageId]),
+  )
+  const manualNote = Object.fromEntries(
+    Object.entries(products)
+      .filter(([, value]) => value.manualNote)
+      .map(([productId, value]) => [productId, value.manualNote]),
+  )
   return {
+    schemaVersion: 2,
     excludedProductIds: [...new Set(asArray(raw.excludedProductIds).filter((item) => typeof item === 'string'))],
     excludedImageSha256: [
       ...new Set(asArray(raw.excludedImageSha256).filter((item) => /^[a-f\d]{64}$/i.test(item))),
     ],
-    preferredCoverImage:
-      raw.preferredCoverImage && typeof raw.preferredCoverImage === 'object'
-        ? { ...raw.preferredCoverImage }
-        : {},
-    manualNote: raw.manualNote && typeof raw.manualNote === 'object' ? { ...raw.manualNote } : {},
+    products,
+    // Kept as normalized compatibility projections for the MVP-01/MVP-02 runtime.
+    preferredCoverImage,
+    manualNote,
   }
 }
 
-function normalizeImage(image, productId, excludedImages) {
+function normalizeImage(image, productId, excludedImages, homepageImage, order) {
   if (!image || typeof image !== 'object') return null
   const sha256 = cleanText(image.sha256 || image.contentSha256 || image.digest).toLowerCase()
   if (!/^[a-f\d]{64}$/.test(sha256)) return null
+  const sourceUrls = [
+    ...asArray(image.sourceUrls),
+    image.sourceUrl,
+    image.url,
+  ].filter((value, index, all) => typeof value === 'string' && value && all.indexOf(value) === index)
   return {
     sha256,
     width: Number.isFinite(Number(image.width)) ? Number(image.width) : null,
     height: Number.isFinite(Number(image.height)) ? Number(image.height) : null,
+    bytes: Number.isFinite(Number(image.bytes)) ? Number(image.bytes) : null,
     mime: cleanText(image.mime || image.contentType, 'image/jpeg'),
-    sourceUrl: cleanText(image.sourceUrl || image.url),
+    sourceUrl: cleanText(sourceUrls[0]),
     alt: cleanText(image.alt, `Candidate image for ${productId}`),
     excluded: excludedImages.has(sha256),
+    isOfficialPrimary:
+      image.isOfficialPrimary === true ||
+      image.isPrimary === true ||
+      Boolean(homepageImage && sourceUrls.includes(homepageImage)),
+    order,
     mediaUrl: `/media/${sha256}`,
   }
 }
 
-function normalizeProduct(product, preferences, imageObjects = {}) {
+function recommendationScore(image) {
+  const width = Number(image.width) || 0
+  const height = Number(image.height) || 0
+  const area = width * height
+  if (area < 120_000 || width <= 0 || height <= 0) return null
+  const ratio = width / height
+  if (ratio < 0.34 || ratio > 2.6) return null
+  const ratioPenalty = Math.abs(Math.log(ratio / 0.82)) * 150_000
+  return area - ratioPenalty - (Number(image.order) || 0) * 1_000
+}
+
+export function selectCoverImage(images = [], preferredCoverImageId = '') {
+  const available = images.filter((image) => image && !image.excluded)
+  const preferred = available.find((image) => image.sha256 === preferredCoverImageId)
+  if (preferred) {
+    return { image: preferred, source: 'manual_override', preferredCoverUnavailable: false }
+  }
+  const officialPrimary = available.find((image) => image.isOfficialPrimary)
+  if (officialPrimary) {
+    return {
+      image: officialPrimary,
+      source: 'official_primary',
+      preferredCoverUnavailable: Boolean(preferredCoverImageId),
+    }
+  }
+  const recommended = available
+    .map((image) => ({ image, score: recommendationScore(image) }))
+    .filter((candidate) => candidate.score !== null)
+    .sort((left, right) => right.score - left.score || left.image.order - right.image.order)[0]?.image
+  if (recommended) {
+    return {
+      image: recommended,
+      source: 'automatic_recommendation',
+      preferredCoverUnavailable: Boolean(preferredCoverImageId),
+    }
+  }
+  return {
+    image: available[0] || null,
+    source: available.length > 0 ? 'first_valid' : 'none',
+    preferredCoverUnavailable: Boolean(preferredCoverImageId),
+  }
+}
+
+function failureUrl(failure) {
+  return cleanText(failure?.url || failure?.sourceUrl || failure?.imageUrl)
+}
+
+function productImageUrls(fields) {
+  return new Set([
+    fields.homepageImage,
+    ...asArray(fields.imageUrls),
+    ...asArray(fields.candidateImages).flatMap((image) =>
+      typeof image === 'string' ? [image] : [image?.url, image?.sourceUrl]),
+  ].filter((value) => typeof value === 'string' && value))
+}
+
+function safeProductFailures(fields, failures) {
+  const imageUrls = productImageUrls(fields)
+  return failures
+    .filter((failure) => imageUrls.has(failureUrl(failure)))
+    .map((failure) => ({
+      kind: cleanText(failure.kind || failure.type || failure.stage, 'image'),
+      code: cleanText(failure.code || failure.reason, 'unknown'),
+      status: Number.isFinite(Number(failure.status || failure.statusCode))
+        ? Number(failure.status || failure.statusCode)
+        : null,
+      recordedAt: failure.recordedAt || null,
+    }))
+}
+
+function normalizeProduct(product, preferences, imageObjects = {}, failures = []) {
   if (!product || typeof product !== 'object') return null
   const fields = product.fields && typeof product.fields === 'object' ? product.fields : product
   const id = cleanText(
@@ -107,13 +226,14 @@ function normalizeProduct(product, preferences, imageObjects = {}) {
   if (!id) return null
 
   const excludedImages = new Set(preferences.excludedImageSha256)
+  const homepageImage = cleanText(fields.homepageImage)
   const storedImages = asArray(product.imageSha256)
     .map((sha256) => imageObjects[sha256] || (typeof sha256 === 'string' ? { sha256 } : sha256))
   const images = [
     ...storedImages,
     ...asArray(fields.images || fields.candidateImages || fields.imageRecords || fields.media),
   ]
-    .map((image) => normalizeImage(image, id, excludedImages))
+    .map((image, index) => normalizeImage(image, id, excludedImages, homepageImage, index))
     .filter(
       (image, index, all) =>
         image && all.findIndex((candidate) => candidate?.sha256 === image.sha256) === index,
@@ -123,10 +243,11 @@ function normalizeProduct(product, preferences, imageObjects = {}) {
     fields.classification || fields.bucket || fields.typeBucket || fields.figureType,
     'unknown',
   )
-  const preferredCoverImage = cleanText(preferences.preferredCoverImage[id])
-  if (preferredCoverImage) {
-    images.sort((left, right) => Number(right.sha256 === preferredCoverImage) - Number(left.sha256 === preferredCoverImage))
-  }
+  const preferredCoverImageId = cleanText(
+    preferences.products?.[id]?.preferredCoverImageId || preferences.preferredCoverImage[id],
+  )
+  const cover = selectCoverImage(images, preferredCoverImageId)
+  const imageFailures = safeProductFailures(fields, failures)
 
   const sourceDomain = sourceDomainFrom(fields)
   const sourceKind = cleanText(
@@ -164,9 +285,16 @@ function normalizeProduct(product, preferences, imageObjects = {}) {
     lastSeenAt: fields.lastSeenAt || product.lastSeenAt || null,
     fieldDigest: cleanText(fields.fieldDigest || product.fieldDigest),
     images,
+    coverImage: cover.image,
+    coverSelectionSource: cover.source,
+    preferredCoverUnavailable: cover.preferredCoverUnavailable,
     excluded: preferences.excludedProductIds.includes(id),
-    note: cleanText(preferences.manualNote[id]),
-    preferredCoverImage,
+    note: cleanText(preferences.products?.[id]?.manualNote || preferences.manualNote[id]),
+    preferredCoverImageId,
+    // Compatibility alias for pre-MVP-03A callers.
+    preferredCoverImage: preferredCoverImageId,
+    imageFailures,
+    failureCount: imageFailures.length,
   }
 }
 
@@ -184,12 +312,17 @@ function summarize(products, failures) {
   const officialProducts = products.filter((product) =>
     ['official_manufacturer', 'official_distributor'].includes(product.sourceKind),
   ).length
+  const covers = products.filter((product) => product.coverImage)
   return {
     products: products.length,
     images,
     officialProducts,
     officialImages,
     failures: failures.length,
+    indexCovers: covers.length,
+    automaticCovers: covers.filter((product) => product.coverSelectionSource !== 'manual_override').length,
+    manualCovers: covers.filter((product) => product.coverSelectionSource === 'manual_override').length,
+    productsWithoutImages: products.filter((product) => product.images.length === 0).length,
     ...buckets,
   }
 }
@@ -231,14 +364,14 @@ export async function loadRunGallery(root, requestedRunId = null) {
   const run = (await readJson(path.join(runDirectory, 'run.json'), {}) ) || {}
   const imageIndex =
     (await readJson(path.join(root, 'image-index.json'), { objects: {} })) || { objects: {} }
+  const failureDocument = await readJson(path.join(runDirectory, 'failures.json'), [])
+  const failures = asArray(failureDocument?.failures ?? failureDocument)
   const productDocument = await readJson(path.join(runDirectory, 'products.json'), [])
   const rawProducts = asArray(productDocument?.products ?? productDocument)
   const resolvedProducts = await Promise.all(rawProducts.map((product) => loadProductReference(root, product)))
   const products = resolvedProducts
-    .map((product) => normalizeProduct(product, preferences, imageIndex.objects || {}))
+    .map((product) => normalizeProduct(product, preferences, imageIndex.objects || {}, failures))
     .filter(Boolean)
-  const failureDocument = await readJson(path.join(runDirectory, 'failures.json'), [])
-  const failures = asArray(failureDocument?.failures ?? failureDocument)
   const sourceStatus = await readSourceStatus(root)
 
   const query = cleanText(run.query || run.characterName || run.input?.query, 'Unknown character')

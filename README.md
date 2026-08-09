@@ -6,7 +6,7 @@ Figure Gallery 是一个以“角色—官方手办原型—主图”为核心�
 
 PR-00 正式工程基线和 PR-01 核心目录模型均已进入 `main`，对应 Formal web CI 已通过。来源/候选池、审核工作流、正式媒体与主图、merge/split/undo、公开搜索和图库仍未实现。
 
-**personal gallery MVP-02 柴郡覆盖补齐已完成本机验收**：`tools/personal-gallery-mvp/` 是一个可删除、只在本机运行、与正式应用完全隔离的个人拍摄参考工具。当前柴郡图库收录 7 个第一阶段静态/比例手办商品卡片和 56 个字节不同的本地图片对象；6 个商品有本地图，APEX 商品页公开列出的 3 个图片 URL 当前返回 HTTP 404，故只保留条目和失败记录。系统 Google Chrome 的真实 loopback-only 验收已通过；这 7 个条目不把 Hpoi 中的黏土人、可动、盲盒/Q 版、GK、抱枕等非第一阶段类别计入，也尚未做感知去重。正式 PR-02—PR-08 路线继续暂停但不删除；MVP 不是正式 Candidate、Review 或 Media 实现，也不会把自动数据写入正式目录。
+**personal gallery MVP-03A 柴郡拍摄参考索引已完成本机验收**：`tools/personal-gallery-mvp/` 是一个可删除、只在本机运行、与正式应用完全隔离的个人拍摄参考工具。当前柴郡图库保留 7 个第一阶段比例手办商品记录和 65 个本地图片对象；角色首页按商品只显示一张经人工复核的完整造型封面，点击后进入该商品的全部图片详情。APEX `Dating Summer！Ver.` 现在保留 1 张适合作封面的发行方合成图，并补入官方商品页正常浏览器会话实际加载的 3 张纵向商品长图；ALTER 官方页当前 6 张候选图均已解析，其中正面全身图被人工选为封面。类型筛选只显示实际存在的“比例手办/景品”等中文类别，不再显示 `unknown`。系统 Google Chrome 的真实 loopback-only 验收已通过。本轮只做这两款的定向图片修复，没有增加物理商品、没有做感知去重或 prototype/SKU 合并。正式 PR-02—PR-08 路线继续暂停但不删除；MVP 不是正式 Candidate、Review 或 Media 实现，也不会把数据写入正式目录。
 
 已接受的技术底座：
 
@@ -56,6 +56,7 @@ PR-00 正式工程基线和 PR-01 核心目录模型均已进入 `main`，对应
 - [PR-01 业务身份实现](docs/PR01_IDENTITY_IMPLEMENTATION.md)
 - [MVP-01 个人自动手办图库](docs/MVP01_PERSONAL_AUTO_GALLERY.md)
 - [MVP-02 柴郡官方来源图库](docs/MVP02_CHESHIRE_OFFICIAL_GALLERY.md)
+- [MVP-03A 柴郡拍摄参考索引](docs/MVP03A_SHOOTING_REFERENCE_INDEX.md)
 - [需求追踪矩阵](docs/TRACEABILITY_MATRIX.md)
 - [技术决策 ADR](research/TECH_STACK_DECISION.md)
 
@@ -65,4 +66,4 @@ Hpoi 当前只可作为人工参考；在 personal gallery MVP 中也已经因�
 
 ## 开发状态
 
-PR-00、PR-01、personal gallery MVP-01 与 MVP-02 柴郡覆盖补齐均已完成本机验证；MVP-02 的真实首轮、第二轮幂等及系统 Chrome 验收以 `research/evidence/mvp02/personal-gallery-results.json` 为准，不能由合成 CI fixture 代替。项目所有者可先把本地图库用于拍摄准备；正式 PR-02—PR-08 仍暂停，正式 PR-02 尚未开始。正式变化必须使用任务独立分支和独立 PR；未经明确授权不得合并或部署。恢复任何路线仍需新的明确授权。
+PR-00、PR-01、personal gallery MVP-01、MVP-02 柴郡覆盖补齐与 MVP-03A 拍摄参考索引均已完成本机验证；MVP-02 的真实收集证据继续以 `research/evidence/mvp02/personal-gallery-results.json` 为准，MVP-03A 的索引、详情和系统 Chrome 证据以 `research/evidence/mvp03a/reference-index-results.json` 为准，均不能由合成 CI fixture 代替。项目所有者可先把本地图库用于拍摄准备；正式 PR-02—PR-08 仍暂停，正式 PR-02 尚未开始。正式变化必须使用任务独立分支和独立 PR；未经明确授权不得合并或部署。恢复任何路线仍需新的明确授权。

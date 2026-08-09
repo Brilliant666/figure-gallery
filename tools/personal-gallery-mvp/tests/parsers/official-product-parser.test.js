@@ -45,7 +45,7 @@ test('Good Smile parser returns official fields and only product-gallery images'
   assert.equal(product.imageUrls.some((url) => url.includes('related-product')), false)
 })
 
-test('ALTER parser reads Japanese specifications and sample gallery', async () => {
+test('ALTER parser reads Japanese specifications and the current bxslider gallery', async () => {
   const product = parseOfficialProductPage({
     rawHtml: await fixture('alter-product.synthetic.html'),
     url: 'https://www.alter-web.jp/products/19002/',
@@ -65,12 +65,14 @@ test('ALTER parser reads Japanese specifications and sample gallery', async () =
   assert.equal(product.price, '26,800円')
   assert.equal(product.classification, 'likely_scale')
   assert.ok(product.imageUrls.length >= 4)
+  assert.equal(product.imageUrls.some((url) => url.includes('cheshire-19002-03')), true)
   assert.equal(product.imageUrls.some((url) => url.includes('recommended')), false)
 })
 
 test('reviewed APEX manufacturer and AmiAmi distributor pages preserve source roles and stable IDs', async () => {
   const apex = parseOfficialProductPage({
-    rawHtml: await fixture('apex-cheshire.synthetic.html'),
+    rawHtml: await fixture('apex-shell.synthetic.html'),
+    renderedHtml: await fixture('apex-cheshire.synthetic.html'),
     url: 'https://apex-toys.com/productinfo/3727461.html',
     discoveryMethod: 'seed_official_url',
   })
@@ -81,7 +83,8 @@ test('reviewed APEX manufacturer and AmiAmi distributor pages preserve source ro
   assert.equal(apex.officialProductId, '3727461')
   assert.equal(apex.scale, '1/8')
   assert.equal(apex.classification, 'likely_scale')
-  assert.equal(apex.imageUrls.length, 2)
+  assert.equal(apex.imageUrls.length, 3)
+  assert.equal(apex.imageUrls.some((url) => url.includes('cheshire-details')), true)
 
   const amiami = parseOfficialProductPage({
     rawHtml: await fixture('amiami-cheshire.synthetic.html'),

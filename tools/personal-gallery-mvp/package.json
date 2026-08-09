@@ -16,6 +16,7 @@
     "test": "node scripts/run-unit-tests.mjs",
     "test:e2e": "playwright test",
     "validate:chrome:real": "node scripts/validate-real-system-chrome.mjs",
+    "validate:chrome:mvp03a": "node scripts/validate-mvp03a-system-chrome.mjs",
     "check:dependencies": "node scripts/check-installed-dependencies.mjs",
     "check": "node scripts/check-source.mjs",
     "ci:summary": "node scripts/write-ci-summary.mjs"

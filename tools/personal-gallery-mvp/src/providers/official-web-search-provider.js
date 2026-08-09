@@ -87,7 +87,7 @@ function documentBlock(document) {
   if (BLOCKING_STATUS_CODES.has(statusCode)) return { category: `http_${statusCode}`, statusCode }
   const robots = String(document?.metadata?.robots || '')
   if (/^(?:none|noindex\s*,?\s*nofollow)$/iu.test(robots.trim())) return { category: 'robots_denied', statusCode }
-  const rawHtml = String(document?.rawHtml || '')
+  const rawHtml = [document?.rawHtml, document?.html].filter(Boolean).join('\n')
   const activeContent = rawHtml
     .replace(/<script\b[^>]*>[\s\S]*?<\/script>/giu, ' ')
     .replace(/<style\b[^>]*>[\s\S]*?<\/style>/giu, ' ')
@@ -224,7 +224,7 @@ export class OfficialWebSearchProvider {
       requestType: 'official_product',
       estimatedCredits: 1,
       signal,
-      operation: () => this.client.scrape(normalizedUrl, { formats: ['rawHtml', 'links', 'images', 'product'] }),
+      operation: () => this.client.scrape(normalizedUrl, { formats: ['html', 'rawHtml', 'links', 'images', 'product'] }),
       inspectDocument: true,
       expectedUrl: normalizedUrl,
     })
@@ -239,6 +239,7 @@ export class OfficialWebSearchProvider {
     }
     return {
       rawHtml: document.rawHtml || '',
+      renderedHtml: document.html || '',
       links: Array.isArray(document.links) ? document.links : [],
       images: Array.isArray(document.images) ? document.images : [],
       product: document.product || null,
