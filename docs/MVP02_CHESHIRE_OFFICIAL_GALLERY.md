@@ -61,7 +61,7 @@ Search v2 固定使用：
 
 `amiami.jp`、`www.amiami.jp` 是 seed-only 发行方域名：只有任务中已经逐页人工审核的明确商品 URL 可以访问，Search 命中不会自动进入详情访问。搜索命中其他域名时只记为 `unreviewedDomain`，不得访问详情、下载图片或自动扩充 allowlist。厂商或发行方页面返回的图片 host 只有在具体商品页直接列出 URL 后，才可作为该父页面本次图片候选；不得按 URL 规律构造资源。
 
-柴郡默认受审 seed 只包含搜索漏召回的 Good Smile `Summery Date!`、`Cait Sith Crooner`，以及三个明确的 AmiAmi 商品页；其中 `FIGURE-188750` 对应 APEX `Dating Summer！Ver.`。它们不能硬编码成伪搜索结果；使用 seed URL 必须记录 `discoveryMethod=seed_official_url`，Search 发现记录 `firecrawl_search`。任何新增 seed 都需要独立逐页审核，不能从发行方域名自动枚举。
+柴郡默认受审 seed 只包含搜索漏召回的 Good Smile `Summery Date!`、`Cait Sith Crooner`、APEX `Dating Summer！Ver.` 官方商品页，以及两个明确的 AmiAmi 商品页。它们不能硬编码成伪搜索结果；使用 seed URL 必须记录 `discoveryMethod=seed_official_url`，Search 发现记录 `firecrawl_search`。任何新增 seed 都需要独立逐页审核，不能从发行方域名自动枚举。
 
 ## 4. 官方商品页真实性
 
@@ -175,7 +175,7 @@ node src/cli/collect.js --query "柴郡" --confirm-official-source-access
 
 最初的真实结果由五组中、日、英查询自动发现 Good Smile 与 ALTER 各一个商品。覆盖补齐后，同样的五组查询与 5 个受审 seed 共同形成 7 个第一阶段静态/比例手办条目：Good Smile 3 个、ALTER 1 个、APEX 1 个、AmiAmi×AniGame 2 个。最终同配置两轮均解析 7 个商品；第二轮新增商品 0、对象 0，7 个商品全部为 `unchanged`。
 
-MVP-02 当时的安全加固使用经过公网 DNS 校验并绑定解析地址的 HTTPS 图片传输，并形成 56 个对象、6 个有图商品的历史基线。MVP-03A 后续定向修复没有重试或猜测原 APEX 404 地址，而是将活动来源替换为逐页审核的 AmiAmi 同商品页；同时补齐 ALTER 当前 `.bxslider` 图库。当前本地基线为 62 个字节不同的 SHA-256 对象、7 个有图商品；旧 run 中的 3 条 APEX 404 仍作为历史证据保留。跨格式感知去重仍不属于本 MVP。真实页面、图片、manifest 和完整日志只保留在 Git 忽略的 `.local/` 中。
+MVP-02 当时的安全加固使用经过公网 DNS 校验并绑定解析地址的 HTTPS 图片传输，并形成 56 个对象、6 个有图商品的历史基线。MVP-03A 随后补齐 ALTER 当前 `.bxslider` 图库，并曾以逐页审核的 AmiAmi 同商品页为 APEX 保留 1 张合成封面。进一步检查确认 APEX 官方页是脚本壳，标准渲染 DOM 中公开列出 3 张纵向商品长图；parser 现在同时使用 Firecrawl 标准渲染 `html` 和源 `rawHtml`，本机运行时也从正常系统 Chrome 页面会话中导入这 3 个已加载资源。当前本地基线为 65 个字节不同的 SHA-256 对象、7 个有图商品；旧 run 中的 3 条 APEX 404 仍作为历史证据保留。普通直接 HTTP 访问这些 APEX CDN URL 仍是 404，未伪造请求头或使用代理绕过，因此干净运行时的图片下载限制仍须如实报告。跨格式感知去重仍不属于本 MVP。真实页面、图片、manifest 和完整日志只保留在 Git 忽略的 `.local/` 中。
 
 ## 10. 私有图库验收
 
@@ -234,7 +234,7 @@ CI 永远设置 Hpoi 和官方来源实时开关为 `false`，不使用 Reposito
 
 ## 13. 停止和后续边界
 
-MVP-02 柴郡覆盖补齐后继续作为本机个人拍摄工具使用；经 MVP-03A 定向图片修复，当前收录 7 个第一阶段比例手办商品卡片和 62 个字节不同的图片对象。Hpoi 的 9+ 结果还包含黏土人、可动、盲盒/Q 版、GK、抱枕及不同角色等非第一阶段条目，不能直接等同于本工具目标数。当前只做 SHA-256 精确去重，没有感知去重；Hpoi 继续因 captcha 停用，本轮 Hpoi 请求为 0。
+MVP-02 柴郡覆盖补齐后继续作为本机个人拍摄工具使用；经 MVP-03A 定向图片修复，当前收录 7 个第一阶段比例手办商品卡片和 65 个字节不同的图片对象。Hpoi 的 9+ 结果还包含黏土人、可动、盲盒/Q 版、GK、抱枕及不同角色等非第一阶段条目，不能直接等同于本工具目标数。当前只做 SHA-256 精确去重，没有感知去重；Hpoi 继续因 captcha 停用，本轮 Hpoi 请求为 0。
 
 达到真实首轮、第二轮幂等、真实浏览器、PR 合并与干净工作区停止条件后立即停止。不得继续增加 allowlist、搜索 query、第二角色、感知哈希、正式 Candidate/Review/Media、正式 PR-02、Payload 导入、原画图库、公开部署或 Hpoi 绕过。
 

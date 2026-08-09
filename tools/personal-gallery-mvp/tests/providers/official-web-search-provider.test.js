@@ -145,7 +145,7 @@ test('Search v2 is web-only, explicitly excludes Hpoi, and never visits unreview
   assert.deepEqual(OFFICIAL_FIRECRAWL_METHODS, ['search', 'scrape'])
 })
 
-test('scrape requests only rawHtml, links, images, and product for allowlisted product pages', async () => {
+test('scrape requests rendered html plus rawHtml, links, images, and product for allowlisted product pages', async () => {
   const calls = []
   const provider = new OfficialWebSearchProvider({
     apiKey: 'synthetic-key',
@@ -154,6 +154,7 @@ test('scrape requests only rawHtml, links, images, and product for allowlisted p
       async scrape(...args) {
         calls.push(args)
         return {
+          html: '<main data-fixture="synthetic-rendered">Cheshire Azur Lane</main>',
           rawHtml: '<main data-fixture="synthetic">Cheshire Azur Lane</main>',
           links: [],
           images: [],
@@ -168,8 +169,9 @@ test('scrape requests only rawHtml, links, images, and product for allowlisted p
   })
   assert.deepEqual(calls, [[
     'https://www.goodsmile.com/en/product/19001/cheshire',
-    { formats: ['rawHtml', 'links', 'images', 'product'] },
+    { formats: ['html', 'rawHtml', 'links', 'images', 'product'] },
   ]])
+  assert.match(result.renderedHtml, /synthetic-rendered/)
   assert.equal(result.finalUrl, 'https://www.goodsmile.com/en/product/19001/cheshire')
   assert.equal(result.requestRecord.requestType, 'official_product')
 })
@@ -194,6 +196,27 @@ test('a public product page with a navigation sign-in link is not mistaken for a
     url: 'https://www.goodsmile.com/en/product/19001/cheshire',
   })
   assert.equal(result.status, 200)
+})
+
+test('blocking content in rendered html stops even when rawHtml is only a benign script shell', async () => {
+  const provider = new OfficialWebSearchProvider({
+    apiKey: 'synthetic-key',
+    gate,
+    maxRetries: 0,
+    client: {
+      async scrape(url) {
+        return {
+          html: '<main><h1>Captcha verification required</h1></main>',
+          rawHtml: '<html><body><script src="/synthetic-body.js"></script></body></html>',
+          metadata: { sourceURL: url, statusCode: 200 },
+        }
+      },
+    },
+  })
+  await assert.rejects(
+    () => provider.fetchOfficialProductPage({ url: 'https://apex-toys.com/productinfo/3727461.html' }),
+    (error) => error.category === 'captcha' && error.requestRecord.retries === 0,
+  )
 })
 
 test('outside targets and blocked redirects terminate before any follow-up request', async () => {

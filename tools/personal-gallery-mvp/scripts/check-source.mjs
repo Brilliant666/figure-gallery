@@ -222,19 +222,28 @@ if (
   JSON.stringify(referenceGates.map((gate) => gate.id)) !== JSON.stringify(expectedReferenceGates) ||
   referenceGates.some((gate) => gate.status !== 'pass') ||
   Number(mvp03aEvidence.realRuntime?.products) !== 7 ||
-  Number(mvp03aEvidence.realRuntime?.images) !== 62 ||
+  Number(mvp03aEvidence.realRuntime?.images) !== 65 ||
   Number(mvp03aEvidence.realRuntime?.indexCovers) !== 7 ||
+  Number(mvp03aEvidence.realRuntime?.automaticCovers) !== 2 ||
+  Number(mvp03aEvidence.realRuntime?.manualOverrideCovers) !== 5 ||
   Number(mvp03aEvidence.realRuntime?.productsWithoutImages) !== 0 ||
   Number(mvp03aEvidence.realRuntime?.classificationCounts?.unknown) !== 0 ||
-  Number(mvp03aEvidence.realRuntime?.apex?.localImages) !== 1 ||
+  Number(mvp03aEvidence.realRuntime?.apex?.localImages) !== 4 ||
+  Number(mvp03aEvidence.realRuntime?.apex?.officialCompositeFiles) !== 3 ||
+  mvp03aEvidence.realRuntime?.apex?.sourceDomain !== 'apex-toys.com' ||
   Number(mvp03aEvidence.realRuntime?.alter?.localImages) !== 6 ||
   Number(mvp03aEvidence.systemChrome?.index?.imageRequests) !== 7 ||
+  Number(mvp03aEvidence.systemChrome?.apex?.localImages) !== 4 ||
   mvp03aEvidence.systemChrome?.interactions?.unknownOptionAbsent !== 'pass' ||
   Number(mvp03aEvidence.systemChrome?.network?.externalRequests) !== 0 ||
   mvp03aEvidence.realRuntime?.runtimeTrackedByGit !== false ||
   mvp03aEvidence.collection?.cheshireRecrawled !== false ||
   mvp03aEvidence.collection?.targetedOfficialImageRepair !== true ||
-  Number(mvp03aEvidence.collection?.uniqueObjectsAdded) !== 6 ||
+  Number(mvp03aEvidence.collection?.uniqueObjectsAdded) !== 9 ||
+  Number(mvp03aEvidence.collection?.browserPageAssetsImported) !== 3 ||
+  Number(mvp03aEvidence.officialPageInspection?.renderedProductImages) !== 3 ||
+  Number(mvp03aEvidence.officialPageInspection?.plainDirectHttpStatus) !== 404 ||
+  mvp03aEvidence.officialPageInspection?.proxyOrBypassUsed !== false ||
   mvp03aEvidence.collection?.hpoiRequests !== 0 ||
   mvp03aEvidence.collection?.firecrawlRequests !== 0
 ) {
@@ -268,9 +277,10 @@ if (JSON.stringify(actualOfficialQueries) !== JSON.stringify(expectedOfficialQue
 
 if (
   !officialProviderText.includes("sources: ['web']") ||
-  !officialProviderText.includes("excludeDomains: ['hpoi.net', 'www.hpoi.net']")
+  !officialProviderText.includes("excludeDomains: ['hpoi.net', 'www.hpoi.net']") ||
+  !officialProviderText.includes("formats: ['html', 'rawHtml', 'links', 'images', 'product']")
 ) {
-  fail('Official discovery must use Firecrawl Search v2 web results and explicitly exclude Hpoi.')
+  fail('Official discovery must use Search v2 web results, exclude Hpoi, and preserve rendered plus source HTML.')
 }
 
 const officialClientMethods = [

@@ -71,7 +71,8 @@ test('ALTER parser reads Japanese specifications and the current bxslider galler
 
 test('reviewed APEX manufacturer and AmiAmi distributor pages preserve source roles and stable IDs', async () => {
   const apex = parseOfficialProductPage({
-    rawHtml: await fixture('apex-cheshire.synthetic.html'),
+    rawHtml: await fixture('apex-shell.synthetic.html'),
+    renderedHtml: await fixture('apex-cheshire.synthetic.html'),
     url: 'https://apex-toys.com/productinfo/3727461.html',
     discoveryMethod: 'seed_official_url',
   })
@@ -82,7 +83,8 @@ test('reviewed APEX manufacturer and AmiAmi distributor pages preserve source ro
   assert.equal(apex.officialProductId, '3727461')
   assert.equal(apex.scale, '1/8')
   assert.equal(apex.classification, 'likely_scale')
-  assert.equal(apex.imageUrls.length, 2)
+  assert.equal(apex.imageUrls.length, 3)
+  assert.equal(apex.imageUrls.some((url) => url.includes('cheshire-details')), true)
 
   const amiami = parseOfficialProductPage({
     rawHtml: await fixture('amiami-cheshire.synthetic.html'),

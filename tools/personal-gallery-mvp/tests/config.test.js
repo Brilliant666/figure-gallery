@@ -44,7 +44,7 @@ test('reviewed Cheshire fallback seeds stay limited to verified manufacturer and
   assert.deepEqual(DEFAULT_CHESHIRE_OFFICIAL_SEED_URLS, [
     'https://www.goodsmile.com/en/product/36232/Cheshire%2BSummery%2BDate%2B',
     'https://www.goodsmile.com/en/product/36234/Cheshire%2BCait%2BSith%2BCrooner',
-    'https://www.amiami.jp/top/detail/detail?gcode=FIGURE-188750',
+    'https://apex-toys.com/productinfo/3727461.html',
     'https://www.amiami.jp/top/detail/detail?gcode=FIGURE-181336',
     'https://www.amiami.jp/top/detail/detail?gcode=FIGURE-158150',
   ])

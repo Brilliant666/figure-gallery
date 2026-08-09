@@ -15,7 +15,7 @@ import {
   officialUrlIdentity,
 } from './official-urls.js'
 
-export const OFFICIAL_PRODUCT_PARSER_VERSION = 'official-deterministic-v2'
+export const OFFICIAL_PRODUCT_PARSER_VERSION = 'official-deterministic-v3'
 
 const CHESHIRE = /(?:\bcheshire\b|チェシャー|柴郡)/iu
 const AZUR_LANE = /(?:\bazur\s+lane\b|アズールレーン|碧蓝航线|碧藍航線)/iu
@@ -354,6 +354,7 @@ export function validateOfficialProductPage({ title, primaryText, series, manufa
 
 export function parseOfficialProductPage({
   rawHtml,
+  renderedHtml = '',
   url,
   images = [],
   firecrawlProduct = null,
@@ -365,9 +366,16 @@ export function parseOfficialProductPage({
   if (!requestedUrl || !isAllowedOfficialProductUrl(requestedUrl)) {
     throw new OfficialPageValidationError('Product URL is outside the official source allowlist.', { code: 'official_url_not_allowed' })
   }
-  const { full, primary } = primaryDocument(rawHtml)
+  // Firecrawl `rawHtml` is intentionally kept for source fidelity, while its
+  // standard `html` format contains the rendered DOM for script-backed pages.
+  // APEX currently serves a tiny shell whose public product body is inserted
+  // by document.write; prefer the rendered document when it is available.
+  const effectiveHtml = String(renderedHtml || '').trim() || rawHtml
+  const { full, primary } = primaryDocument(effectiveHtml)
+  const rawDocument = renderedHtml ? load(rawHtml || '<html></html>') : full
   const canonicalCandidate = normalizeOfficialPageUrl(
-    firstAttribute(full, ['link[rel="canonical"]'], 'href'),
+    firstAttribute(full, ['link[rel="canonical"]'], 'href')
+      || firstAttribute(rawDocument, ['link[rel="canonical"]'], 'href'),
     requestedUrl,
   )
   const sourceUrl = canonicalCandidate && isAllowedOfficialProductUrl(canonicalCandidate) && sameOfficialSite(canonicalCandidate, requestedUrl)
@@ -375,10 +383,15 @@ export function parseOfficialProductPage({
     : requestedUrl
   const sourceDomain = canonicalOfficialDomain(new URL(sourceUrl).hostname)
   const fields = collectFields(primary)
-  const jsonLdDocuments = parseJsonLdDocuments(full)
+  const jsonLdDocuments = [
+    ...parseJsonLdDocuments(full),
+    ...(renderedHtml ? parseJsonLdDocuments(rawDocument) : []),
+  ]
   const visibleTitle = cleanText(primary('h1, [itemprop="name"], .product-title, .item_name').first().text())
     || firstAttribute(full, ['meta[property="og:title"]'], 'content')
+    || firstAttribute(rawDocument, ['meta[property="og:title"]'], 'content')
     || cleanText(full('title').text())
+    || cleanText(rawDocument('title').text())
   const structuredProduct = selectStructuredProduct(jsonLdDocuments, {
     pageUrl: sourceUrl,
     title: visibleTitle,
