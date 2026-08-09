@@ -314,6 +314,32 @@ export class GalleryStore {
     return { identity, productKey: identity.key, state, changedFields: changes, record }
   }
 
+  async includeExistingProducts(runId, productKeys = []) {
+    const snapshots = await readJson(this.runFile(runId, 'products.json'), [])
+    const present = new Set(snapshots.map((entry) => entry?.productKey).filter(Boolean))
+    let added = 0
+    for (const productKey of unique(productKeys.filter((value) => typeof value === 'string' && value))) {
+      if (present.has(productKey)) continue
+      const record = await readJson(this.productFile(productKey))
+      if (!record) continue
+      snapshots.push({
+        productKey,
+        state: 'unchanged',
+        fields: structuredClone(record.fields || {}),
+        imageSha256: [...(record.imageSha256 || [])],
+        beforeDigest: record.fieldDigest || null,
+        afterDigest: record.fieldDigest || null,
+        changedFields: [],
+        observedAt: now(this.clock),
+        carriedForwardWithoutNetwork: true,
+      })
+      present.add(productKey)
+      added += 1
+    }
+    if (added) await atomicWriteJson(this.runFile(runId, 'products.json'), snapshots)
+    return { added, total: snapshots.length }
+  }
+
   async registerImages(registrations) {
     if (!Array.isArray(registrations) || registrations.length === 0) return
     const timestamp = now(this.clock)

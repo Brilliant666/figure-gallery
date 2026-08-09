@@ -89,9 +89,17 @@ export class OfficialSearchCollector {
   async collect({ query, characterConfig, seedUrls = [], limits = {}, requestedRunId = null, signal } = {}) {
     const character = validateCharacterConfig(characterConfig)
     const effectiveQuery = String(query || character.displayName).trim()
-    const discoveryQueries = buildOfficialDiscoveryQueries(character, {
-      maxQueries: bounded(limits.maxQueries, this.config.officialMaxQueries || 30, 30),
-    })
+    const skipSearch = limits.skipSearch === true
+    const writeCoverage = limits.writeCoverage !== false
+    const includeReviewedSeeds = limits.includeReviewedSeeds !== false
+    const runSourceMode = limits.sourceMode === 'hpoi_index_official_resolution'
+      ? 'hpoi_index_official_resolution'
+      : 'official_sources'
+    const discoveryQueries = skipSearch
+      ? []
+      : buildOfficialDiscoveryQueries(character, {
+          maxQueries: bounded(limits.maxQueries, this.config.officialMaxQueries || 30, 30),
+        })
     const effective = {
       searchLimit: bounded(limits.searchLimit, this.config.officialMaxSearchResultsPerQuery || 10, 10),
       maxCandidates: bounded(limits.maxCandidates, this.config.officialMaxCandidates || 80, 80),
@@ -116,7 +124,7 @@ export class OfficialSearchCollector {
       discoveryQueries,
       limits: effective,
       requestedRunId,
-      sourceMode: 'official_sources',
+      sourceMode: runSourceMode,
     })
     const counters = {
       ...run.counters,
@@ -181,7 +189,7 @@ export class OfficialSearchCollector {
         }
       }
 
-      for (const seed of [...(character.reviewedSeeds || []), ...(seedUrls || [])]) {
+      for (const seed of [...(includeReviewedSeeds ? character.reviewedSeeds || [] : []), ...(seedUrls || [])]) {
         const sourceUrl = normalizeOfficialPageUrl(typeof seed === 'string' ? seed : seed?.url)
         if (!sourceUrl || !isAllowedOfficialProductUrl(sourceUrl)) {
           await this.store.recordWarning?.(run.runId, { kind: 'seed_official_url_not_allowed', url: sourceUrl })
@@ -318,7 +326,7 @@ export class OfficialSearchCollector {
       stopReason,
       counters,
       extra: {
-        sourceMode: 'official_sources',
+        sourceMode: runSourceMode,
         characterId: character.characterId,
         characterSlug: character.slug,
         characterDisplayName: character.displayName,
@@ -326,23 +334,25 @@ export class OfficialSearchCollector {
         unreviewedDomains,
       },
     })
-    await this.store.writeCoverage?.(character.slug, {
-      schemaVersion: 1,
-      characterId: character.characterId,
-      characterSlug: character.slug,
-      runId: run.runId,
-      status,
-      searchQueries: discoveryQueries.length,
-      searchCandidates: candidates.size,
-      officialHits: counters.productsProcessed,
-      unreviewedDomains: new Set(unreviewedDomains.map((entry) => entry.sourceDomain).filter(Boolean)).size,
-      retailerOnlySeeds: character.reviewedSeeds.filter((seed) => seed.sourceType === 'retailer_seed_only').length,
-      parserUnsupported: counters.productFailures,
-      sourceBlocked: status === 'blocked' ? 1 : 0,
-      outOfScopeProducts: counters.other,
-      duplicateCandidates: Math.max(0, counters.officialCandidates - counters.productsDiscovered),
-      hpoiRequests: 0,
-    })
+    if (writeCoverage) {
+      await this.store.writeCoverage?.(character.slug, {
+        schemaVersion: 1,
+        characterId: character.characterId,
+        characterSlug: character.slug,
+        runId: run.runId,
+        status,
+        searchQueries: discoveryQueries.length,
+        searchCandidates: candidates.size,
+        officialHits: counters.productsProcessed,
+        unreviewedDomains: new Set(unreviewedDomains.map((entry) => entry.sourceDomain).filter(Boolean)).size,
+        retailerOnlySeeds: character.reviewedSeeds.filter((seed) => seed.sourceType === 'retailer_seed_only').length,
+        parserUnsupported: counters.productFailures,
+        sourceBlocked: status === 'blocked' ? 1 : 0,
+        outOfScopeProducts: counters.other,
+        duplicateCandidates: Math.max(0, counters.officialCandidates - counters.productsDiscovered),
+        hpoiRequests: 0,
+      })
+    }
     return finalized
   }
 

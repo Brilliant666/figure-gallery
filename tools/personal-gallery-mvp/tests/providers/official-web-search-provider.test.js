@@ -142,7 +142,7 @@ test('Search v2 is web-only, explicitly excludes Hpoi, and never visits unreview
   assert.ok(result.rejected.some((entry) => entry.status === 'hpoi_denied'))
   assert.ok(result.rejected.some((entry) => entry.status === 'non_product_path'))
   assert.equal(result.requestRecord.requestType, 'official_search')
-  assert.equal(result.requestRecord.creditUsage, 10)
+  assert.equal(result.requestRecord.creditUsage, 2)
   assert.deepEqual(OFFICIAL_FIRECRAWL_METHODS, ['search', 'scrape'])
 })
 
@@ -288,5 +288,5 @@ test('captcha is terminal and 503 retries are provider-owned, delayed, and count
   assert.equal(attempts, 3)
   assert.deepEqual(fakeClock.sleeps, [1000, 1000])
   assert.equal(result.requestRecord.retries, 2)
-  assert.equal(result.requestRecord.creditUsage, 30)
+  assert.equal(result.requestRecord.creditUsage, 6)
 })

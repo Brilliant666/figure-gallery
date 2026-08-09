@@ -103,6 +103,10 @@ export function loadConfig({ loadEnv = true } = {}) {
     requestDelayMs: integer('HPOI_REQUEST_DELAY_MS', 1_500, { min: 1_500, max: 60_000 }),
     root: validateRuntimeRoot(rootValue || DEFAULT_RUNTIME_ROOT),
     writtenPermissionConfirmed: boolean('HPOI_WRITTEN_PERMISSION_CONFIRMED'),
+    hpoiIndexMaxQueries: integer('HPOI_INDEX_MAX_QUERIES', 30, { min: 1, max: 30 }),
+    hpoiIndexMaxResultsPerQuery: integer('HPOI_INDEX_MAX_RESULTS_PER_QUERY', 10, { min: 1, max: 10 }),
+    hpoiIndexMaxRawResults: integer('HPOI_INDEX_MAX_RAW_RESULTS', 200, { min: 1, max: 200 }),
+    hpoiIndexRequestDelayMs: integer('HPOI_INDEX_REQUEST_DELAY_MS', 7_000, { min: 1_000, max: 60_000 }),
     officialLiveFetchEnabled: boolean('OFFICIAL_SOURCE_LIVE_FETCH_ENABLED'),
     officialMaxSearchResultsPerQuery: integer('OFFICIAL_MAX_SEARCH_RESULTS_PER_QUERY', 10, { min: 1, max: 10 }),
     officialMaxQueries: integer('OFFICIAL_MAX_QUERIES', 30, { min: 1, max: 30 }),
@@ -135,5 +139,22 @@ export function officialLiveGate(config, { interactiveConfirmation = false } = {
     missing,
     notice:
       'Only reviewed public official manufacturer pages and explicit seed-only authorized official distributor pages may be scraped. Hpoi, user content, login, crawl, browser actions, and access-control bypass remain disabled.',
+  }
+}
+
+export function hpoiIndexLiveGate(
+  config,
+  { interactiveIndexConfirmation = false, interactiveOfficialConfirmation = false } = {},
+) {
+  const missing = []
+  if (!config.officialLiveFetchEnabled) missing.push('OFFICIAL_SOURCE_LIVE_FETCH_ENABLED=true')
+  if (!interactiveIndexConfirmation) missing.push('interactive Hpoi-index discovery confirmation')
+  if (!interactiveOfficialConfirmation) missing.push('interactive official-source confirmation')
+  if (!config.firecrawlApiKey) missing.push('FIRECRAWL_API_KEY')
+  return {
+    allowed: missing.length === 0,
+    missing,
+    notice:
+      'Third-party Search may return indexed Hpoi product URL strings for candidate discovery and coverage. The tool never requests, scrapes, resolves, previews, or navigates those Hpoi URLs; formal facts and images still require reviewed non-Hpoi official sources.',
   }
 }

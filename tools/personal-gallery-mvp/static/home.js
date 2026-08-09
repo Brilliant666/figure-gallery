@@ -5,6 +5,7 @@ const stopButton = document.querySelector('#stop-button')
 const statusPill = document.querySelector('#status-pill')
 const statusMessage = document.querySelector('#status-message')
 const activeGalleryLink = document.querySelector('#active-gallery-link')
+const activeDiscoveryLink = document.querySelector('#active-discovery-link')
 const recentRuns = document.querySelector('#recent-runs')
 const characterGalleries = document.querySelector('#character-galleries')
 const queryInput = document.querySelector('#query')
@@ -30,6 +31,9 @@ function renderStatus(run) {
   const link = run?.galleryUrl || galleryUrl(run)
   activeGalleryLink.classList.toggle('hidden', !link)
   if (link) activeGalleryLink.href = link
+  const discoveryLink = run?.discoveryUrl || (run?.characterSlug ? `/discovery/${encodeURIComponent(run.characterSlug)}` : null)
+  activeDiscoveryLink.classList.toggle('hidden', !discoveryLink)
+  if (discoveryLink) activeDiscoveryLink.href = discoveryLink
   const running = status === 'running' || status === 'stopping'
   startButton.disabled = running
   stopButton.disabled = !running
@@ -66,11 +70,22 @@ function renderCharacters(items) {
     const row = document.createElement('div')
     row.className = 'recent-run'
     const label = document.createElement('span')
-    label.textContent = `${character.displayName} · ${character.summary?.products || 0} 款`
+    const coverage = character.coverage?.metrics
+    label.textContent = coverage
+      ? `${character.displayName} · ${character.summary?.products || 0} 款 · 索引候选 ${coverage.hpoiIndexedCandidates || 0} · 待解析 ${coverage.unresolved || 0}`
+      : `${character.displayName} · ${character.summary?.products || 0} 款`
+    const actions = document.createElement('span')
+    actions.className = 'inline-actions'
     const link = document.createElement('a')
+    link.className = 'character-gallery-link'
     link.href = `/gallery/characters/${encodeURIComponent(character.slug)}`
     link.textContent = '打开图库'
-    row.append(label, link)
+    const discovery = document.createElement('a')
+    discovery.className = 'character-discovery-link'
+    discovery.href = `/discovery/${encodeURIComponent(character.slug)}`
+    discovery.textContent = '收录覆盖'
+    actions.append(link, discovery)
+    row.append(label, actions)
     characterGalleries.append(row)
   }
 }
@@ -93,12 +108,16 @@ function collectionPayload() {
   const data = new FormData(form)
   return {
     query: data.get('query'),
-    sourceMode: 'official_sources',
+    sourceMode: 'hpoi_search_index',
+    maxIndexQueries: Number(data.get('maxIndexQueries')),
+    maxIndexResultsPerQuery: Number(data.get('maxIndexResultsPerQuery')),
+    maxIndexRawResults: 200,
     maxSearchResults: Number(data.get('maxSearchResults')),
     maxCandidates: Number(data.get('maxCandidates')),
     maxProducts: Number(data.get('maxProducts')),
     maxImagesPerProduct: Number(data.get('maxImagesPerProduct')),
     confirmOfficialSourceAccess: data.get('confirmOfficialSourceAccess') === 'on',
+    confirmHpoiIndexDiscovery: data.get('confirmHpoiIndexDiscovery') === 'on',
   }
 }
 

@@ -14,7 +14,8 @@
 
 - 技术栈已经确定为 Payload CMS + Next.js；PostgreSQL 16 和 S3 兼容对象存储是正式数据与媒体边界。
 - 正式应用必须在获授权的 PR-00 中使用官方脚手架干净创建，禁止复制或迁移 `spikes/` 代码。
-- Hpoi 只作人工参考，禁止自动访问；未取得明确书面许可前不得编写正式 Hpoi adapter。
+- Hpoi 是 discovery/coverage benchmark；Hpoi direct automation 仍禁止。仅允许经明确任务授权的第三方公开搜索索引返回 Hpoi URL 文本，且全过程不得对 Hpoi 发起 GET、HEAD、DNS、scrape、API 或浏览器访问；未取得明确书面许可前不得编写正式 Direct Hpoi adapter。
+- 当前最高层产品方向见 `docs/PROJECT_NORTH_STAR.md`。近期先验证自动发现覆盖、柴郡/蕾姆补收录、官方来源解析和原型去重证据，正式 PR-02—PR-08 保留但暂停，恢复仍需独立授权。
 - 每项正式变化必须使用任务独立分支和独立 PR；未经明确授权不得合并或部署。
 - 后续阶段按 `docs/DELIVERY_ROADMAP.md` 的 PR-00—PR-08 推进，不得越级开始下一项。
 

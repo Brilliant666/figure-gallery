@@ -2,13 +2,13 @@
 import process from 'node:process'
 import { Command } from 'commander'
 
-import { loadConfig, officialLiveGate } from '../config.js'
+import { hpoiIndexLiveGate, loadConfig, officialLiveGate } from '../config.js'
 import { createDefaultRuntime } from '../server/runtime-adapter.js'
 
 const config = loadConfig()
 const program = new Command()
   .name('personal-gallery-collect')
-  .description('Build a bounded local character gallery from allowlisted public official product pages.')
+  .description('Discover indexed Hpoi candidate URLs without visiting Hpoi, then build a bounded gallery from reviewed official pages.')
   .argument('[query]', 'character name (also accepted positionally for Windows npm forwarding)')
   .option('--query <name>', 'character name')
   .option(
@@ -24,6 +24,14 @@ const program = new Command()
     String(config.officialMaxImagesPerProduct),
   )
   .option('--seed-official-url <url...>', 'explicit allowlisted official product URL fallback')
+  .option('--official-only', 'skip Hpoi search-index discovery and run the legacy reviewed-official search path')
+  .option('--max-index-queries <count>', 'maximum deterministic site:hpoi.net Search queries', String(config.hpoiIndexMaxQueries))
+  .option('--max-index-results <count>', 'maximum Search results per index query', String(config.hpoiIndexMaxResultsPerQuery))
+  .option('--max-index-raw-results <count>', 'maximum raw index results before URL dedupe', String(config.hpoiIndexMaxRawResults))
+  .option(
+    '--confirm-hpoi-index-discovery',
+    'confirm Search may return Hpoi URL strings while direct Hpoi transport remains forbidden',
+  )
   .option(
     '--confirm-official-source-access',
     'confirm this owner-initiated run may access only public allowlisted official product pages',
@@ -32,9 +40,15 @@ const program = new Command()
 program.parse()
 const options = program.opts()
 const query = options.query || program.args[0] || config.defaultQuery
-const gate = officialLiveGate(config, {
-  interactiveConfirmation: options.confirmOfficialSourceAccess === true,
-})
+const sourceMode = options.officialOnly ? 'official_sources' : 'hpoi_search_index'
+const gate = sourceMode === 'hpoi_search_index'
+  ? hpoiIndexLiveGate(config, {
+      interactiveIndexConfirmation: options.confirmHpoiIndexDiscovery === true,
+      interactiveOfficialConfirmation: options.confirmOfficialSourceAccess === true,
+    })
+  : officialLiveGate(config, {
+      interactiveConfirmation: options.confirmOfficialSourceAccess === true,
+    })
 
 if (!gate.allowed) {
   process.stdout.write(
@@ -42,11 +56,15 @@ if (!gate.allowed) {
       {
         status: 'environment_blocked',
         query,
-        sourceMode: 'official_sources',
+        sourceMode,
         hpoiStatus: 'blocked_by_source',
         missing: gate.missing,
         notice: gate.notice,
         hpoiRequests: 0,
+        hpoiDirectHttpRequests: 0,
+        hpoiDirectBrowserNavigations: 0,
+        hpoiScrapeRequests: 0,
+        hpoiApiRequests: 0,
         firecrawlSearchRequests: 0,
         firecrawlScrapeRequests: 0,
         firecrawlRequests: 0,
@@ -64,9 +82,12 @@ if (!gate.allowed) {
     return parsed
   }
   const runtime = createDefaultRuntime(config)
-  const result = await runtime.runCollector({
+  const run = sourceMode === 'hpoi_search_index'
+    ? runtime.runIndexDiscovery.bind(runtime)
+    : runtime.runCollector.bind(runtime)
+  const result = await run({
     query,
-    sourceMode: 'official_sources',
+    sourceMode,
     seedUrls: options.seedOfficialUrl || [],
     gate,
     limits: {
@@ -75,6 +96,9 @@ if (!gate.allowed) {
         'max-search-results',
         config.officialMaxSearchResultsPerQuery,
       ),
+      maxIndexQueries: integer(options.maxIndexQueries, 'max-index-queries', config.hpoiIndexMaxQueries),
+      maxIndexResultsPerQuery: integer(options.maxIndexResults, 'max-index-results', config.hpoiIndexMaxResultsPerQuery),
+      maxIndexRawResults: integer(options.maxIndexRawResults, 'max-index-raw-results', config.hpoiIndexMaxRawResults),
       maxQueries: config.officialMaxQueries,
       maxCandidates: integer(options.maxCandidates, 'max-candidates', config.officialMaxCandidates),
       maxProducts: integer(options.maxProducts, 'max-products', config.officialMaxProducts),

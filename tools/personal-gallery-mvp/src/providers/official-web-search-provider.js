@@ -162,7 +162,7 @@ export class OfficialWebSearchProvider {
     if (!Number.isInteger(limit) || limit < 1 || limit > 10) throw new Error('Search limit must be from 1 through 10.')
     const response = await this.#request({
       requestType: 'official_search',
-      estimatedCredits: limit,
+      estimatedCredits: 2,
       signal,
       operation: () => this.client.search(discoveryQuery, {
         sources: ['web'],
@@ -267,7 +267,7 @@ export class OfficialWebSearchProvider {
             statusCode: blocked.statusCode,
             finalSourceUrl: reportedFinalUrl,
             retries: attempt,
-            credits: value?.metadata?.creditsUsed,
+            credits: value?.creditsUsed ?? value?.metadata?.creditsUsed,
             estimatedCredits,
             success: false,
             failureCategory: blocked.category,
@@ -286,7 +286,7 @@ export class OfficialWebSearchProvider {
           statusCode,
           finalSourceUrl: reportedFinalUrl,
           retries: attempt,
-          credits: value?.metadata?.creditsUsed,
+          credits: value?.creditsUsed ?? value?.metadata?.creditsUsed,
           estimatedCredits,
           success: true,
           failureCategory: null,

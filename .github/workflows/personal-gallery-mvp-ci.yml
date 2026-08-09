@@ -8,6 +8,7 @@ on:
       - feat/mvp-02-cheshire-official-gallery
       - feat/mvp-03a-shooting-reference-index
       - feat/mvp-04-second-character-generalization
+      - feat/mvp-05-hpoi-index-discovery
   workflow_dispatch:
 
 permissions:

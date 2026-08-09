@@ -15,10 +15,10 @@
       </header>
 
       <aside class="source-notice" role="alert">
-        <strong>来源模式：Official sources</strong>
+        <strong>来源模式：Hpoi 搜索索引发现 → 非 Hpoi 正式来源</strong>
         <p>
-          Hpoi 实时来源已停用（Blocked by captcha），不会自动重试。本工具只在你主动启动后搜索允许的厂商官方域名，
-          不使用 Cookie、登录、验证码绕过、代理轮换、增强代理或反检测能力。
+          Hpoi direct automation 仍被硬性禁止。本工具只让第三方 Search 返回已经索引的 Hpoi 商品 URL 字符串，
+          绝不打开、解析、预览或抓取这些 URL；正式事实与图片只来自受审的非 Hpoi 官方来源。
         </p>
       </aside>
 
@@ -29,7 +29,15 @@
         </label>
         <div class="limit-grid">
           <label>
-            每查询搜索结果
+            索引查询上限
+            <input name="maxIndexQueries" type="number" value="30" min="1" max="30" />
+          </label>
+          <label>
+            每条索引结果
+            <input name="maxIndexResultsPerQuery" type="number" value="10" min="1" max="10" />
+          </label>
+          <label>
+            正式来源搜索结果
             <input name="maxSearchResults" type="number" value="10" min="1" max="10" />
           </label>
           <label>
@@ -46,11 +54,15 @@
           </label>
         </div>
         <label class="permission-confirmation">
+          <input name="confirmHpoiIndexDiscovery" type="checkbox" required />
+          我确认只使用第三方公开搜索索引返回的 Hpoi URL 文本，且不会对 Hpoi 发起 GET、HEAD、DNS、scrape 或浏览器访问。
+        </label>
+        <label class="permission-confirmation">
           <input name="confirmOfficialSourceAccess" type="checkbox" required />
           我确认本次只访问公开厂商官方商品页，并主动启动有限、低频、只读的官方来源收集。
         </label>
         <div class="actions">
-          <button id="start-button" type="submit">开始官方来源收集</button>
+          <button id="start-button" type="submit">开始自动发现与收集</button>
           <button id="stop-button" type="button" class="secondary" disabled>停止当前任务</button>
         </div>
       </form>
@@ -83,6 +95,7 @@
           <div><dt>失败</dt><dd id="failures-count">0</dd></div>
         </dl>
         <a id="active-gallery-link" class="button-link hidden" href="#">打开图库</a>
+        <a id="active-discovery-link" class="button-link secondary hidden" href="#">查看收录覆盖</a>
       </section>
 
       <section class="panel" aria-labelledby="recent-heading">

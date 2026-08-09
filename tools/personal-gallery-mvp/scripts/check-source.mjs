@@ -71,6 +71,9 @@ if (packageJson.scripts?.['validate:chrome:real'] !== 'node scripts/validate-rea
 if (packageJson.scripts?.['validate:chrome:mvp04'] !== 'node scripts/validate-mvp04-system-chrome.mjs') {
   fail('The local-only MVP-04 two-character system Chrome acceptance command is missing or changed.')
 }
+if (packageJson.scripts?.['validate:chrome:mvp05'] !== 'node scripts/validate-mvp05-system-chrome.mjs') {
+  fail('The local-only MVP-05 discovery and gallery system Chrome acceptance command is missing or changed.')
+}
 if (packageJson.scripts?.['check:dependencies'] !== 'node scripts/check-installed-dependencies.mjs') {
   fail('The platform-aware dependency and Sharp runtime check is missing or changed.')
 }
@@ -85,6 +88,10 @@ if (lock.packages?.['node_modules/undici']?.version !== '7.29.0') {
 
 const officialProviderText = readFileSync(
   path.join(toolRoot, 'src', 'providers', 'official-web-search-provider.js'),
+  'utf8',
+)
+const hpoiIndexProviderText = readFileSync(
+  path.join(toolRoot, 'src', 'providers', 'hpoi-index-discovery-provider.js'),
   'utf8',
 )
 const officialUrlsText = readFileSync(
@@ -113,12 +120,20 @@ const mvp04Evidence = JSON.parse(readFileSync(
   path.join(repositoryRoot, 'research', 'evidence', 'mvp04', 'multi-character-results.json'),
   'utf8',
 ))
+const mvp05Evidence = JSON.parse(readFileSync(
+  path.join(repositoryRoot, 'research', 'evidence', 'mvp05', 'hpoi-index-discovery-results.json'),
+  'utf8',
+))
 const mvp03aChromeRunnerText = readFileSync(
   path.join(toolRoot, 'scripts', 'validate-mvp03a-system-chrome.mjs'),
   'utf8',
 )
 const mvp04ChromeRunnerText = readFileSync(
   path.join(toolRoot, 'scripts', 'validate-mvp04-system-chrome.mjs'),
+  'utf8',
+)
+const mvp05ChromeRunnerText = readFileSync(
+  path.join(toolRoot, 'scripts', 'validate-mvp05-system-chrome.mjs'),
   'utf8',
 )
 
@@ -324,6 +339,49 @@ if (
   fail('The committed MVP-04 evidence does not satisfy GEN-01 through GEN-15 or contains a URL list.')
 }
 
+const indexDiscoveryGates = Array.isArray(mvp05Evidence.gates) ? mvp05Evidence.gates : []
+const expectedIndexDiscoveryGates = Array.from(
+  { length: 15 },
+  (_, index) => `HIDX-${String(index + 1).padStart(2, '0')}`,
+)
+if (
+  mvp05Evidence.status !== 'MVP-05 ready for coverage review' ||
+  JSON.stringify(indexDiscoveryGates.map((gate) => gate.id)) !== JSON.stringify(expectedIndexDiscoveryGates) ||
+  indexDiscoveryGates.some((gate) => gate.status !== 'pass') ||
+  mvp05Evidence.baseline?.mergeCommit !== 'ad5f04127f13da5ec23b714afaf65e3854346c76' ||
+  mvp05Evidence.baseline?.mainFormalConclusion !== 'success' ||
+  mvp05Evidence.baseline?.mainGalleryConclusion !== 'success' ||
+  mvp05Evidence.northStar?.primaryEntity !== 'FigurePrototype' ||
+  mvp05Evidence.northStar?.hpoiIsFactAuthority !== false ||
+  mvp05Evidence.northStar?.hpoiIsMediaAuthority !== false ||
+  Number(mvp05Evidence.accessBoundary?.hpoiDirectHttpRequests) !== 0 ||
+  Number(mvp05Evidence.accessBoundary?.hpoiDirectBrowserNavigations) !== 0 ||
+  Number(mvp05Evidence.accessBoundary?.hpoiScrapeRequests) !== 0 ||
+  Number(mvp05Evidence.accessBoundary?.hpoiApiRequests) !== 0 ||
+  Number(mvp05Evidence.accessBoundary?.hpoiImagesDownloaded) !== 0 ||
+  Number(mvp05Evidence.accessBoundary?.hpoiResultUrlsCommitted) !== 0 ||
+  Number(mvp05Evidence.realCoverage?.cheshire?.finalCoverageRun?.indexedCandidates) !== 3 ||
+  Number(mvp05Evidence.realCoverage?.cheshire?.finalCoverageRun?.afterProducts) !== 7 ||
+  Number(mvp05Evidence.realCoverage?.cheshire?.finalCoverageRun?.afterImages) !== 65 ||
+  Number(mvp05Evidence.realCoverage?.rem?.finalCoverageRun?.indexedCandidates) !== 35 ||
+  Number(mvp05Evidence.realCoverage?.rem?.finalCoverageRun?.afterProducts) !== 11 ||
+  Number(mvp05Evidence.realCoverage?.rem?.finalCoverageRun?.afterImages) !== 89 ||
+  Number(mvp05Evidence.realCoverage?.rem?.firstCompletedRun?.officialResolutionAttempts) !== 28 ||
+  Number(mvp05Evidence.idempotency?.secondRoundNewCandidates) !== 0 ||
+  Number(mvp05Evidence.idempotency?.secondRoundNewProducts) !== 0 ||
+  Number(mvp05Evidence.idempotency?.secondRoundNewObjects) !== 0 ||
+  mvp05Evidence.idempotency?.preferredCoversPreserved !== true ||
+  mvp05Evidence.systemChrome?.status !== 'pass' ||
+  Number(mvp05Evidence.systemChrome?.externalRequests) !== 0 ||
+  Number(mvp05Evidence.systemChrome?.hpoiRequests) !== 0 ||
+  mvp05Evidence.outOfScope?.prototypeAutoMerge !== false ||
+  mvp05Evidence.outOfScope?.formalPayloadWrite !== false ||
+  mvp05Evidence.outOfScope?.formalPr02Started !== false ||
+  /https?:\/\/(?:[^/]+\.)?hpoi\./iu.test(JSON.stringify(mvp05Evidence))
+) {
+  fail('The committed MVP-05 evidence does not satisfy HIDX-01 through HIDX-15 or contains a Hpoi URL list.')
+}
+
 const expectedCheshireQueries = [
   '"Azur Lane" Cheshire figure',
   '"Azur Lane" Cheshire scale figure',
@@ -438,9 +496,32 @@ if (!/^OFFICIAL_SOURCE_LIVE_FETCH_ENABLED=false$/m.test(envExampleText)) {
 if (
   !/^\s*HPOI_LIVE_FETCH_ENABLED:\s*"false"$/m.test(workflowText) ||
   !/^\s*OFFICIAL_SOURCE_LIVE_FETCH_ENABLED:\s*"false"$/m.test(workflowText) ||
-  !workflowText.includes('- feat/mvp-04-second-character-generalization')
+  !workflowText.includes('- feat/mvp-04-second-character-generalization') ||
+  !workflowText.includes('- feat/mvp-05-hpoi-index-discovery')
 ) {
-  fail('Offline CI must cover MVP-04 and explicitly disable both Hpoi and official-source live fetch.')
+  fail('Offline CI must cover MVP-04/MVP-05 and explicitly disable both Hpoi and official-source live fetch.')
+}
+
+const hpoiIndexClientMethods = [
+  ...hpoiIndexProviderText.matchAll(/this\.client\.([A-Za-z][A-Za-z0-9]*)\s*\(/g),
+].map((match) => match[1])
+if (
+  JSON.stringify([...new Set(hpoiIndexClientMethods)]) !== JSON.stringify(['search']) ||
+  !hpoiIndexProviderText.includes("sources: ['web']") ||
+  !hpoiIndexProviderText.includes("includeDomains: ['hpoi.net']") ||
+  !hpoiIndexProviderText.includes("HPOI_INDEX_FIRECRAWL_METHODS = Object.freeze(['search'])")
+) {
+  fail('Hpoi-index discovery must use only bounded Firecrawl Search v2 results and never scrape Hpoi.')
+}
+if (
+  !mvp05ChromeRunnerText.includes('figure-gallery-mvp05-chrome-') ||
+  !mvp05ChromeRunnerText.includes('--disable-extensions') ||
+  !mvp05ChromeRunnerText.includes('--host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE 127.0.0.1') ||
+  !mvp05ChromeRunnerText.includes("for (const slug of ['cheshire', 'rem'])") ||
+  !mvp05ChromeRunnerText.includes("a[href*=\"hpoi.net\"]") ||
+  /screenshot\s*:|recordVideo\s*:|trace\s*:/iu.test(mvp05ChromeRunnerText)
+) {
+  fail('The MVP-05 system Chrome coverage and network-guard contract is incomplete.')
 }
 
 const tracked = trackedFiles()
@@ -511,6 +592,9 @@ console.log(
         mvp03aSystemChromeAcceptanceContract: true,
         mvp04SystemChromeAcceptanceContract: true,
         mvp04AllFifteenGatesPass: true,
+        hpoiIndexSearchOnly: true,
+        mvp05SystemChromeAcceptanceContract: true,
+        mvp05AllFifteenGatesPass: true,
         noTrackedRuntimeOrMedia: true,
         syntheticFixtureSize: true,
       },

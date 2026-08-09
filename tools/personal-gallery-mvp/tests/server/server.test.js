@@ -268,7 +268,7 @@ test('serves the local UI and blocks collection before constructing network work
 
   const home = await fetch(`${base}/`)
   assert.equal(home.status, 200)
-  assert.match(await home.text(), /Official sources/)
+  assert.match(await home.text(), /Hpoi 搜索索引发现/)
   assert.match(home.headers.get('content-security-policy'), /connect-src 'self'/)
 
   const reboundStatus = await new Promise((resolve, reject) => {

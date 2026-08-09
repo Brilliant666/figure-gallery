@@ -12,6 +12,7 @@ let application
 let baseUrl
 let reportPath
 let fixtureState
+let browserContext
 
 async function syntheticPng(index) {
   return sharp({
@@ -176,8 +177,14 @@ test.afterAll(async () => {
   await rm(root, { recursive: true, force: true })
 })
 
+test.afterEach(async () => {
+  await browserContext?.close().catch(() => {})
+  browserContext = null
+})
+
 test('two-character galleries isolate routes and preferences while sharing immutable objects', async ({ browser }) => {
-  const context = await browser.newContext({ viewport: { width: 1280, height: 900 } })
+  browserContext = await browser.newContext({ viewport: { width: 1280, height: 900 } })
+  const context = browserContext
   const network = { hpoiRequests: 0, firecrawlRequests: 0, externalRequests: 0, loopbackRequests: 0 }
   await context.route('**/*', async (route) => {
     const url = new URL(route.request().url())
@@ -195,7 +202,8 @@ test('two-character galleries isolate routes and preferences while sharing immut
   await page.goto(baseUrl)
   await expect(page.locator('#character-galleries')).toContainText('柴郡')
   await expect(page.locator('#character-galleries')).toContainText('蕾姆')
-  await expect(page.locator('#character-galleries a')).toHaveCount(2)
+  await expect(page.locator('#character-galleries .character-gallery-link')).toHaveCount(2)
+  await expect(page.locator('#character-galleries .character-discovery-link')).toHaveCount(2)
 
   await page.goto(`${baseUrl}/gallery/characters/cheshire`)
   await expect(page.locator('#gallery-title')).toHaveText('柴郡')
@@ -288,4 +296,5 @@ test('two-character galleries isolate routes and preferences while sharing immut
     fixture: 'synthetic_two_characters_7_and_10_products',
   }, null, 2)}\n`)
   await context.close()
+  browserContext = null
 })
