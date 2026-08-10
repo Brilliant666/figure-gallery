@@ -10,6 +10,7 @@
   "packageManager": "npm@10.9.8",
   "scripts": {
     "collect": "node src/cli/collect.js",
+    "project:character": "node src/cli/project-character.js",
     "project:rem": "node src/cli/project-rem.js",
     "serve": "node src/cli/serve.js",
     "status": "node src/cli/status.js",

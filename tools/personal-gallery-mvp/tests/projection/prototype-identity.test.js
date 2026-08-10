@@ -5,6 +5,7 @@ import {
   assignPrototypeIdentities,
   legacyMembershipPrototypeId,
   membershipFingerprint,
+  prototypeIdentityContract,
   resolvePrototypeAlias,
 } from '../../src/projection/prototype-identity.js'
 
@@ -93,5 +94,33 @@ test('an implicit split is rejected instead of silently reusing identity', () =>
       previousRegistry: initial.registry,
     }),
     /split requires an explicit identity decision/u,
+  )
+})
+
+test('character namespaces allocate isolated stable IDs and reject a foreign registry', () => {
+  const groups = [{ catalogItemIds: ['shared-source:item-1'] }]
+  const rem = assignPrototypeIdentities({ groups, characterSlug: 'rem' })
+  const cheshire = assignPrototypeIdentities({ groups, characterSlug: 'cheshire' })
+  const rebuilt = assignPrototypeIdentities({
+    groups,
+    characterSlug: 'cheshire',
+    previousRegistry: cheshire.registry,
+  })
+
+  assert.match(Object.keys(rem.registry.prototypes)[0], /^rem-proto-[a-f\d]{16}$/u)
+  assert.match(Object.keys(cheshire.registry.prototypes)[0], /^cheshire-proto-[a-f\d]{16}$/u)
+  assert.notEqual(
+    Object.keys(rem.registry.prototypes)[0],
+    Object.keys(cheshire.registry.prototypes)[0],
+  )
+  assert.deepEqual(rebuilt.registry, cheshire.registry)
+  assert.throws(() => assignPrototypeIdentities({
+    groups,
+    characterSlug: 'cheshire',
+    previousRegistry: rem.registry,
+  }), /Unsupported cheshire Prototype identity registry/u)
+  assert.equal(
+    prototypeIdentityContract('rem').identityNamespace,
+    'figure-gallery:personal-gallery:rem:prototype:v1',
   )
 })

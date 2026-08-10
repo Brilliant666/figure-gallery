@@ -21,6 +21,7 @@ import {
 } from './prototype-preference-migration.js'
 
 export const PROJECTION_VERSION = 'rem-prototype-projection-v2'
+export const CHARACTER_PROJECTION_VERSION = 'character-prototype-projection-v1'
 export const ART_SCALE_FILTER_LEAK_ID = 'solaris:7415437426731'
 export const ART_SCALE_FILTER_LEAK_REASON = 'confirmed bust/filter leak'
 
@@ -314,7 +315,42 @@ function prototypeProjection(items, identity) {
   }
 }
 
-function validateInputShape(figures, groupingResults, imageEvidence) {
+export function normalizeCharacterCatalog(figures) {
+  if (!Array.isArray(figures?.items)) return figures
+  const requiresNormalization = figures.items.some((item) => (
+    typeof item?.id !== 'string' ||
+    !item.id ||
+    (Array.isArray(item.images) && !Array.isArray(item.image_urls)) ||
+    (Array.isArray(item.sourceRefs) && !Array.isArray(item.source_urls))
+  ))
+  if (!requiresNormalization) return figures
+  const items = figures.items.map((item) => {
+    const id = String(item?.id || item?.catalogItemId || '').trim()
+    const images = Array.isArray(item?.images) ? item.images : []
+    const imageUrls = uniqueStrings([
+      item?.image_url,
+      ...(item?.image_urls || []),
+      ...images.map((image) => image?.url),
+    ])
+    const mainImage = images.find((image) => image?.isMain && image?.url)?.url || imageUrls[0] || null
+    const sourceRefs = Array.isArray(item?.sourceRefs) ? item.sourceRefs : []
+    const sourceUrls = uniqueStrings([
+      ...(item?.source_urls || []),
+      ...sourceRefs.map((source) => source?.url),
+    ])
+    return {
+      ...item,
+      id,
+      image_url: mainImage,
+      image_urls: imageUrls,
+      source_urls: sourceUrls,
+      source: item?.source || uniqueStrings(sourceRefs.map((source) => source?.family)).join(', ') || null,
+    }
+  })
+  return { ...figures, count: figures.count ?? items.length, items }
+}
+
+function validateInputShape(figures, groupingResults, imageEvidence, characterSlug = null) {
   if (!Array.isArray(figures?.items)) throw new Error('figures.json must contain an items array.')
   if (!Array.isArray(groupingResults?.pairDecisions)) {
     throw new Error('prototype-grouping-results.json must contain pairDecisions.')
@@ -328,6 +364,11 @@ function validateInputShape(figures, groupingResults, imageEvidence) {
   }
   if (Number(figures.count) !== figures.items.length) {
     throw new Error('figures.json count does not match its items array.')
+  }
+  if (figures.characterSlug && characterSlug && figures.characterSlug !== characterSlug) {
+    throw new Error(
+      `Catalog characterSlug ${figures.characterSlug} does not match projection ${characterSlug}.`,
+    )
   }
 }
 
@@ -373,22 +414,31 @@ function assertKnownEndpoints(edges, catalogItemIds, label) {
   }
 }
 
-export function buildPrototypeProjectionState({
+export function buildCharacterPrototypeProjectionState({
+  characterSlug,
+  characterName,
   figures,
   groupingResults,
   imageEvidence,
   identityRegistry = null,
   consolidation = null,
+  exclusions = [],
+  dangerousNegativePairs = [],
+  relaxTimeCases = [],
+  legacyIdentityBootstrap = false,
+  strictConsolidation = false,
+  projectionVersion = CHARACTER_PROJECTION_VERSION,
   inputDigests = {},
-  strictFrozenBaseline = false,
   generatedAt = new Date().toISOString(),
 }) {
-  validateInputShape(figures, groupingResults, imageEvidence)
-  if (strictFrozenBaseline) assertFrozenBaseline(figures, groupingResults, imageEvidence)
+  if (!characterSlug) throw new Error('Character projection requires characterSlug.')
+  figures = normalizeCharacterCatalog(figures)
+  validateInputShape(figures, groupingResults, imageEvidence, characterSlug)
 
   const allItemIds = new Set(figures.items.map((item) => item.id))
-  const excludedItems = figures.items.filter((item) => item.id === ART_SCALE_FILTER_LEAK_ID)
-  const eligibleItems = figures.items.filter((item) => item.id !== ART_SCALE_FILTER_LEAK_ID)
+  const exclusionById = new Map(exclusions.map((value) => [value.catalogItemId, value]))
+  const excludedItems = figures.items.filter((item) => exclusionById.has(item.id))
+  const eligibleItems = figures.items.filter((item) => !exclusionById.has(item.id))
   const eligibleIds = new Set(eligibleItems.map((item) => item.id))
 
   const autoEdges = groupingResults.pairDecisions
@@ -409,12 +459,9 @@ export function buildPrototypeProjectionState({
     pairId: relation.candidateId,
     items: [relation.left.anchorCatalogItemId, relation.right.anchorCatalogItemId],
   }))
-  const dangerousNegativeEdges = DANGEROUS_NEGATIVE_PAIRS.filter((edge) => (
+  const dangerousNegativeEdges = dangerousNegativePairs.filter((edge) => (
     edgeItemIds(edge).every((id) => allItemIds.has(id))
   ))
-  if (strictFrozenBaseline && dangerousNegativeEdges.length !== DANGEROUS_NEGATIVE_PAIRS.length) {
-    throw new Error('A frozen dangerous negative control is missing from figures.json.')
-  }
   assertKnownEndpoints(
     [
       ...autoEdges,
@@ -513,7 +560,7 @@ export function buildPrototypeProjectionState({
     baselineComponents.set(root, members)
   }
   for (const members of baselineComponents.values()) {
-    const baselinePrototypeId = legacyMembershipPrototypeId(members)
+    const baselinePrototypeId = legacyMembershipPrototypeId(members, { characterSlug })
     baselineFingerprintByPrototypeId.set(baselinePrototypeId, membershipFingerprint(members))
     for (const id of members) baselineIdentityByItem.set(id, baselinePrototypeId)
   }
@@ -531,7 +578,7 @@ export function buildPrototypeProjectionState({
     ) {
       throw new Error('Rem v1 consolidation specification summary mismatch.')
     }
-    if (strictFrozenBaseline && baselineComponents.size !== consolidation.expected.beforePrototypeCount) {
+    if (strictConsolidation && baselineComponents.size !== consolidation.expected.beforePrototypeCount) {
       throw new Error(
         `Rem v1 pre-consolidation count mismatch: ${baselineComponents.size} != ${consolidation.expected.beforePrototypeCount}.`,
       )
@@ -539,7 +586,7 @@ export function buildPrototypeProjectionState({
     for (const relation of consolidation.differentRelations) {
       for (const endpoint of [relation.left, relation.right]) {
         const baselinePrototypeId = baselineIdentityByItem.get(endpoint.anchorCatalogItemId)
-        if (strictFrozenBaseline && baselinePrototypeId !== endpoint.baselinePrototypeId) {
+        if (strictConsolidation && baselinePrototypeId !== endpoint.baselinePrototypeId) {
           throw new Error(
             `Rem v1 DIFFERENT baseline identity mismatch for ${endpoint.anchorCatalogItemId}: ` +
             `${baselinePrototypeId} != ${endpoint.baselinePrototypeId}.`,
@@ -554,7 +601,7 @@ export function buildPrototypeProjectionState({
           throw new Error(`Rem v1 consolidation anchor is unavailable: ${member.anchorCatalogItemId}.`)
         }
         const baselinePrototypeId = baselineIdentityByItem.get(member.anchorCatalogItemId)
-        if (strictFrozenBaseline && baselinePrototypeId !== member.baselinePrototypeId) {
+        if (strictConsolidation && baselinePrototypeId !== member.baselinePrototypeId) {
           throw new Error(
             `Rem v1 baseline identity mismatch for ${member.anchorCatalogItemId}: ` +
             `${baselinePrototypeId} != ${member.baselinePrototypeId}.`,
@@ -591,7 +638,7 @@ export function buildPrototypeProjectionState({
     members.push(itemById.get(id))
     components.set(root, members)
   }
-  if (strictFrozenBaseline && consolidation && components.size !== consolidation.expected.afterPrototypeCount) {
+  if (strictConsolidation && consolidation && components.size !== consolidation.expected.afterPrototypeCount) {
     throw new Error(
       `Rem v1 post-consolidation count mismatch: ${components.size} != ${consolidation.expected.afterPrototypeCount}.`,
     )
@@ -602,8 +649,9 @@ export function buildPrototypeProjectionState({
   }))
   const bootstrapPrototypeIds = {}
   const forcedPrototypeIds = {}
-  const legacyBootstrapAllowed = !identityRegistry ||
-    Object.keys(identityRegistry.prototypes || {}).length === 0
+  const legacyBootstrapAllowed = legacyIdentityBootstrap && (
+    !identityRegistry || Object.keys(identityRegistry.prototypes || {}).length === 0
+  )
   for (const group of identityGroups) {
     const fingerprint = membershipFingerprint(group.catalogItemIds)
     const baselineIds = [...new Set(group.catalogItemIds.map((id) => baselineIdentityByItem.get(id)))].sort()
@@ -615,6 +663,7 @@ export function buildPrototypeProjectionState({
   }
   const identityState = assignPrototypeIdentities({
     groups: identityGroups,
+    characterSlug,
     previousRegistry: identityRegistry,
     bootstrapPrototypeIds,
     forcedPrototypeIds,
@@ -649,7 +698,7 @@ export function buildPrototypeProjectionState({
   const imageRefCount = prototypes.reduce((total, prototype) => total + prototype.images.length, 0)
   const prototypeWithImageCount = prototypes.filter((prototype) => prototype.cover).length
 
-  const relaxTimeCases = RELAX_TIME_CASES.map((frozenCase) => {
+  const evaluatedRelaxTimeCases = relaxTimeCases.map((frozenCase) => {
     const edge = inconclusiveEdges.find((candidate) => candidate.pairId === frozenCase.pairId)
     const catalogItemIds = edge ? edgeItemIds(edge) : [...frozenCase.catalogItemIds]
     const sourceFamilies = Object.fromEntries(catalogItemIds.map((id) => {
@@ -683,21 +732,26 @@ export function buildPrototypeProjectionState({
     manufacturerCount,
     imageProvenance,
   }
+  const priorFingerprints = identityRegistry
+    ? new Map(Object.values(identityRegistry.prototypes || {}).map((entry) => (
+      [entry.prototypeId, entry.membershipFingerprint]
+    )))
+    : legacyIdentityBootstrap ? baselineFingerprintByPrototypeId : new Map()
   const membershipFingerprintChangedCount = prototypes.filter((prototype) => {
-    const baseline = baselineFingerprintByPrototypeId.get(prototype.prototypeId)
+    const baseline = priorFingerprints.get(prototype.prototypeId)
     return baseline && baseline !== prototype.membershipFingerprint
   }).length
-  const baselinePrototypeIds = new Set(baselineFingerprintByPrototypeId.keys())
+  const baselinePrototypeIds = new Set(priorFingerprints.keys())
   const activePreexistingPrototypeIds = prototypes.filter((prototype) => (
     baselinePrototypeIds.has(prototype.prototypeId)
   )).length
 
   const projection = {
     schemaVersion: 2,
-    projectionVersion: PROJECTION_VERSION,
+    projectionVersion,
     viewMode: 'prototype_projection',
-    character: figures.character || 'Rem',
-    characterSlug: 'rem',
+    character: characterName || figures.character || characterSlug,
+    characterSlug,
     generatedAt,
     sourceCatalogItemCount: summary.catalogItemCount,
     projectionEligibleItemCount: summary.projectionEligibleCount,
@@ -738,7 +792,7 @@ export function buildPrototypeProjectionState({
       catalogItemId: item.id,
       title: item.title || item.id,
       projectionExcluded: true,
-      reason: ART_SCALE_FILTER_LEAK_REASON,
+      reason: exclusionById.get(item.id)?.reason || 'projection exclusion',
     })),
     grouping: {
       autoMergeEdgeCount: autoEdges.length,
@@ -754,11 +808,43 @@ export function buildPrototypeProjectionState({
       dangerousNegativePairCount: dangerousNegativeEdges.length,
       groupingConflictCount,
       rejectedEdges,
-      relaxTimeCases,
+      relaxTimeCases: evaluatedRelaxTimeCases,
     },
     prototypes,
   }
   return { projection, identityRegistry: identityState.registry }
+}
+
+export function buildCharacterPrototypeProjection(options) {
+  return buildCharacterPrototypeProjectionState(options).projection
+}
+
+export function buildPrototypeProjectionState({
+  figures,
+  groupingResults,
+  imageEvidence,
+  strictFrozenBaseline = false,
+  ...options
+}) {
+  validateInputShape(figures, groupingResults, imageEvidence, 'rem')
+  if (strictFrozenBaseline) assertFrozenBaseline(figures, groupingResults, imageEvidence)
+  return buildCharacterPrototypeProjectionState({
+    ...options,
+    figures,
+    groupingResults,
+    imageEvidence,
+    characterSlug: 'rem',
+    characterName: figures.character || 'Rem',
+    exclusions: [{
+      catalogItemId: ART_SCALE_FILTER_LEAK_ID,
+      reason: ART_SCALE_FILTER_LEAK_REASON,
+    }],
+    dangerousNegativePairs: DANGEROUS_NEGATIVE_PAIRS,
+    relaxTimeCases: RELAX_TIME_CASES,
+    legacyIdentityBootstrap: true,
+    strictConsolidation: strictFrozenBaseline,
+    projectionVersion: PROJECTION_VERSION,
+  })
 }
 
 export function buildPrototypeProjection(options) {
@@ -770,40 +856,106 @@ async function readWithDigest(filePath) {
   return { value: JSON.parse(bytes.toString('utf8')), sha256: sha256(bytes) }
 }
 
-export async function loadProjectionInputs(collectorRoot) {
-  const root = path.resolve(collectorRoot)
+export async function loadCharacterProjectionInputs({
+  catalogPath,
+  groupingPath,
+  reviewPath,
+  verifyDigests = true,
+}) {
   const files = {
-    figures: path.join(root, 'figures.json'),
-    groupingResults: path.join(root, 'prototype-grouping-results.json'),
-    imageEvidence: path.join(root, 'prototype-review-image-evidence.json'),
+    catalog: path.resolve(catalogPath),
+    grouping: path.resolve(groupingPath),
+    review: path.resolve(reviewPath),
   }
-  const [figures, groupingResults, imageEvidence] = await Promise.all([
-    readWithDigest(files.figures),
-    readWithDigest(files.groupingResults),
-    readWithDigest(files.imageEvidence),
+  const [catalog, grouping, review] = await Promise.all([
+    readWithDigest(files.catalog),
+    readWithDigest(files.grouping),
+    readWithDigest(files.review),
   ])
-
-  const expectedFigureDigest = groupingResults.value?.source?.sha256
-  const evidenceDigests = imageEvidence.value?.inputs?.sha256 || {}
-  if (
-    expectedFigureDigest && expectedFigureDigest !== figures.sha256 ||
-    evidenceDigests['figures.json'] && evidenceDigests['figures.json'] !== figures.sha256 ||
-    evidenceDigests['prototype-grouping-results.json'] &&
-      evidenceDigests['prototype-grouping-results.json'] !== groupingResults.sha256
-  ) {
-    throw new Error('Frozen Collector input digest mismatch; refusing to build a projection.')
+  const evidenceDigests = review.value?.inputs?.sha256 || {}
+  const expectedCatalogDigest = grouping.value?.source?.sha256
+  const catalogKeys = ['figures.json', path.basename(files.catalog)]
+  const groupingKeys = ['prototype-grouping-results.json', path.basename(files.grouping)]
+  const recordedCatalogDigest = catalogKeys.map((key) => evidenceDigests[key]).find(Boolean)
+  const recordedGroupingDigest = groupingKeys.map((key) => evidenceDigests[key]).find(Boolean)
+  if (verifyDigests && (
+    expectedCatalogDigest && expectedCatalogDigest !== catalog.sha256 ||
+    recordedCatalogDigest && recordedCatalogDigest !== catalog.sha256 ||
+    recordedGroupingDigest && recordedGroupingDigest !== grouping.sha256
+  )) {
+    throw new Error('Projection input digest mismatch; refusing to build a projection.')
   }
-
   return {
-    figures: figures.value,
-    groupingResults: groupingResults.value,
-    imageEvidence: imageEvidence.value,
+    figures: catalog.value,
+    groupingResults: grouping.value,
+    imageEvidence: review.value,
     inputDigests: {
-      'figures.json': figures.sha256,
-      'prototype-grouping-results.json': groupingResults.sha256,
-      'prototype-review-image-evidence.json': imageEvidence.sha256,
+      [path.basename(files.catalog)]: catalog.sha256,
+      [path.basename(files.grouping)]: grouping.sha256,
+      [path.basename(files.review)]: review.sha256,
     },
   }
+}
+
+export async function loadProjectionInputs(collectorRoot) {
+  const root = path.resolve(collectorRoot)
+  return loadCharacterProjectionInputs({
+    catalogPath: path.join(root, 'figures.json'),
+    groupingPath: path.join(root, 'prototype-grouping-results.json'),
+    reviewPath: path.join(root, 'prototype-review-image-evidence.json'),
+  })
+}
+
+export async function buildCharacterProjectionFromFiles({
+  character,
+  catalogPath,
+  groupingPath,
+  reviewPath,
+  outputPath,
+  identityRegistryPath = path.join(path.dirname(path.resolve(outputPath)), 'prototype-identities.json'),
+  preferencesPath = path.join(path.dirname(path.resolve(outputPath)), 'preferences.json'),
+  catalogPreferenceMapPath = null,
+  exclusions = [],
+}) {
+  if (!character?.slug || !character?.displayName) {
+    throw new Error('Character projection requires a resolved Character Profile.')
+  }
+  const resolvedOutputPath = path.resolve(outputPath)
+  const resolvedRegistryPath = path.resolve(identityRegistryPath)
+  const resolvedPreferencesPath = path.resolve(preferencesPath)
+  const inputs = await loadCharacterProjectionInputs({ catalogPath, groupingPath, reviewPath })
+  const previousRegistry = await readJson(resolvedRegistryPath)
+  const catalogPreferenceMap = catalogPreferenceMapPath
+    ? await readJson(path.resolve(catalogPreferenceMapPath))
+    : null
+  if (catalogPreferenceMapPath && !catalogPreferenceMap) {
+    throw new Error('Legacy preference mapping file was not found.')
+  }
+  const state = buildCharacterPrototypeProjectionState({
+    ...inputs,
+    characterSlug: character.slug,
+    characterName: character.displayName,
+    identityRegistry: previousRegistry,
+    exclusions,
+  })
+  const preferenceMigration = await migratePrototypePreferencesFile({
+    preferencesPath: resolvedPreferencesPath,
+    aliases: state.identityRegistry.aliases,
+    prototypes: state.projection.prototypes,
+    catalogPreferenceMap,
+    backupLabel: 'character-prototype-projection',
+  })
+  await atomicWriteJson(resolvedRegistryPath, state.identityRegistry)
+  await atomicWriteJson(resolvedOutputPath, state.projection)
+  Object.defineProperty(state.projection, 'buildResult', {
+    enumerable: false,
+    value: {
+      identityRegistryPath: resolvedRegistryPath,
+      preferenceMigration: preferenceMigration.summary,
+      preferenceBackup: preferenceMigration.backup,
+    },
+  })
+  return state.projection
 }
 
 export async function buildProjectionFromCollector({

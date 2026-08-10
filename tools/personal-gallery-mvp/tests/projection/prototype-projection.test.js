@@ -6,11 +6,14 @@ import test from 'node:test'
 
 import {
   ART_SCALE_FILTER_LEAK_ID,
+  buildCharacterProjectionFromFiles,
+  buildCharacterPrototypeProjection,
   buildProjectionFromCollector,
   buildPrototypeProjection,
   buildPrototypeProjectionState,
   classifyCatalogItem,
   legacyMembershipPrototypeId,
+  normalizeCharacterCatalog,
   sourceFamilyForUrl,
 } from '../../src/projection/prototype-projection.js'
 
@@ -232,6 +235,98 @@ test('collector loader verifies digests and writes an atomic runtime projection'
     assert.equal(written.viewMode, 'prototype_projection')
     assert.equal(written.prototypeCount, projection.prototypeCount)
     assert.equal(written.prototypes.length, projection.prototypes.length)
+  } finally {
+    await rm(root, { recursive: true, force: true })
+  }
+})
+
+test('generic catalog normalization accepts CatalogItem image/source references without touching legacy input', () => {
+  const legacy = { count: 1, items: [item('legacy-a')] }
+  assert.equal(normalizeCharacterCatalog(legacy), legacy)
+  const normalized = normalizeCharacterCatalog({
+    character: '柴郡',
+    characterSlug: 'cheshire',
+    items: [{
+      catalogItemId: 'solaris:cheshire-a',
+      title: 'Synthetic Cheshire',
+      images: [{ url: 'https://solarisjapan.com/example.jpg', isMain: true }],
+      sourceRefs: [{ family: 'solaris', sourceId: 'a', url: 'https://solarisjapan.com/a' }],
+    }],
+  })
+  assert.equal(normalized.count, 1)
+  assert.equal(normalized.items[0].id, 'solaris:cheshire-a')
+  assert.equal(normalized.items[0].image_url, 'https://solarisjapan.com/example.jpg')
+  assert.deepEqual(normalized.items[0].source_urls, ['https://solarisjapan.com/a'])
+  assert.equal(normalized.items[0].source, 'solaris')
+})
+
+test('generic character projection has isolated stable IDs and zero rebuild drift', async () => {
+  const root = await mkdtemp(path.join(os.tmpdir(), 'character-projection-test-'))
+  const output = path.join(root, 'runtime', 'characters', 'cheshire', 'prototype-projection.json')
+  const catalogPath = path.join(root, 'catalog.json')
+  const groupingPath = path.join(root, 'grouping.json')
+  const reviewPath = path.join(root, 'review.json')
+  const catalog = {
+    schemaVersion: 1,
+    character: '柴郡',
+    characterSlug: 'cheshire',
+    count: 3,
+    items: [
+      item('solaris:cheshire-a', { character: 'Cheshire', title: 'Cheshire Original' }),
+      item('goodsmile:cheshire-a', { character: 'Cheshire', title: 'Cheshire Renewal' }),
+      item(ART_SCALE_FILTER_LEAK_ID, { character: 'Cheshire', title: 'A valid Cheshire pose' }),
+    ],
+  }
+  const grouping = {
+    pairDecisions: [{
+      decision: 'AUTO_MERGE',
+      items: ['solaris:cheshire-a', 'goodsmile:cheshire-a'],
+    }],
+    autoMergeGroups: 1,
+    autoMergeItems: 2,
+  }
+  const review = { reviewPairs: [] }
+  try {
+    await writeFile(catalogPath, `${JSON.stringify(catalog)}\n`, 'utf8')
+    await writeFile(groupingPath, `${JSON.stringify(grouping)}\n`, 'utf8')
+    await writeFile(reviewPath, `${JSON.stringify(review)}\n`, 'utf8')
+    const character = { slug: 'cheshire', displayName: '柴郡' }
+    const first = await buildCharacterProjectionFromFiles({
+      character,
+      catalogPath,
+      groupingPath,
+      reviewPath,
+      outputPath: output,
+    })
+    const second = await buildCharacterProjectionFromFiles({
+      character,
+      catalogPath,
+      groupingPath,
+      reviewPath,
+      outputPath: output,
+    })
+
+    assert.equal(first.characterSlug, 'cheshire')
+    assert.equal(first.prototypeCount, 2)
+    assert.equal(first.projectionEligibleItemCount, 3)
+    assert.equal(first.excludedCatalogItems.length, 0)
+    assert.ok(first.prototypes.every((prototype) => /^cheshire-proto-[a-f\d]{16}$/u.test(
+      prototype.prototypeId,
+    )))
+    assert.deepEqual(
+      second.prototypes.map((prototype) => prototype.prototypeId),
+      first.prototypes.map((prototype) => prototype.prototypeId),
+    )
+    assert.equal(second.identity.newPrototypeIds, 0)
+    assert.equal(second.identity.activePreexistingPrototypeIds, 2)
+    assert.equal(second.identity.membershipFingerprintChangedCount, 0)
+    assert.throws(() => buildCharacterPrototypeProjection({
+      characterSlug: 'rem',
+      characterName: 'Rem',
+      figures: catalog,
+      groupingResults: grouping,
+      imageEvidence: review,
+    }), /does not match projection rem/u)
   } finally {
     await rm(root, { recursive: true, force: true })
   }

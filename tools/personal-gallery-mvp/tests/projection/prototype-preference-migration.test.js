@@ -6,6 +6,7 @@ import test from 'node:test'
 
 import {
   backupPreferencesOnce,
+  migrateCatalogItemPreferences,
   mergePrototypeNotes,
   migratePrototypePreferences,
   migratePrototypePreferencesFile,
@@ -182,4 +183,53 @@ test('preference backup is created once and never overwritten', async () => {
   } finally {
     await rm(root, { recursive: true, force: true })
   }
+})
+
+test('legacy product preferences migrate through explicit Catalog Item and image provenance mappings', () => {
+  const legacyA = 'legacy-product-a'
+  const legacyB = 'legacy-product-b'
+  const localImageSha = 'a'.repeat(64)
+  const target = {
+    ...prototype(),
+    catalogItemIds: ['catalog-a', 'catalog-b'],
+  }
+  const initial = preferences({
+    excludedProductIds: [legacyA],
+    products: {
+      [legacyA]: { preferredCoverImageId: localImageSha, manualNote: 'keep this angle' },
+    },
+    preferredCoverImage: { [legacyA]: localImageSha },
+    manualNote: { [legacyA]: 'keep this angle' },
+  })
+  const preferenceMap = {
+    schemaVersion: 1,
+    products: {
+      [legacyA]: {
+        catalogItemId: 'catalog-a',
+        imageUrlBySha256: { [localImageSha]: imageA },
+      },
+      [legacyB]: { catalogItemId: 'catalog-b' },
+    },
+  }
+  const first = migrateCatalogItemPreferences({
+    preferences: initial,
+    prototypes: [target],
+    preferenceMap,
+  })
+  const second = migrateCatalogItemPreferences({
+    preferences: first.preferences,
+    prototypes: [target],
+    preferenceMap,
+  })
+
+  assert.equal(first.preferences.products[survivor].preferredCoverImageUrl, imageA)
+  assert.equal(first.preferences.products[survivor].manualNote, 'keep this angle')
+  assert.equal(first.preferences.excludedProductIds.includes(survivor), false)
+  assert.equal(Object.hasOwn(first.preferences.products, legacyA), false)
+  assert.equal(first.summary.catalogMappings, 1)
+  assert.equal(first.summary.cover, 1)
+  assert.equal(first.summary.notes, 1)
+  assert.deepEqual(first.summary.conflicts.map((value) => value.kind), ['exclude'])
+  assert.equal(second.changed, false)
+  assert.deepEqual(second.preferences, first.preferences)
 })

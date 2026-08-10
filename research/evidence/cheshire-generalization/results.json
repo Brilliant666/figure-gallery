@@ -1,0 +1,242 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-08-10T11:38:00.000Z",
+  "phase0": {
+    "pullRequest": 21,
+    "oldHead": "f1688a450ddb66697fe24a812af7bbbb04686021",
+    "oldMain": "ad5f04127f13da5ec23b714afaf65e3854346c76",
+    "mergeSha": "2eacd72677301eb97dc84f3afaecfa2e6972d69b",
+    "mainSha": "2eacd72677301eb97dc84f3afaecfa2e6972d69b",
+    "mergeGate": "pass",
+    "formalWebCi": "success",
+    "personalGalleryCi": "success",
+    "postMergeMainFormalWebCi": {
+      "runId": 31379631228,
+      "conclusion": "success"
+    },
+    "unresolvedReviewThreads": 0
+  },
+  "remRegression": {
+    "catalogItems": 285,
+    "projectionEligible": 284,
+    "figurePrototypes": 221,
+    "cards": 221,
+    "singletonPrototypes": 175,
+    "multiItemPrototypes": 46,
+    "catalogItemsCollapsed": 63,
+    "groupingConflicts": 0,
+    "prototypeIdDrift": 0,
+    "recommendationTop50Drift": 0,
+    "frozen": true
+  },
+  "cheshireCollection": {
+    "oldBaseline": 7,
+    "wideCatalog": 13,
+    "poseEligible": 6,
+    "projectionEligible": 6,
+    "excluded": 7,
+    "exclusionReasons": {
+      "deformedOrQ": 5,
+      "nendoroid": 2
+    },
+    "poseEligibilityAudit": {
+      "eligibleCardsReviewedInSystemChrome": 6,
+      "eligibleCardsClearlyUseful": 6,
+      "excludedBoundaryRecordsReviewedFromPublicTextEvidence": 7,
+      "obviousQsdBustLeaks": 0
+    },
+    "sourceContributions": {
+      "solaris": {
+        "raw": 408,
+        "wideMembership": 13,
+        "eligibleMembership": 6,
+        "primaryEligibleCatalogItems": 6
+      },
+      "goodsmile": {
+        "rawInSync": 5,
+        "wideMembership": 5,
+        "eligibleMembership": 3,
+        "marginalCatalogItemsAfterSolarisBaseline": 0,
+        "role": "official metadata and image enrichment"
+      },
+      "japanFigure": {
+        "raw": 250,
+        "wideMembership": 3,
+        "eligibleMembership": 1,
+        "marginalCatalogItemsAfterSolarisAndGoodsmile": 0,
+        "role": "catalog and image enrichment"
+      },
+      "optionalFourthSource": {
+        "connectors": 0,
+        "items": 0
+      }
+    },
+    "successfulSync": {
+      "status": "pass",
+      "requests": 16,
+      "wideCatalog": 13,
+      "poseEligible": 6,
+      "new": 13,
+      "changed": 0
+    },
+    "successfulRefresh": {
+      "status": "pass",
+      "requests": 12,
+      "wideCatalog": 13,
+      "poseEligible": 6,
+      "new": 0,
+      "duplicateCatalogItems": 0,
+      "reportedChangedBeforeVolatileFieldFix": 13,
+      "volatileFieldFixOfflineRegression": "pass",
+      "postFixLiveRefreshRepeated": false
+    },
+    "hpoiRequests": 0
+  },
+  "baselineComparison": {
+    "oldCheshireBaseline": 7,
+    "exactOverlap": 3,
+    "probableOverlap": 2,
+    "totalOverlap": 5,
+    "collectorOnly": 1,
+    "oldOnly": 2,
+    "oldOnlyReasons": {
+      "sourceGap": 2
+    },
+    "sourceCoverageGap": true
+  },
+  "cheshireGrouping": {
+    "catalogItems": 6,
+    "autoMergeGroups": 0,
+    "autoMergeItems": 0,
+    "reviewPairs": 0,
+    "uniqueItemsInReview": 0,
+    "manualReviewMinutes": 0,
+    "fullEligibleGalleryReviewMinutes": 6,
+    "imageSupportsSame": 0,
+    "imageSupportsDifferent": 0,
+    "imageInconclusive": 0,
+    "differentRelations": 2,
+    "groupingConflicts": 0
+  },
+  "cheshireProjection": {
+    "figurePrototypes": 6,
+    "singletonPrototypes": 6,
+    "multiItemPrototypes": 0,
+    "largestGroup": 1,
+    "catalogItemsCollapsed": 0,
+    "cards": 6,
+    "cardsWithCover": 6,
+    "imageRefs": 69,
+    "imageProvenance": {
+      "goodsmile": 28,
+      "solaris": 40,
+      "japanFigure": 1,
+      "unknown": 0
+    },
+    "prototypeIdRebuildDrift": 0,
+    "recommendationTopOrderDrift": 0,
+    "prototypeIdNamespace": "cheshire-proto-*",
+    "preferenceMigration": {
+      "legacyProductsMapped": 3,
+      "coversMigrated": 1,
+      "notesMigrated": 1,
+      "invalidCoverPreferencesRejected": 2,
+      "conflicts": 0,
+      "secondRunNoOp": true,
+      "manualCoverPersistenceInSystemChrome": "pass"
+    }
+  },
+  "productAcceptance": {
+    "routes": {
+      "rem": "pass",
+      "cheshire": "pass"
+    },
+    "search": "pass",
+    "manufacturerFilter": "pass",
+    "typeFilter": "pass",
+    "detail": "pass",
+    "lightbox": "pass",
+    "zoomAndKeyboard": "pass",
+    "responsive": {
+      "e2eFourThreeTwo": "pass",
+      "systemChromeDesktop": "pass"
+    },
+    "coverPersistence": "pass",
+    "defaultSort": "recommended_reference_completeness",
+    "fakePopularity": false,
+    "systemChromeConsoleErrors": 0,
+    "cheshireCardsReviewed": 6
+  },
+  "generalization": {
+    "characterProfileLOC": 43,
+    "characterProfileLOCBreakdown": {
+      "collectorProfiles": 42,
+      "existingGallerySafetyAliasChange": 1
+    },
+    "cheshireProfileLOC": 19,
+    "sharedPipelineChangedLOC": 1564,
+    "sharedPipelineChangedLOCBreakdown": {
+      "nonblankAdded": 1492,
+      "nonblankRemoved": 72
+    },
+    "characterSpecificBranchLOC": 0,
+    "newConnectorLOC": 225,
+    "newConnectorCount": 3,
+    "optionalFourthConnectorLOC": 0,
+    "remSpecificHardcodedSeamsParameterized": 3,
+    "cheshireSpecificBranchesIntroduced": 0,
+    "copiedRemCollector": false,
+    "copiedGalleryPage": false,
+    "verdict": "PASS"
+  },
+  "tests": {
+    "collectorUnit": {
+      "passed": 25,
+      "failed": 0,
+      "networkRequests": 0
+    },
+    "personalGalleryUnit": {
+      "passed": 197,
+      "failed": 0,
+      "networkRequests": 0
+    },
+    "personalGalleryE2E": {
+      "passed": 2,
+      "failed": 0,
+      "externalRequests": 0,
+      "screenshots": 0,
+      "videos": 0
+    },
+    "sourceSafety": "pass",
+    "npmAudit": {
+      "collectorHigh": 0,
+      "collectorCritical": 0,
+      "personalGalleryHigh": 0,
+      "personalGalleryCritical": 0
+    },
+    "gitDiffCheck": "pass"
+  },
+  "frozenInputVerification": {
+    "externalCollectorSha256": "b8389c6da309cb61ad71e1eb955c276f6c71d4046f3fea14aa89c980c334909e",
+    "externalFiguresSha256": "e4d15b4f6e1c7e67f9f593c4d256cbd23d69bac7aae7bccc7daf3fbb48e54267",
+    "unchanged": true
+  },
+  "boundaries": {
+    "externalRemCollectorModified": false,
+    "newDataSources": 0,
+    "thirdCharacterAdded": false,
+    "hpoiAccessed": false,
+    "hpoiHttpRequests": 0,
+    "hpoiBrowserNavigation": 0,
+    "hpoiScrapeRequests": 0,
+    "hpoiApiRequests": 0,
+    "payloadModified": false,
+    "postgresqlModified": false,
+    "s3Modified": false,
+    "popularityImplemented": false,
+    "latestImplemented": false,
+    "deployed": false,
+    "remGroupingResearchRestarted": false,
+    "pullRequests18_19_20_22Modified": false
+  }
+}
