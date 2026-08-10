@@ -1,0 +1,116 @@
+{
+  "schemaVersion": 1,
+  "task": "FG-REM-PROTOTYPE-GALLERY-01",
+  "status": "pass",
+  "input": {
+    "catalogItemCount": 285,
+    "projectionEligibleCount": 284,
+    "excludedFilterLeaks": 1
+  },
+  "grouping": {
+    "autoMergeEdges": 38,
+    "autoMergeComponentReductions": 29,
+    "imageSupportsSameEdges": 27,
+    "imageSupportsSameComponentReductions": 24,
+    "imageSupportsDifferentEdges": 6,
+    "imageInconclusiveEdges": 2,
+    "groupingConflictCount": 0,
+    "relaxTimeCases": [
+      {
+        "pairId": "review-12",
+        "result": "IMAGE_INCONCLUSIVE",
+        "projectionAction": "kept_separate"
+      },
+      {
+        "pairId": "review-28",
+        "result": "IMAGE_INCONCLUSIVE",
+        "projectionAction": "kept_separate"
+      }
+    ]
+  },
+  "projection": {
+    "prototypeCount": 231,
+    "singletonPrototypeCount": 189,
+    "multiItemPrototypeCount": 42,
+    "largestPrototypeGroupSize": 4,
+    "catalogItemsCollapsed": 53,
+    "manufacturerCount": 42,
+    "prototypeCards": 231,
+    "cardsWithCover": 230
+  },
+  "images": {
+    "imageRefCount": 1257,
+    "provenance": {
+      "goodsmile": 257,
+      "solaris": 980,
+      "japan-figure": 20,
+      "unknown": 0
+    }
+  },
+  "identity": {
+    "scope": "same_frozen_input_only",
+    "prototypeIdDigestAlgorithm": "sha256(JSON.stringify(prototypeIdsInProjectionOrder))",
+    "prototypeIdDigest": "82f4f76fed762ba9ebf9209b64c00f770c3b8c2b54cf2ad786cf6d0950b959ef",
+    "rerunIdDrift": 0
+  },
+  "browserAcceptance": {
+    "browser": "system Google Chrome",
+    "status": "pass",
+    "prototypeCardsInspected": 50,
+    "multiItemPrototypesInspected": 15,
+    "responsiveColumns": {
+      "desktop": 4,
+      "tablet": 3,
+      "mobile": 2
+    },
+    "search": "pass",
+    "manufacturerFilter": "pass",
+    "typeFilter": "pass",
+    "detail": "pass",
+    "lightbox": "pass",
+    "zoom": "pass",
+    "keyboardNavigation": "pass",
+    "coverPersistence": "pass"
+  },
+  "verification": {
+    "offlineUnitAndIntegrationTests": 177,
+    "loopbackPlaywrightTests": 2,
+    "repositorySourceCheck": "pass",
+    "npmAuditHighOrCritical": 0,
+    "gitDiffCheck": "pass"
+  },
+  "representativeAcceptance": {
+    "groupedAsOnePrototype": [
+      "Ice Season",
+      "Room Wear Renewal",
+      "China Maid Renewal",
+      "Outing Coordination channel version",
+      "Winter Maid Online Crane",
+      "Crystal Dress",
+      "Neon City",
+      "Shiromuku",
+      "Yukata",
+      "Graceful Beauty"
+    ],
+    "keptSeparate": [
+      "Bunny vs Bunny 2nd",
+      "Glitter & Glamours vs Another Colour",
+      "Phantom Night Wizard single vs pair"
+    ],
+    "projectionExcluded": [
+      "ArtScale Bust"
+    ]
+  },
+  "boundaries": {
+    "collectorModified": false,
+    "figuresJsonModified": false,
+    "newSourceAdded": false,
+    "hpoiRequests": 0,
+    "newPHashGroupingRun": false,
+    "payloadModified": false,
+    "postgresqlModified": false,
+    "deployed": false,
+    "thirdCharacterAdded": false,
+    "projectionReversible": true
+  }
+}

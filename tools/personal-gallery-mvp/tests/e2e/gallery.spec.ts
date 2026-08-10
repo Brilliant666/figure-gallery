@@ -289,3 +289,140 @@ test('two-character galleries isolate routes and preferences while sharing immut
   }, null, 2)}\n`)
   await context.close()
 })
+
+test('Rem prototype projection renders one pose per card with search, detail, provenance, and cover persistence', async ({ browser }) => {
+  const projectionPath = path.join(root, 'characters', 'rem', 'prototype-projection.json')
+  const goodsmileImage = 'https://images.goodsmile.info/cgm/images/product/20200101/rem-yukata.jpg'
+  const solarisImage = 'https://cdn.shopify.com/s/files/1/0318/2649/files/rem-yukata-alt.jpg'
+  const japanFigureImage = 'https://cdn.shopify.com/s/files/1/0568/2298/8958/files/rem-bunny.jpg'
+  await writeFile(projectionPath, JSON.stringify({
+    schemaVersion: 1,
+    projectionVersion: 'rem-prototype-projection-v1',
+    viewMode: 'prototype_projection',
+    character: 'Rem',
+    characterSlug: 'rem',
+    summary: {
+      catalogItemCount: 3,
+      projectionEligibleCount: 3,
+      prototypeCount: 2,
+      singletonPrototypeCount: 1,
+      multiItemPrototypeCount: 1,
+      groupingConflictCount: 0,
+      imageCount: 3,
+      prototypeWithImageCount: 2,
+      manufacturerCount: 2,
+    },
+    prototypes: [
+      {
+        prototypeId: 'rem-proto-yukata0000001',
+        catalogItemIds: ['goodsmile:yukata-renewal', 'solaris:yukata-original'],
+        title: 'Rem Yukata',
+        manufacturer: 'KADOKAWA',
+        manufacturers: ['KADOKAWA'],
+        classification: 'likely_scale',
+        category: 'General',
+        cover: { id: 'image-ref-goodsmile', url: goodsmileImage, catalogItemId: 'goodsmile:yukata-renewal', sourceFamily: 'goodsmile', isMain: true },
+        images: [
+          { id: 'image-ref-goodsmile', url: goodsmileImage, catalogItemId: 'goodsmile:yukata-renewal', sourceFamily: 'goodsmile', isMain: true },
+          { id: 'image-ref-solaris', url: solarisImage, catalogItemId: 'solaris:yukata-original', sourceFamily: 'solaris', isMain: true },
+        ],
+        catalogItems: [
+          {
+            id: 'goodsmile:yukata-renewal', title: 'Rem Yukata Renewal Package Edition', manufacturer: 'KADOKAWA',
+            type: 'scale', scale: '1/7', release: '2025/06', source: 'Good Smile Company',
+            sourceUrls: ['https://www.goodsmile.info/en/product/1136861'],
+          },
+          {
+            id: 'solaris:yukata-original', title: 'Rem Yukata Original', manufacturer: 'KADOKAWA',
+            type: 'scale', scale: '1/7', source: 'Solaris Japan',
+            sourceUrls: ['https://solarisjapan.com/products/rem-yukata'],
+          },
+        ],
+        sources: [
+          { url: 'https://www.goodsmile.info/en/product/1136861', sourceFamily: 'goodsmile', label: 'Good Smile — official' },
+          { url: 'https://solarisjapan.com/products/rem-yukata', sourceFamily: 'solaris', label: 'Solaris Japan — catalog/retailer source' },
+        ],
+      },
+      {
+        prototypeId: 'rem-proto-bunny00000001',
+        catalogItemIds: ['japanfigure:bunny'],
+        title: 'Rem Bunny 2nd',
+        manufacturer: 'FREEing',
+        manufacturers: ['FREEing'],
+        classification: 'likely_prize',
+        category: 'Prize',
+        cover: { id: 'image-ref-japan', url: japanFigureImage, catalogItemId: 'japanfigure:bunny', sourceFamily: 'japan-figure', isMain: true },
+        images: [{ id: 'image-ref-japan', url: japanFigureImage, catalogItemId: 'japanfigure:bunny', sourceFamily: 'japan-figure', isMain: true }],
+        catalogItems: [{
+          id: 'japanfigure:bunny', title: 'Rem Bunny Second Color', manufacturer: 'FREEing', type: 'prize',
+          source: 'Japan Figure', sourceUrls: ['https://japan-figure.com/products/rem-bunny'],
+        }],
+        sources: [{ url: 'https://japan-figure.com/products/rem-bunny', sourceFamily: 'japan-figure', label: 'Japan Figure — catalog source' }],
+      },
+    ],
+  }))
+
+  const context = await browser.newContext({ viewport: { width: 1280, height: 900 } })
+  let fixtureImageRequests = 0
+  await context.route('**/*', async (route) => {
+    const url = new URL(route.request().url())
+    if (['127.0.0.1', 'localhost'].includes(url.hostname)) return route.continue()
+    if (['images.goodsmile.info', 'cdn.shopify.com'].includes(url.hostname)) {
+      fixtureImageRequests += 1
+      return route.fulfill({ status: 200, contentType: 'image/png', body: fixtureState.sharedBuffer })
+    }
+    return route.abort('blockedbyclient')
+  })
+  const page = await context.newPage()
+  try {
+    await page.goto(`${baseUrl}/gallery/characters/rem`)
+    await expect(page.locator('.product-card')).toHaveCount(2)
+    await expect(page.locator('#gallery-meta')).toContainText('3 个有效 Catalog Items')
+    await expect(page.locator('#gallery-meta')).toContainText('2 个独立姿势')
+
+    await page.locator('#gallery-search').fill('Renewal')
+    await expect(page.locator('.product-card')).toHaveCount(1)
+    await page.locator('#gallery-search').fill('')
+    await page.locator('#manufacturer-filter').selectOption('FREEing')
+    await expect(page.locator('.product-card')).toHaveCount(1)
+    await page.locator('#manufacturer-filter').selectOption('all')
+    await page.locator('#classification-filter').selectOption('likely_scale')
+    await expect(page.locator('.product-card')).toHaveCount(1)
+    await page.locator('#classification-filter').selectOption('all')
+
+    const columnCount = () => page.locator('#product-grid').evaluate((node) => getComputedStyle(node).gridTemplateColumns.split(' ').length)
+    expect(await columnCount()).toBe(4)
+    await page.setViewportSize({ width: 900, height: 900 })
+    expect(await columnCount()).toBe(3)
+    await page.setViewportSize({ width: 600, height: 900 })
+    expect(await columnCount()).toBe(2)
+    await page.setViewportSize({ width: 1280, height: 900 })
+
+    await page.locator('.product-card').filter({ hasText: 'Rem Yukata' }).locator('.reference-card-link').click()
+    await expect(page).toHaveURL(/\/gallery\/characters\/rem\/prototypes\/rem-proto-yukata0000001$/u)
+    await expect(page.locator('.detail-image-tile')).toHaveCount(2)
+    await expect(page.locator('.catalog-item-card')).toHaveCount(2)
+    await expect(page.locator('#prototype-catalog-section')).toContainText('Good Smile — official')
+    await expect(page.locator('#prototype-catalog-section')).toContainText('Solaris Japan — catalog/retailer source')
+
+    await page.locator('.image-open').first().click()
+    await expect(page.locator('#lightbox')).toBeVisible()
+    await page.locator('#zoom-in').click()
+    await expect(page.locator('#zoom-value')).toHaveText('125%')
+    await page.keyboard.press('ArrowRight')
+    await expect(page.locator('#lightbox-position')).toHaveText('2 / 2')
+    await page.keyboard.press('Escape')
+
+    const saved = page.waitForResponse((response) =>
+      response.url() === `${baseUrl}/api/preferences/rem` && response.status() === 200,
+    )
+    await page.locator('.detail-image-tile').nth(1).getByRole('button', { name: '设为封面' }).click()
+    await saved
+    await page.reload()
+    await expect(page.locator('#current-cover .reference-cover')).toHaveAttribute('src', solarisImage)
+    expect(fixtureImageRequests).toBeGreaterThan(0)
+  } finally {
+    await context.close()
+    await rm(projectionPath, { force: true })
+  }
+})

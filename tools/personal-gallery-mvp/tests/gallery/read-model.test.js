@@ -6,6 +6,7 @@ import test from 'node:test'
 
 import {
   loadGalleryByQuery,
+  loadPrototypeGallery,
   loadRunGallery,
   listRecentRuns,
   normalizePreferences,
@@ -359,4 +360,91 @@ test('projects official-source fields and resolves the stable Cheshire gallery t
   const recent = await listRecentRuns(root, 2)
   assert.equal(recent[0].characterSlug, 'cheshire')
   assert.equal(recent[0].sourceMode, 'official_sources')
+})
+
+test('loads a reversible prototype projection before the legacy Rem product run', async (t) => {
+  const root = await mkdtemp(path.join(os.tmpdir(), 'personal-gallery-projection-'))
+  t.after(() => rm(root, { recursive: true, force: true }))
+  const characterDirectory = path.join(root, 'characters', 'rem')
+  await mkdir(characterDirectory, { recursive: true })
+  const coverUrl = 'https://images.goodsmile.info/cgm/images/product/20200101/1.jpg'
+  const alternateUrl = 'https://cdn.shopify.com/s/files/1/0318/2649/files/rem-2.jpg'
+  await writeFile(path.join(characterDirectory, 'preferences.json'), JSON.stringify({
+    schemaVersion: 2,
+    excludedProductIds: [],
+    excludedImageSha256: [],
+    products: {
+      'rem-proto-0123456789abcdef': { preferredCoverImageUrl: alternateUrl },
+    },
+    preferredCoverImage: { 'rem-proto-0123456789abcdef': alternateUrl },
+    manualNote: {},
+  }))
+  await writeFile(path.join(characterDirectory, 'prototype-projection.json'), JSON.stringify({
+    schemaVersion: 1,
+    projectionVersion: 'rem-prototype-projection-v1',
+    viewMode: 'prototype_projection',
+    character: 'Rem',
+    characterSlug: 'rem',
+    summary: {
+      catalogItemCount: 2,
+      projectionEligibleCount: 2,
+      prototypeCount: 1,
+      singletonPrototypeCount: 0,
+      multiItemPrototypeCount: 1,
+      groupingConflictCount: 0,
+      imageCount: 2,
+      prototypeWithImageCount: 1,
+      manufacturerCount: 1,
+    },
+    prototypes: [{
+      prototypeId: 'rem-proto-0123456789abcdef',
+      catalogItemIds: ['goodsmile:1', 'solaris:2'],
+      title: 'Rem Yukata',
+      manufacturer: 'KADOKAWA',
+      manufacturers: ['KADOKAWA'],
+      classification: 'likely_scale',
+      category: 'General',
+      cover: { id: 'image-ref-cover', url: coverUrl, catalogItemId: 'goodsmile:1', sourceFamily: 'goodsmile', isMain: true },
+      images: [
+        { id: 'image-ref-cover', url: coverUrl, catalogItemId: 'goodsmile:1', sourceFamily: 'goodsmile', isMain: true },
+        { id: 'image-ref-alt', url: alternateUrl, catalogItemId: 'solaris:2', sourceFamily: 'solaris', isMain: true },
+        { id: 'image-ref-unsafe', url: 'https://images.invalid/rem.jpg', catalogItemId: 'solaris:2', sourceFamily: 'solaris' },
+      ],
+      catalogItems: [
+        {
+          id: 'goodsmile:1', title: 'Rem Yukata Renewal', manufacturer: 'KADOKAWA', type: 'scale', scale: '1/7',
+          release: '2025/06', source: 'Good Smile Company', sourceFamily: 'goodsmile',
+          sourceUrls: ['https://www.goodsmile.com/en/product/1'],
+        },
+        {
+          id: 'solaris:2', title: 'Rem Yukata Original', manufacturer: 'KADOKAWA', type: 'scale', scale: '1/7',
+          source: 'Solaris Japan', sourceFamily: 'solaris',
+          sourceUrls: ['https://solarisjapan.com/products/rem-yukata'],
+        },
+      ],
+      sources: [
+        { url: 'https://www.goodsmile.com/en/product/1', sourceFamily: 'goodsmile', label: 'Good Smile — official' },
+        { url: 'https://solarisjapan.com/products/rem-yukata', sourceFamily: 'solaris', label: 'Solaris Japan — catalog/retailer source' },
+      ],
+    }],
+  }))
+
+  const direct = await loadPrototypeGallery(root, {
+    characterId: 'rezero:rem', slug: 'rem', displayName: '蕾姆', aliases: ['蕾姆', 'Rem'], workNames: ['Re:ZERO'],
+  })
+  assert.equal(direct.viewMode, 'prototype_projection')
+  assert.equal(direct.summary.catalogItemCount, 2)
+  assert.equal(direct.summary.projectionEligibleCount, 2)
+  assert.equal(direct.summary.prototypeCount, 1)
+  assert.equal(direct.products.length, 1)
+  assert.equal(direct.products[0].images.length, 2)
+  assert.equal(direct.products[0].coverImage.url, alternateUrl)
+  assert.equal(direct.products[0].coverSelectionSource, 'manual_override')
+  assert.equal(direct.products[0].catalogItems.length, 2)
+  assert.deepEqual(direct.products[0].images.map((image) => image.sourceFamily), ['goodsmile', 'solaris'])
+  assert.equal(direct.products[0].sources[1].sourceFamily, 'solaris')
+
+  const byQuery = await loadGalleryByQuery(root, '蕾姆')
+  assert.equal(byQuery.viewMode, 'prototype_projection')
+  assert.equal(byQuery.products[0].id, 'rem-proto-0123456789abcdef')
 })

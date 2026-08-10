@@ -270,6 +270,10 @@ test('serves the local UI and blocks collection before constructing network work
   assert.equal(home.status, 200)
   assert.match(await home.text(), /Official sources/)
   assert.match(home.headers.get('content-security-policy'), /connect-src 'self'/)
+  assert.match(
+    home.headers.get('content-security-policy'),
+    /img-src 'self' https:\/\/cdn\.shopify\.com https:\/\/images\.goodsmile\.info https:\/\/www\.goodsmile\.com/,
+  )
 
   const reboundStatus = await new Promise((resolve, reject) => {
     const request = http.request(`${base}/`, { headers: { Host: 'attacker.example' } }, (response) => {

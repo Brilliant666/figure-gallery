@@ -21,7 +21,7 @@ function securityHeaders(contentType = null) {
   const headers = {
     'Cache-Control': 'no-store',
     'Content-Security-Policy':
-      "default-src 'self'; img-src 'self'; style-src 'self'; script-src 'self'; connect-src 'self'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'",
+      "default-src 'self'; img-src 'self' https://cdn.shopify.com https://images.goodsmile.info https://www.goodsmile.com; style-src 'self'; script-src 'self'; connect-src 'self'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'",
     'Cross-Origin-Opener-Policy': 'same-origin',
     'Referrer-Policy': 'no-referrer',
     'X-Content-Type-Options': 'nosniff',

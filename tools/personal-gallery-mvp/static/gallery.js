@@ -5,10 +5,13 @@ const empty = document.querySelector('#empty-state')
 const errorMessage = document.querySelector('#gallery-error')
 const referenceIndex = document.querySelector('#reference-index')
 const productDetail = document.querySelector('#product-detail')
+const gallerySearch = document.querySelector('#gallery-search')
 const classificationFilter = document.querySelector('#classification-filter')
 const manufacturerFilter = document.querySelector('#manufacturer-filter')
 const designFilter = document.querySelector('#design-filter')
 const scaleFilter = document.querySelector('#scale-filter')
+const designFilterField = document.querySelector('#design-filter-field')
+const scaleFilterField = document.querySelector('#scale-filter-field')
 const showExcluded = document.querySelector('#show-excluded')
 const detailShowExcluded = document.querySelector('#detail-show-excluded')
 const metricList = document.querySelector('#gallery-metrics')
@@ -32,6 +35,9 @@ const currentCover = document.querySelector('#current-cover')
 const coverSelection = document.querySelector('#cover-selection')
 const productNote = document.querySelector('#product-note')
 const detailBackLink = document.querySelector('#detail-back-link')
+const prototypeCatalogSection = document.querySelector('#prototype-catalog-section')
+const catalogItemCount = document.querySelector('#catalog-item-count')
+const catalogItemList = document.querySelector('#catalog-item-list')
 
 const lightbox = document.querySelector('#lightbox')
 const lightboxStage = document.querySelector('#lightbox-stage')
@@ -52,6 +58,8 @@ const POLL_INTERVAL_MS = 800
 const OFFICIAL_SOURCE_DOMAINS = new Set([
   'goodsmile.com',
   'www.goodsmile.com',
+  'goodsmile.info',
+  'www.goodsmile.info',
   'goodsmilearts.com',
   'www.goodsmilearts.com',
   'alter-web.jp',
@@ -61,6 +69,19 @@ const OFFICIAL_SOURCE_DOMAINS = new Set([
   'apex-toys.com',
   'www.apex-toys.com',
 ])
+const CATALOG_SOURCE_DOMAINS = new Set([
+  ...OFFICIAL_SOURCE_DOMAINS,
+  'solarisjapan.com',
+  'www.solarisjapan.com',
+  'japan-figure.com',
+  'www.japan-figure.com',
+])
+const SOURCE_FAMILY_LABELS = Object.freeze({
+  goodsmile: 'Good Smile — official',
+  solaris: 'Solaris Japan — catalog/retailer source',
+  'japan-figure': 'Japan Figure — catalog source',
+  unknown: 'Unknown source family',
+})
 const CLASSIFICATION_LABELS = Object.freeze({
   likely_scale: '比例手办',
   likely_prize: '景品',
@@ -72,12 +93,13 @@ function classificationLabel(value) {
 }
 
 function parseRoute(pathname = window.location.pathname) {
-  const characterMatch = /^\/gallery\/characters\/([^/]+)(?:\/products\/([^/]+))?\/?$/u.exec(pathname)
+  const characterMatch = /^\/gallery\/characters\/([^/]+)(?:\/(products|prototypes)\/([^/]+))?\/?$/u.exec(pathname)
   if (characterMatch) {
     return {
-      mode: characterMatch[2] ? 'product' : 'character',
+      mode: characterMatch[3] ? 'detail' : 'character',
       characterSlug: decodeURIComponent(characterMatch[1]),
-      productId: characterMatch[2] ? decodeURIComponent(characterMatch[2]) : null,
+      detailKind: characterMatch[2] || null,
+      productId: characterMatch[3] ? decodeURIComponent(characterMatch[3]) : null,
     }
   }
   return {
@@ -101,7 +123,8 @@ function characterGalleryPath() {
 }
 
 function productDetailPath(productId) {
-  return `${characterGalleryPath()}/products/${encodeURIComponent(productId)}`
+  const segment = gallery?.viewMode === 'prototype_projection' ? 'prototypes' : 'products'
+  return `${characterGalleryPath()}/${segment}/${encodeURIComponent(productId)}`
 }
 
 function element(tag, className, text) {
@@ -114,11 +137,11 @@ function element(tag, className, text) {
 function isSafeSourceUrl(value, expectedDomain) {
   try {
     const url = new URL(value)
-    const actualDomain = OFFICIAL_SOURCE_DOMAINS.has(url.hostname)
+    const actualDomain = CATALOG_SOURCE_DOMAINS.has(url.hostname)
       ? url.hostname.replace(/^www\./u, '')
       : null
     const expectedHost = String(expectedDomain || '').trim().toLowerCase()
-    const normalizedExpectedDomain = OFFICIAL_SOURCE_DOMAINS.has(expectedHost)
+    const normalizedExpectedDomain = CATALOG_SOURCE_DOMAINS.has(expectedHost)
       ? expectedHost.replace(/^www\./u, '')
       : null
     const sensitiveQuery = [...url.searchParams.keys()].some((key) =>
@@ -137,6 +160,7 @@ function isSafeSourceUrl(value, expectedDomain) {
 
 function currentProducts() {
   if (!gallery) return []
+  const search = gallerySearch.value.normalize('NFKC').trim().toLocaleLowerCase('zh-CN')
   const classification = classificationFilter.value
   const manufacturer = manufacturerFilter.value
   const design = designFilter.value
@@ -144,9 +168,18 @@ function currentProducts() {
   return referenceProducts().filter((product) => {
     if (!showExcluded.checked && product.excluded) return false
     if (classification !== 'all' && product.classification !== classification) return false
-    if (manufacturer !== 'all' && product.manufacturer !== manufacturer) return false
-    if (design !== 'all' && product.design !== design) return false
-    if (scale !== 'all' && product.scale !== scale) return false
+    if (manufacturer !== 'all' && ![product.manufacturer, ...(product.manufacturers || [])].includes(manufacturer)) return false
+    if (gallery.viewMode !== 'prototype_projection' && design !== 'all' && product.design !== design) return false
+    if (gallery.viewMode !== 'prototype_projection' && scale !== 'all' && product.scale !== scale) return false
+    if (search) {
+      const searchable = [
+        product.title,
+        product.manufacturer,
+        ...(product.manufacturers || []),
+        ...(product.catalogItems || []).flatMap((item) => [item.title, item.manufacturer]),
+      ].join('\n').normalize('NFKC').toLocaleLowerCase('zh-CN')
+      if (!searchable.includes(search)) return false
+    }
     return true
   })
 }
@@ -211,18 +244,27 @@ async function toggleImage(image) {
 }
 
 async function setPreferredCover(product, image) {
-  const previous = product.preferredCoverImageId
-  productPreference(product.id).preferredCoverImageId = image.sha256
+  const previous = product.preferredCoverImageUrl || product.preferredCoverImageId
+  const next = image.remote ? image.url : image.sha256
+  if (image.remote) {
+    productPreference(product.id).preferredCoverImageUrl = next
+    delete productPreference(product.id).preferredCoverImageId
+  } else {
+    productPreference(product.id).preferredCoverImageId = next
+    delete productPreference(product.id).preferredCoverImageUrl
+  }
   gallery.preferences.preferredCoverImage ||= {}
-  gallery.preferences.preferredCoverImage[product.id] = image.sha256
+  gallery.preferences.preferredCoverImage[product.id] = next
   try {
     await persistAndReload()
   } catch (error) {
     if (previous) {
-      productPreference(product.id).preferredCoverImageId = previous
+      if (previous.startsWith('https:' + '//')) productPreference(product.id).preferredCoverImageUrl = previous
+      else productPreference(product.id).preferredCoverImageId = previous
       gallery.preferences.preferredCoverImage[product.id] = previous
     } else {
       delete productPreference(product.id).preferredCoverImageId
+      delete productPreference(product.id).preferredCoverImageUrl
       delete gallery.preferences.preferredCoverImage[product.id]
     }
     showError(`封面偏好保存失败：${error.message}`)
@@ -289,6 +331,7 @@ function createCover(product) {
   image.width = product.coverImage.width || 800
   image.height = product.coverImage.height || 1000
   image.dataset.sha256 = product.coverImage.sha256
+  image.dataset.imageId = product.coverImage.id || product.coverImage.sha256
   image.dataset.coverSource = product.coverSelectionSource
   frame.append(image)
   frame.dataset.coverState = 'available'
@@ -305,7 +348,13 @@ function createProductCard(product) {
   const body = element('div', 'reference-card-body')
   body.append(element('h2', null, product.title))
   body.append(element('p', 'product-meta', product.manufacturer))
-  body.append(element('p', 'product-meta', `${product.scale} · ${classificationLabel(product.classification)}`))
+  body.append(element(
+    'p',
+    'product-meta',
+    [product.scale !== 'unknown' ? product.scale : '', classificationLabel(product.classification)]
+      .filter(Boolean)
+      .join(' · '),
+  ))
   link.append(body)
   card.append(link)
   return card
@@ -325,10 +374,14 @@ function createDetailImageTile(product, image) {
   img.width = image.width || 800
   img.height = image.height || 800
   img.dataset.sha256 = image.sha256
+  img.dataset.imageId = image.id || image.sha256
   open.append(img)
-  open.addEventListener('click', () => openLightbox(image.sha256, product.id))
+  open.addEventListener('click', () => openLightbox(image.id || image.sha256, product.id))
   const actions = element('div', 'image-actions')
-  const isPreferred = product.preferredCoverImageId === image.sha256
+  const isPreferred = Boolean(
+    product.preferredCoverImageUrl && product.preferredCoverImageUrl === image.url ||
+    product.preferredCoverImageId && product.preferredCoverImageId === image.sha256,
+  )
   const cover = element('button', 'image-action cover-action', isPreferred ? '当前人工封面' : '设为封面')
   cover.type = 'button'
   cover.disabled = isPreferred
@@ -337,19 +390,30 @@ function createDetailImageTile(product, image) {
   exclude.type = 'button'
   exclude.addEventListener('click', () => toggleImage(image))
   actions.append(cover, exclude)
-  tile.append(open, actions)
+  const provenance = image.sourceFamily
+    ? element('span', 'image-provenance', SOURCE_FAMILY_LABELS[image.sourceFamily] || SOURCE_FAMILY_LABELS.unknown)
+    : null
+  tile.append(open, ...(provenance ? [provenance] : []), actions)
   return tile
 }
 
 function renderMetrics() {
   const reference = referenceProducts()
-  const entries = [
-    ['商品', reference.length],
-    ['本地图片', reference.reduce((total, product) => total + product.images.length, 0)],
-    ['索引封面', reference.filter((product) => product.coverImage).length],
-    ['无图商品', reference.filter((product) => !product.coverImage).length],
-    ['失败', gallery.failures.length],
-  ]
+  const entries = gallery.viewMode === 'prototype_projection'
+    ? [
+        ['Catalog Items', gallery.summary.projectionEligibleCount],
+        ['独立姿势', reference.length],
+        ['图片引用', gallery.summary.imageCount],
+        ['有封面姿势', reference.filter((product) => product.coverImage).length],
+        ['归组冲突', gallery.summary.groupingConflictCount || 0],
+      ]
+    : [
+        ['商品', reference.length],
+        ['本地图片', reference.reduce((total, product) => total + product.images.length, 0)],
+        ['索引封面', reference.filter((product) => product.coverImage).length],
+        ['无图商品', reference.filter((product) => !product.coverImage).length],
+        ['失败', gallery.failures.length],
+      ]
   metricList.replaceChildren(
     ...entries.map(([label, value]) => {
       const wrapper = document.createElement('div')
@@ -388,7 +452,9 @@ function replaceFilterOptions(select, values, allLabel, labelFor = (value) => va
 }
 
 function renderSourceStatus() {
-  sourceMode.textContent = gallery.sourceMode === 'official_sources' ? 'Official sources' : gallery.sourceMode
+  sourceMode.textContent = gallery.viewMode === 'prototype_projection'
+    ? 'Frozen Catalog Item projection'
+    : gallery.sourceMode === 'official_sources' ? 'Official sources' : gallery.sourceMode
   const hpoi = gallery.sourceStatus?.hpoi || {}
   const blockedAt = hpoi.blockedAt ? ` · 记录时间：${hpoi.blockedAt}` : ''
   hpoiSourceStatus.textContent = hpoi.hpoiLiveStatus === 'blocked_by_source'
@@ -403,7 +469,9 @@ function renderIndex() {
   grid.replaceChildren(...products.map(createProductCard))
   empty.classList.toggle('hidden', products.length > 0)
   visibleImages = []
-  meta.textContent = `${referenceProducts().length} 款手办 · 每款仅显示一张拍摄参考封面`
+  meta.textContent = gallery.viewMode === 'prototype_projection'
+    ? `${gallery.summary.projectionEligibleCount} 个有效 Catalog Items · ${referenceProducts().length} 个独立姿势 · 一姿势一卡`
+    : `${referenceProducts().length} 款手办 · 每款仅显示一张拍摄参考封面`
   renderMetrics()
   renderFailures()
 }
@@ -411,9 +479,48 @@ function renderIndex() {
 function coverSourceLabel(product) {
   if (!product.coverImage) return '暂无可用图片'
   if (product.coverSelectionSource === 'manual_override') return '人工选择'
+  if (product.coverSelectionSource === 'projection_rule') return '投影确定性规则'
   if (product.coverSelectionSource === 'official_primary') return '官方主图自动选择'
   if (product.coverSelectionSource === 'automatic_recommendation') return '确定性规则自动推荐'
   return '第一张有效图片'
+}
+
+function sourceFamilyLabel(value) {
+  return SOURCE_FAMILY_LABELS[value] || SOURCE_FAMILY_LABELS.unknown
+}
+
+function renderCatalogItems(product) {
+  const items = product.catalogItems || []
+  prototypeCatalogSection.classList.toggle('hidden', gallery.viewMode !== 'prototype_projection')
+  if (gallery.viewMode !== 'prototype_projection') {
+    catalogItemList.replaceChildren()
+    return
+  }
+  catalogItemCount.textContent = String(items.length)
+  const cards = items.map((item) => {
+    const card = element('article', 'catalog-item-card')
+    card.append(element('h4', null, item.title))
+    const facts = [item.manufacturer, item.scale, item.release].filter((value) => value && value !== 'unknown')
+    if (facts.length) card.append(element('p', 'product-meta', facts.join(' · ')))
+    const links = element('div', 'catalog-source-links')
+    for (const source of item.sources || []) {
+      if (!isSafeSourceUrl(source.url)) continue
+      const link = element(
+        'a',
+        null,
+        source.sourceFamily && source.sourceFamily !== 'unknown'
+          ? sourceFamilyLabel(source.sourceFamily)
+          : source.label || sourceFamilyLabel('unknown'),
+      )
+      link.href = source.url
+      link.target = '_blank'
+      link.rel = 'noreferrer noopener'
+      links.append(link)
+    }
+    if (links.childElementCount) card.append(links)
+    return card
+  })
+  catalogItemList.replaceChildren(...cards)
 }
 
 function renderDetailActions(product) {
@@ -424,7 +531,7 @@ function renderDetailActions(product) {
   note.type = 'button'
   note.addEventListener('click', () => editManualNote(product))
   detailActions.replaceChildren(exclude, note)
-  if (isSafeSourceUrl(product.sourceUrl, product.sourceDomain)) {
+  if (gallery.viewMode !== 'prototype_projection' && isSafeSourceUrl(product.sourceUrl, product.sourceDomain)) {
     const source = element('a', 'button-link', '打开官方商品页 ↗')
     source.href = product.sourceUrl
     source.target = '_blank'
@@ -455,10 +562,18 @@ function renderDetail() {
   detailBackLink.href = characterGalleryPath()
   detailBackLink.textContent = `← 返回${gallery.query}`
   title.textContent = gallery.query
-  meta.textContent = '手办详情 · 全部官方参考图片'
+  meta.textContent = gallery.viewMode === 'prototype_projection'
+    ? '独立姿势详情 · 全部现有参考图片与关联 Catalog Items'
+    : '手办详情 · 全部官方参考图片'
   detailTitle.textContent = product.title
-  detailMeta.textContent = `${product.manufacturer} · ${product.scale} · ${classificationLabel(product.classification)}`
-  detailSourceMeta.textContent = `${product.sourceKind} · ${product.sourceDomain}`
+  detailMeta.textContent = [
+    product.manufacturer,
+    product.scale !== 'unknown' ? product.scale : '',
+    classificationLabel(product.classification),
+  ].filter(Boolean).join(' · ')
+  detailSourceMeta.textContent = gallery.viewMode === 'prototype_projection'
+    ? `${product.catalogItems.length} catalog items grouped · ${product.images.length} image refs`
+    : `${product.sourceKind} · ${product.sourceDomain}`
   detailImageCount.textContent = String(product.images.length)
   coverSelection.textContent = coverSourceLabel(product)
   currentCover.replaceChildren(product.coverImage ? createCover(product) : element('div', 'no-image-placeholder', '暂无可用图片'))
@@ -466,6 +581,7 @@ function renderDetail() {
   productNote.classList.toggle('hidden', !product.note)
   renderDetailActions(product)
   renderDetailFailures(product)
+  renderCatalogItems(product)
   const images = product.images.filter((image) => detailShowExcluded.checked || !image.excluded)
   detailGrid.replaceChildren(...images.map((image) => createDetailImageTile(product, image)))
   detailNoImages.classList.toggle('hidden', images.length > 0)
@@ -474,7 +590,7 @@ function renderDetail() {
 
 function render() {
   if (!gallery) return
-  if (route.mode === 'product') renderDetail()
+  if (route.mode === 'detail') renderDetail()
   else renderIndex()
 }
 
@@ -485,7 +601,11 @@ function updateLightbox() {
   lightboxImage.alt = item.image.alt
   lightboxPosition.textContent = `${currentImageIndex + 1} / ${visibleImages.length}`
   lightboxTitle.textContent = item.product.title
-  lightboxMeta.textContent = `${item.product.manufacturer} · ${classificationLabel(item.product.classification)} · ${item.product.scale}`
+  lightboxMeta.textContent = [
+    item.product.manufacturer,
+    classificationLabel(item.product.classification),
+    item.image.sourceFamily ? sourceFamilyLabel(item.image.sourceFamily) : item.product.scale,
+  ].filter(Boolean).join(' · ')
   previousButton.disabled = currentImageIndex === 0
   nextButton.disabled = currentImageIndex === visibleImages.length - 1
 }
@@ -498,9 +618,9 @@ function setZoom(value, actual = false) {
   zoomValue.textContent = `${Math.round(zoom * 100)}%`
 }
 
-function openLightbox(sha256, productId) {
+function openLightbox(imageId, productId) {
   currentImageIndex = visibleImages.findIndex(
-    (item) => item.image.sha256 === sha256 && item.product.id === productId,
+    (item) => (item.image.id || item.image.sha256) === imageId && item.product.id === productId,
   )
   if (currentImageIndex < 0) return
   setZoom(1)
@@ -545,7 +665,7 @@ async function load() {
     document.body.dataset.view = route.mode
     clearError()
     title.textContent = gallery.query
-    document.title = route.mode === 'product'
+    document.title = route.mode === 'detail'
       ? `${selectedProduct()?.title || gallery.query} · Shooting Reference`
       : `${gallery.query} · Shooting Reference Index`
     renderSourceStatus()
@@ -557,9 +677,21 @@ async function load() {
       '全部类型',
       classificationLabel,
     )
-    replaceFilterOptions(manufacturerFilter, referenceProducts().map((product) => product.manufacturer), '全部厂商')
-    replaceFilterOptions(designFilter, referenceProducts().map((product) => product.design), '全部造型')
-    replaceFilterOptions(scaleFilter, referenceProducts().map((product) => product.scale), '全部比例')
+    replaceFilterOptions(
+      manufacturerFilter,
+      referenceProducts().flatMap((product) => product.manufacturers?.length ? product.manufacturers : [product.manufacturer]),
+      '全部厂商',
+    )
+    const isProjection = gallery.viewMode === 'prototype_projection'
+    designFilterField.classList.toggle('hidden', isProjection)
+    scaleFilterField.classList.toggle('hidden', isProjection)
+    if (isProjection) {
+      designFilter.value = 'all'
+      scaleFilter.value = 'all'
+    } else {
+      replaceFilterOptions(designFilter, referenceProducts().map((product) => product.design), '全部造型')
+      replaceFilterOptions(scaleFilter, referenceProducts().map((product) => product.scale), '全部比例')
+    }
     render()
     if (gallery.status === 'running' || gallery.status === 'stopping') schedulePolling()
     else stopPolling()
@@ -573,6 +705,7 @@ async function load() {
 for (const control of [classificationFilter, manufacturerFilter, designFilter, scaleFilter, showExcluded]) {
   control.addEventListener('change', render)
 }
+gallerySearch.addEventListener('input', render)
 detailShowExcluded.addEventListener('change', render)
 document.querySelector('#lightbox-close').addEventListener('click', closeLightbox)
 previousButton.addEventListener('click', () => moveLightbox(-1))

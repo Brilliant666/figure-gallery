@@ -19,6 +19,10 @@
 
       <section id="reference-index" aria-label="角色手办拍摄参考索引">
         <section class="panel filter-panel" aria-label="图库过滤">
+          <label class="search-field">
+            搜索
+            <input id="gallery-search" type="search" autocomplete="off" placeholder="姿势、厂商或商品标题" />
+          </label>
           <label>
             类型
             <select id="classification-filter">
@@ -29,11 +33,11 @@
             厂商
             <select id="manufacturer-filter"><option value="all">全部厂商</option></select>
           </label>
-          <label>
+          <label id="design-filter-field">
             造型
             <select id="design-filter"><option value="all">全部造型</option></select>
           </label>
-          <label>
+          <label id="scale-filter-field">
             比例
             <select id="scale-filter"><option value="all">全部比例</option></select>
           </label>
@@ -64,7 +68,7 @@
         </details>
       </section>
 
-      <section id="product-detail" class="product-detail hidden" aria-label="手办详情">
+      <section id="product-detail" class="product-detail hidden" aria-label="姿势详情">
         <nav class="detail-back"><a id="detail-back-link" href="/">← 返回角色图库</a></nav>
         <header class="detail-header">
           <p class="eyebrow">FIGURE REFERENCE SET</p>
@@ -76,7 +80,7 @@
           <div id="current-cover" class="current-cover"></div>
           <div class="detail-facts">
             <p><strong>当前封面：</strong><span id="cover-selection"></span></p>
-            <p><strong>本地图片：</strong><span id="detail-image-count">0</span></p>
+            <p><strong>参考图片：</strong><span id="detail-image-count">0</span></p>
             <p><strong>失败图片：</strong><span id="detail-failure-count">0</span></p>
             <p id="product-note" class="product-note hidden"></p>
             <div id="detail-actions" class="detail-actions"></div>
@@ -92,6 +96,12 @@
           </div>
           <div id="detail-image-grid" class="detail-image-grid"></div>
           <p id="detail-no-images" class="empty-state hidden">暂无可用图片；保留商品记录与失败状态。</p>
+        </section>
+        <section id="prototype-catalog-section" class="prototype-catalog-section hidden">
+          <div class="section-heading">
+            <h3>关联 Catalog Items（<span id="catalog-item-count">0</span>）</h3>
+          </div>
+          <div id="catalog-item-list" class="catalog-item-list"></div>
         </section>
         <details id="detail-failures" class="panel failures-panel">
           <summary>图片失败记录（<span id="detail-failure-summary-count">0</span>）</summary>
