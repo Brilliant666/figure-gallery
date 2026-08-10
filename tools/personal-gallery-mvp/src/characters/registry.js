@@ -41,7 +41,7 @@ const BUILTIN_CHARACTER_VALUES = [
       '碧蓝航线 柴郡 手办',
       '碧蓝航线 柴郡 比例手办',
     ],
-    conflictingAliases: [],
+    conflictingAliases: ['小柴郡', 'Little Cheshire', 'リトルチェシャー'],
     reviewedSeeds: [
       {
         url: 'https://www.goodsmile.com/en/product/36232/Cheshire%2BSummery%2BDate%2B',

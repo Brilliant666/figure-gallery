@@ -3,6 +3,8 @@ import { createHash } from 'node:crypto'
 export const PROTOTYPE_IDENTITY_SCHEMA_VERSION = 1
 export const PROTOTYPE_IDENTITY_NAMESPACE = 'figure-gallery:personal-gallery:rem:prototype:v1'
 
+const SAFE_CHARACTER_SLUG = /^[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?$/u
+
 function sha256(value) {
   return createHash('sha256').update(value).digest('hex')
 }
@@ -19,8 +21,27 @@ export function membershipFingerprint(catalogItemIds) {
   return sha256(JSON.stringify(sortedUniqueCatalogItemIds(catalogItemIds)))
 }
 
-export function legacyMembershipPrototypeId(catalogItemIds) {
-  return `rem-proto-${membershipFingerprint(catalogItemIds).slice(0, 16)}`
+export function prototypeIdentityContract(characterSlug = 'rem', overrides = {}) {
+  const slug = String(characterSlug || '').trim().toLowerCase()
+  if (!SAFE_CHARACTER_SLUG.test(slug)) {
+    throw new Error('Prototype identity requires a safe lowercase ASCII character slug.')
+  }
+  const identityNamespace = String(
+    overrides.identityNamespace || `figure-gallery:personal-gallery:${slug}:prototype:v1`,
+  ).trim()
+  const prototypeIdPrefix = String(overrides.prototypeIdPrefix || `${slug}-proto`).trim()
+  if (!/^[a-z0-9][a-z0-9:._-]{0,255}$/iu.test(identityNamespace)) {
+    throw new Error('Prototype identity namespace is invalid.')
+  }
+  if (prototypeIdPrefix !== `${slug}-proto`) {
+    throw new Error('Prototype ID prefix must be scoped to the character slug.')
+  }
+  return Object.freeze({ characterSlug: slug, identityNamespace, prototypeIdPrefix })
+}
+
+export function legacyMembershipPrototypeId(catalogItemIds, options = {}) {
+  const contract = prototypeIdentityContract(options.characterSlug || 'rem', options)
+  return `${contract.prototypeIdPrefix}-${membershipFingerprint(catalogItemIds).slice(0, 16)}`
 }
 
 export function resolvePrototypeAlias(prototypeId, aliases = {}) {
@@ -34,10 +55,22 @@ export function resolvePrototypeAlias(prototypeId, aliases = {}) {
   return current
 }
 
-function normalizeRegistry(raw) {
+function escaped(value) {
+  return String(value).replace(/[.*+?^${}()|[\]\\]/gu, '\\$&')
+}
+
+function prototypeIdPattern(contract) {
+  return new RegExp(`^${escaped(contract.prototypeIdPrefix)}-[a-f\\d-]+$`, 'u')
+}
+
+function normalizeRegistry(raw, contract) {
   if (!raw) return null
-  if (raw.schemaVersion !== PROTOTYPE_IDENTITY_SCHEMA_VERSION || raw.characterSlug !== 'rem') {
-    throw new Error('Unsupported Rem Prototype identity registry.')
+  if (
+    raw.schemaVersion !== PROTOTYPE_IDENTITY_SCHEMA_VERSION ||
+    raw.characterSlug !== contract.characterSlug ||
+    (raw.identityNamespace && raw.identityNamespace !== contract.identityNamespace)
+  ) {
+    throw new Error(`Unsupported ${contract.characterSlug} Prototype identity registry.`)
   }
   if (!raw.prototypes || typeof raw.prototypes !== 'object' || Array.isArray(raw.prototypes)) {
     throw new Error('Prototype identity registry requires a prototypes object.')
@@ -47,7 +80,7 @@ function normalizeRegistry(raw) {
     : {}
   const prototypes = {}
   for (const [prototypeId, entry] of Object.entries(raw.prototypes)) {
-    if (!/^rem-proto-[a-f\d-]+$/u.test(prototypeId) || entry?.prototypeId !== prototypeId) {
+    if (!prototypeIdPattern(contract).test(prototypeId) || entry?.prototypeId !== prototypeId) {
       throw new Error(`Invalid Prototype identity registry entry: ${prototypeId}.`)
     }
     const catalogItemIds = sortedUniqueCatalogItemIds(entry.catalogItemIds)
@@ -65,7 +98,12 @@ function normalizeRegistry(raw) {
     }
   }
   for (const [retired, target] of Object.entries(aliases)) {
-    if (retired === target || typeof target !== 'string') {
+    if (
+      retired === target ||
+      typeof target !== 'string' ||
+      !prototypeIdPattern(contract).test(retired) ||
+      !prototypeIdPattern(contract).test(target)
+    ) {
       throw new Error(`Invalid Prototype alias: ${retired}.`)
     }
     const resolved = resolvePrototypeAlias(retired, aliases)
@@ -74,8 +112,8 @@ function normalizeRegistry(raw) {
   }
   return {
     schemaVersion: PROTOTYPE_IDENTITY_SCHEMA_VERSION,
-    characterSlug: 'rem',
-    identityNamespace: raw.identityNamespace || PROTOTYPE_IDENTITY_NAMESPACE,
+    characterSlug: contract.characterSlug,
+    identityNamespace: raw.identityNamespace || contract.identityNamespace,
     prototypes,
     aliases,
   }
@@ -85,10 +123,10 @@ function intersects(left, rightSet) {
   return left.some((value) => rightSet.has(value))
 }
 
-function stableAnchorPrototypeId(anchorCatalogItemId, unavailableIds) {
+function stableAnchorPrototypeId(anchorCatalogItemId, unavailableIds, contract) {
   for (let salt = 0; salt < 1_000; salt += 1) {
-    const material = `${PROTOTYPE_IDENTITY_NAMESPACE}\n${anchorCatalogItemId}\n${salt}`
-    const candidate = `rem-proto-${sha256(material).slice(0, 16)}`
+    const material = `${contract.identityNamespace}\n${anchorCatalogItemId}\n${salt}`
+    const candidate = `${contract.prototypeIdPrefix}-${sha256(material).slice(0, 16)}`
     if (!unavailableIds.has(candidate)) return candidate
   }
   throw new Error(`Unable to allocate a stable Prototype ID for ${anchorCatalogItemId}.`)
@@ -102,12 +140,16 @@ function flattenAliases(values) {
 
 export function assignPrototypeIdentities({
   groups,
+  characterSlug = 'rem',
+  identityNamespace,
+  prototypeIdPrefix,
   previousRegistry = null,
   bootstrapPrototypeIds = {},
   forcedPrototypeIds = {},
   aliases = {},
 }) {
-  const previous = normalizeRegistry(previousRegistry)
+  const contract = prototypeIdentityContract(characterSlug, { identityNamespace, prototypeIdPrefix })
+  const previous = normalizeRegistry(previousRegistry, contract)
   const normalizedGroups = groups.map((group) => {
     const catalogItemIds = sortedUniqueCatalogItemIds(group.catalogItemIds)
     return {
@@ -129,6 +171,11 @@ export function assignPrototypeIdentities({
   }
 
   const allAliases = flattenAliases({ ...(previous?.aliases || {}), ...aliases })
+  for (const [retired, target] of Object.entries(allAliases)) {
+    if (!prototypeIdPattern(contract).test(retired) || !prototypeIdPattern(contract).test(target)) {
+      throw new Error(`Prototype alias is outside the ${contract.characterSlug} namespace: ${retired}.`)
+    }
+  }
   const previousEntries = Object.values(previous?.prototypes || {})
   const previousByFingerprint = new Map(
     previousEntries.map((entry) => [entry.membershipFingerprint, entry]),
@@ -157,9 +204,14 @@ export function assignPrototypeIdentities({
       throw new Error('Prototype merge requires an explicit survivor identity.')
     }
     if (!prototypeId) prototypeId = bootstrapPrototypeIds[group.membershipFingerprint] || null
-    if (!prototypeId) prototypeId = stableAnchorPrototypeId(group.catalogItemIds[0], unavailableIds)
+    if (!prototypeId) {
+      prototypeId = stableAnchorPrototypeId(group.catalogItemIds[0], unavailableIds, contract)
+    }
     prototypeId = resolvePrototypeAlias(prototypeId, allAliases)
 
+    if (!prototypeIdPattern(contract).test(prototypeId)) {
+      throw new Error(`Prototype ID is outside the ${contract.characterSlug} namespace: ${prototypeId}.`)
+    }
     if (claimedIds.has(prototypeId)) throw new Error(`Prototype ID assigned twice: ${prototypeId}.`)
     if (allAliases[prototypeId]) throw new Error(`Retired Prototype ID cannot be active: ${prototypeId}.`)
     claimedIds.add(prototypeId)
@@ -188,8 +240,8 @@ export function assignPrototypeIdentities({
     assignments,
     registry: {
       schemaVersion: PROTOTYPE_IDENTITY_SCHEMA_VERSION,
-      characterSlug: 'rem',
-      identityNamespace: PROTOTYPE_IDENTITY_NAMESPACE,
+      characterSlug: contract.characterSlug,
+      identityNamespace: contract.identityNamespace,
       prototypes: Object.fromEntries(Object.entries(prototypes).sort(([left], [right]) => (
         left < right ? -1 : left > right ? 1 : 0
       ))),

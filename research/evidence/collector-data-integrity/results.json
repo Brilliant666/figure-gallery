@@ -1,0 +1,235 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-08-11T00:12:17+08:00",
+  "baseline": {
+    "pullRequest": 23,
+    "branch": "feat/cheshire-pipeline-generalization",
+    "oldHead": "6ebad8e2a16a11b59a040bc9b6393fa161db3508",
+    "mainBefore": "2eacd72677301eb97dc84f3afaecfa2e6972d69b",
+    "draftAtTaskStart": true,
+    "unresolvedReviewThreadsAtTaskStart": 0
+  },
+  "digest": {
+    "versionBefore": "implicit_v1",
+    "versionAfter": 2,
+    "businessFields": [
+      "characterId",
+      "characterSlug",
+      "title",
+      "series",
+      "manufacturer",
+      "category",
+      "description",
+      "scale",
+      "heightMm",
+      "release",
+      "productType",
+      "tags",
+      "images",
+      "sourceRefs",
+      "available"
+    ],
+    "volatileFieldsExcluded": [
+      "sourceUpdatedAt",
+      "updated_at",
+      "fetchedAt",
+      "lastFetchedAt",
+      "requestTimestamp",
+      "crawlTimestamp",
+      "httpResponseTiming",
+      "runtimePath",
+      "generatedAt",
+      "firstSeenAt",
+      "lastSeenAt"
+    ],
+    "derivedFieldsExcluded": [
+      "profilePoseExclusion",
+      "sourcePoseExclusion",
+      "semanticTitle",
+      "manufacturerKey",
+      "structuralVariantSignature",
+      "poseEligibility",
+      "grouping"
+    ],
+    "imageOrderCanonicalized": true,
+    "tagOrderCanonicalized": true,
+    "sourceRefOrderCanonicalized": true,
+    "migrationRequired": true,
+    "migrationFalseChanges": 0,
+    "offlineReplay1": {
+      "networkRequests": 0,
+      "capturedResponsesReplayed": 15,
+      "new": 0,
+      "changed": 0,
+      "unchanged": 13,
+      "resultDigest": "ca6a7cf30c75c2a5586a8c3eef46a44bdd6c4364fa95d8cd14491c9b964583ac"
+    },
+    "offlineReplay2": {
+      "networkRequests": 0,
+      "capturedResponsesReplayed": 15,
+      "new": 0,
+      "changed": 0,
+      "unchanged": 13,
+      "resultDigest": "ca6a7cf30c75c2a5586a8c3eef46a44bdd6c4364fa95d8cd14491c9b964583ac"
+    },
+    "digestDrift": 0,
+    "resultDrift": 0
+  },
+  "japanFigure": {
+    "paginationStrategy": "cursor_until_explicit_has_next_page_false",
+    "responseFieldContract": {
+      "products": "result.structuredContent.products",
+      "hasNextPage": "result.structuredContent.pagination.has_next_page",
+      "nextCursor": "result.structuredContent.pagination.cursor",
+      "requestCursor": "params.arguments.catalog.pagination.cursor"
+    },
+    "dedupeIdentity": "source product id, then canonical source URL",
+    "safetyCapPages": 20,
+    "probe": {
+      "pagesFetchedLive": 4,
+      "apiRequestsLive": 4,
+      "requestsIncludingRobots": 5,
+      "rawRecords": 918,
+      "uniqueRecords": 918,
+      "duplicates": 0,
+      "paginationExhausted": true,
+      "terminationReason": "source_exhausted",
+      "finalCursorState": "absent"
+    },
+    "postFixRefreshObservation": {
+      "pagesFetchedLive": 4,
+      "rawRecords": 925,
+      "uniqueRecords": 923,
+      "duplicates": 2,
+      "paginationExhausted": true,
+      "terminationReason": "source_exhausted"
+    },
+    "cursorLoopProtection": "ERROR",
+    "sameCursorProtection": "ERROR",
+    "missingCursorProtection": "ERROR",
+    "safetyCapBehavior": "INCOMPLETE_and_fail_closed",
+    "previousTruncationDetected": true,
+    "previousSingleWindowLimit": 250,
+    "additionalRawRecordsObservedBeyondPreviousWindowInProbe": 668,
+    "newCheshireWideItems": 0,
+    "newCheshireEligibleItems": 0,
+    "newCheshirePrototypes": 0
+  },
+  "liveRefresh": {
+    "executions": 1,
+    "requests": 15,
+    "realNew": 0,
+    "realChanged": 0,
+    "falseChanged": 0,
+    "unchanged": 13,
+    "wideCatalog": 13,
+    "poseEligible": 6,
+    "sourceStats": {
+      "goodsmile": {
+        "raw": 3,
+        "matched": 3,
+        "figureLike": 3
+      },
+      "solaris": {
+        "raw": 408,
+        "matched": 13,
+        "figureLike": 13
+      },
+      "japanFigure": {
+        "raw": 925,
+        "unique": 923,
+        "matched": 3,
+        "figureLike": 3
+      }
+    },
+    "rawCapturedResponsesCommitted": false,
+    "secondLiveRefreshExecuted": false
+  },
+  "remRegression": {
+    "prototypes": 221,
+    "cards": 221,
+    "cardsWithCover": 220,
+    "imageRefs": 1257,
+    "prototypeIdDrift": 0,
+    "top50Drift": 0,
+    "membershipDrift": 0,
+    "groupingConflicts": 0,
+    "prototypeIdSequenceSha256": "e72353bbdda85af302a097b3823d560f890026eb575c0ecf7e4ec65152bd8c05",
+    "top50OrderSha256": "b2302779115b0040417125e0600ba78f37c667bec9182965bdc8bf0d78e6fc1b",
+    "membershipStateSha256": "2cbab37d9b777178cf090955b199207a0ee5cc32bbeacadc169e11e6de771c52"
+  },
+  "cheshire": {
+    "wideBefore": 13,
+    "wideAfter": 13,
+    "prototypesBefore": 6,
+    "prototypesAfter": 6,
+    "cards": 6,
+    "cardsWithCover": 6,
+    "imageRefs": 69,
+    "existingPrototypeIdDrift": 0,
+    "recommendationOrderDrift": 0,
+    "membershipFingerprintDrift": 0,
+    "groupingConflicts": 0
+  },
+  "validation": {
+    "collectorTests": {
+      "passed": 34,
+      "failed": 0,
+      "node": "22.23.1"
+    },
+    "personalGalleryTests": {
+      "passed": 197,
+      "failed": 0,
+      "node": "22.23.1"
+    },
+    "playwright": {
+      "passed": 2,
+      "failed": 0,
+      "externalRequests": 0
+    },
+    "sourceSafety": "pass",
+    "npmAudit": {
+      "collectorHigh": 0,
+      "collectorCritical": 0,
+      "personalGalleryHigh": 0,
+      "personalGalleryCritical": 0
+    },
+    "systemChrome": {
+      "remCards": 221,
+      "remDefaultSort": "recommended",
+      "cheshireCardsReviewed": 6,
+      "cheshireCoversLoaded": 6,
+      "detail": "pass",
+      "lightbox": "pass",
+      "keyboard": "pass",
+      "consoleErrors": 0
+    },
+    "gitDiffCheck": "pass"
+  },
+  "frozenInputVerification": {
+    "externalRemCollectorSha256": "b8389c6da309cb61ad71e1eb955c276f6c71d4046f3fea14aa89c980c334909e",
+    "externalRemFiguresSha256": "e4d15b4f6e1c7e67f9f593c4d256cbd23d69bac7aae7bccc7daf3fbb48e54267",
+    "unchanged": true
+  },
+  "boundaries": {
+    "externalRemCollectorModified": false,
+    "remGroupingRestarted": false,
+    "poseEligibilityModified": false,
+    "newDataSources": 0,
+    "hpoiRequests": 0,
+    "alterAmiamiHobbySearchRequests": 0,
+    "thirdCharacterAdded": false,
+    "payloadModified": false,
+    "postgresqlModified": false,
+    "s3Modified": false,
+    "popularityOrLatestImplemented": false,
+    "deployed": false,
+    "pullRequests18_19_20_22Modified": false
+  },
+  "decision": {
+    "collectorIntegrity": "PASS",
+    "japanFigurePagination": "PASS",
+    "dualCharacterPipeline": "PASS",
+    "pullRequest23MergeGateBeforeCi": "PASS"
+  }
+}

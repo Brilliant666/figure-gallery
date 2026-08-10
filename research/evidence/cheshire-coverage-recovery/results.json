@@ -1,0 +1,256 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-08-10T14:05:00.000Z",
+  "task": "CHESHIRE-COVERAGE-RECOVERY-01",
+  "case": "NO_SAFE_RECOVERY",
+  "oldBaseline": 7,
+  "previousCovered": 5,
+  "oldOnlyBefore": 2,
+  "gapItems": [
+    {
+      "key": "ALTER",
+      "oldBaselineId": "azur-lane_cheshire_official_alter-web.jp-url-afd4dd5082f6244b1f23c4a2e067a524aa64655fc3f9d0fddd8ed976ba1eb129",
+      "title": "チェシャー｜ALTER",
+      "normalizedTitle": "チェシャー|alter",
+      "manufacturer": "ALTER",
+      "scale": "1/7",
+      "heightMmApprox": 260,
+      "release": "2025-07",
+      "historicalSource": "official_manufacturer",
+      "historicalDiscovery": "firecrawl_search",
+      "knownImageReferences": 6,
+      "poseEligible": true,
+      "recovered": false
+    },
+    {
+      "key": "FANCY_NIGHT",
+      "oldBaselineId": "azur-lane_cheshire_official_amiami.jp-id-FIGURE-181336",
+      "title": "【特典】アズールレーン チェシャー ファンシー・ナイトドリームVer. 1/6 完成品フィギュア[あみあみ×AniGame]",
+      "normalizedTitle": "【特典】アズールレーン チェシャー ファンシー・ナイトドリームver. 1/6 完成品フィギュア[あみあみ×anigame]",
+      "manufacturer": "あみあみ×AniGame",
+      "scale": "1/6",
+      "heightMmApprox": 300,
+      "historicalSource": "official_distributor",
+      "historicalDiscovery": "seed_official_url",
+      "seedDependency": true,
+      "knownImageReferences": 10,
+      "poseEligible": true,
+      "recovered": false
+    }
+  ],
+  "existingSourceBugFound": false,
+  "existingSourceDiagnosis": {
+    "knownGapRecoveredFromExistingSources": 0,
+    "aliasFailureFound": false,
+    "seriesFailureFound": false,
+    "categoryOrPoseFilterFailureFound": false,
+    "japanFigurePaginationCompletenessRisk": true,
+    "japanFigureCurrentConnectorConsumesCursor": false,
+    "japanFigureBoundedPagesChecked": 3,
+    "japanFigureRecordsPerPage": 250,
+    "japanFigureGapHitsInBoundedPages": 0,
+    "japanFigureTargetedQueries": 2,
+    "japanFigureTargetedQueryGapHits": 0
+  },
+  "existingConnectorFixes": [],
+  "requestAccounting": {
+    "existingSourceDiagnosisHttpRequests": {
+      "solaris": 3,
+      "goodSmile": 0,
+      "japanFigure": 11,
+      "total": 14
+    },
+    "finalRefreshHttpRequests": 12,
+    "permissionDocumentHttpRequests": {
+      "alter": 2,
+      "amiami": 3,
+      "hobbySearch": 1,
+      "total": 6
+    },
+    "sourceLocatorSearchQueries": 6,
+    "candidateProductBenchmarkRequests": 0,
+    "hpoiRequests": 0
+  },
+  "sourcesResearched": [
+    "ALTER official",
+    "AmiAmi",
+    "HobbySearch"
+  ],
+  "sourcesLiveTested": [],
+  "candidateSourceResults": [
+    {
+      "source": "ALTER official",
+      "permission": "UNCLEAR",
+      "permissionRequests": 2,
+      "productRequests": 0,
+      "liveBenchmarkRun": false,
+      "elapsedMs": null,
+      "oldOnlyRecovered": null,
+      "rawRelevant": null,
+      "poseEligibleRelevant": null,
+      "existingOverlap": null,
+      "discoveryMarginal": null,
+      "identityEnrichment": null,
+      "mediaEnrichment": null,
+      "images": null,
+      "decision": "RESEARCH_ONLY"
+    },
+    {
+      "source": "AmiAmi",
+      "permission": "BLOCKED",
+      "permissionRequests": 3,
+      "productRequests": 0,
+      "liveBenchmarkRun": false,
+      "elapsedMs": null,
+      "oldOnlyRecovered": null,
+      "rawRelevant": null,
+      "poseEligibleRelevant": null,
+      "existingOverlap": null,
+      "discoveryMarginal": null,
+      "identityEnrichment": null,
+      "mediaEnrichment": null,
+      "images": null,
+      "seedDependency": true,
+      "decision": "REJECT"
+    },
+    {
+      "source": "HobbySearch",
+      "permission": "BLOCKED",
+      "permissionRequests": 1,
+      "productRequests": 0,
+      "liveBenchmarkRun": false,
+      "elapsedMs": null,
+      "oldOnlyRecovered": null,
+      "rawRelevant": null,
+      "poseEligibleRelevant": null,
+      "existingOverlap": null,
+      "discoveryMarginal": null,
+      "identityEnrichment": null,
+      "mediaEnrichment": null,
+      "images": null,
+      "decision": "REJECT"
+    }
+  ],
+  "newConnectorCount": 0,
+  "newConnectorLOC": 0,
+  "characterSpecificBranchLOC": 0,
+  "newAliasesOrProfileChanges": 0,
+  "oldOnlyRecovered": 0,
+  "unexpectedMarginalItems": 0,
+  "before": {
+    "wideCatalog": 13,
+    "poseEligible": 6,
+    "projectionEligible": 6,
+    "prototypeCount": 6,
+    "cards": 6,
+    "cardsWithCover": 6,
+    "imageRefs": 69,
+    "oldBaselineCovered": 5
+  },
+  "after": {
+    "wideCatalog": 13,
+    "poseEligible": 6,
+    "projectionEligible": 6,
+    "prototypeCount": 6,
+    "cards": 6,
+    "cardsWithCover": 6,
+    "imageRefs": 69,
+    "oldBaselineCovered": 5,
+    "catalogItemsCollapsed": 0,
+    "groupingConflicts": 0,
+    "prototypeIdDrift": 0,
+    "recommendationOrderDrift": 0
+  },
+  "poseEligibleBefore": 6,
+  "poseEligibleAfter": 6,
+  "prototypeCountBefore": 6,
+  "prototypeCountAfter": 6,
+  "imageRefsBefore": 69,
+  "imageRefsAfter": 69,
+  "sourceCoverageGapAfter": true,
+  "hpoiRequests": 0,
+  "remRegression": {
+    "figurePrototypes": 221,
+    "cards": 221,
+    "prototypeIdDrift": 0,
+    "recommendationTop50Drift": 0,
+    "groupingConflicts": 0,
+    "frozen": true
+  },
+  "liveRefresh": {
+    "run": true,
+    "runId": "2026-08-10T14-03-45-880Z",
+    "status": "pass",
+    "requests": 12,
+    "wideCatalog": 13,
+    "poseEligible": 6,
+    "new": 0,
+    "reportedChanged": 13,
+    "unchanged": 0,
+    "falseChanges": 13,
+    "expectedZeroGatePassed": false,
+    "boundedLiveRefreshRepeated": false,
+    "offlinePostWriteReplay": {
+      "new": 0,
+      "changed": 0,
+      "unchanged": 13,
+      "digestDrift": 0
+    },
+    "diagnosis": "The adopted runtime still carried pre-fix digests. This first post-fix live refresh normalized all 13 digests; a no-network replay against the rewritten catalog reported 13 unchanged and 0 changed, but the task-authorized live refresh was not repeated."
+  },
+  "productAcceptance": {
+    "systemChrome": "pass",
+    "cheshireCardsReviewed": 6,
+    "search": "pass",
+    "manufacturerFilter": "pass",
+    "typeFilter": "pass",
+    "detail": "pass",
+    "lightbox": "pass",
+    "zoom": "pass",
+    "keyboardNavigation": "pass",
+    "coverPersistence": "pass",
+    "consoleErrors": 0,
+    "excludedAudit": "unchanged_not_applicable_no_new_source"
+  },
+  "tests": {
+    "collectorUnit": {
+      "passed": 25,
+      "failed": 0
+    },
+    "personalGalleryUnit": {
+      "passed": 197,
+      "failed": 0
+    },
+    "personalGalleryE2E": {
+      "passed": 2,
+      "failed": 0,
+      "externalRequests": 0
+    },
+    "sourceSafety": "pass",
+    "npmAuditHigh": 0,
+    "npmAuditCritical": 0
+  },
+  "decision": {
+    "fourthSource": "NONE_SAFE",
+    "alter": "RESEARCH_ONLY",
+    "amiami": "REJECT",
+    "hobbySearch": "REJECT",
+    "cheshireCoverageReadyToContinue": "PARTIAL"
+  },
+  "boundaries": {
+    "externalRemCollectorModified": false,
+    "remDataModified": false,
+    "hpoiAccessed": false,
+    "hpoiRequests": 0,
+    "thirdCharacterAdded": false,
+    "payloadModified": false,
+    "postgresqlModified": false,
+    "s3Modified": false,
+    "popularityImplemented": false,
+    "latestImplemented": false,
+    "deployed": false,
+    "broadSourceResearchPerformed": false,
+    "pullRequests18_19_20_22Modified": false,
+    "pullRequest23RemainsDraft": true
+  }
+}

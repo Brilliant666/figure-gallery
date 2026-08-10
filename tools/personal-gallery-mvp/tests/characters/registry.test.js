@@ -32,6 +32,15 @@ test('Rem matching uses word boundaries, work evidence, and explicit Ram conflic
   assert.equal(conflictingCharacterMatch('Ram 1/7 scale figure', rem), 'Ram')
 })
 
+test('Cheshire matching keeps Little Cheshire variants as explicit conflicts', () => {
+  const cheshire = resolveBuiltinCharacter('柴郡')
+  assert.equal(matchesCharacterText('Azur Lane Cheshire figure', cheshire), true)
+  assert.equal(matchesCharacterWork('アズールレーン チェシャー フィギュア', cheshire), true)
+  assert.equal(conflictingCharacterMatch('Azur Lane Little Cheshire figure', cheshire), 'Little Cheshire')
+  assert.equal(conflictingCharacterMatch('碧蓝航线 小柴郡 手办', cheshire), '小柴郡')
+  assert.equal(conflictingCharacterMatch('アズールレーン リトルチェシャー', cheshire), 'リトルチェシャー')
+})
+
 test('reviewed seeds are character-scoped and reject cross-character ownership', () => {
   const rem = resolveBuiltinCharacter('蕾姆')
   const scoped = validateCharacterConfig({

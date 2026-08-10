@@ -1,0 +1,36 @@
+{
+  "pages": [
+    {
+      "result": {
+        "structuredContent": {
+          "products": [
+            { "id": "gid://shopify/Product/A", "title": "Azur Lane Cheshire Figure A", "url": "https://japan-figure.com/products/a" },
+            { "id": "gid://shopify/Product/B", "title": "Azur Lane Cheshire Figure B", "url": "https://japan-figure.com/products/b" }
+          ],
+          "pagination": { "has_next_page": true, "cursor": "C2" }
+        }
+      }
+    },
+    {
+      "result": {
+        "structuredContent": {
+          "products": [
+            { "id": "gid://shopify/Product/C", "title": "Azur Lane Cheshire Figure C", "url": "https://japan-figure.com/products/c" },
+            { "id": "gid://shopify/Product/D", "title": "Azur Lane Cheshire Figure D", "url": "https://japan-figure.com/products/d" }
+          ],
+          "pagination": { "has_next_page": true, "cursor": "C3" }
+        }
+      }
+    },
+    {
+      "result": {
+        "structuredContent": {
+          "products": [
+            { "id": "gid://shopify/Product/E", "title": "Azur Lane Cheshire Figure E", "url": "https://japan-figure.com/products/e" }
+          ],
+          "pagination": { "has_next_page": false, "cursor": null }
+        }
+      }
+    }
+  ]
+}

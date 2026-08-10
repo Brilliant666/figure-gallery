@@ -226,8 +226,200 @@ export function migratePrototypePreferences({ preferences, aliases, prototypes }
   }
 }
 
-export async function backupPreferencesOnce(preferencesPath) {
-  const backupPath = `${preferencesPath}.pre-rem-v1-consolidation.bak`
+function normalizeCatalogPreferenceMappings(preferenceMap = {}) {
+  if (preferenceMap.schemaVersion !== 1) {
+    throw new Error('Catalog preference mapping requires schemaVersion 1.')
+  }
+  const globalImageUrls = preferenceMap.imageUrlBySha256 &&
+    typeof preferenceMap.imageUrlBySha256 === 'object'
+    ? preferenceMap.imageUrlBySha256
+    : {}
+  const rawMappings = Array.isArray(preferenceMap.mappings)
+    ? preferenceMap.mappings.map((value) => [value?.legacyProductId, value])
+    : Object.entries(preferenceMap.products || {})
+  return rawMappings.map(([legacyProductId, value]) => ({
+    legacyProductId: String(legacyProductId || '').trim(),
+    catalogItemIds: uniqueStrings([
+      value?.catalogItemId,
+      ...(value?.catalogItemIds || []),
+    ]),
+    imageUrlBySha256: {
+      ...globalImageUrls,
+      ...(value?.imageUrlBySha256 || {}),
+    },
+  })).filter((value) => value.legacyProductId && value.catalogItemIds.length)
+}
+
+function preferenceFootprint(preferences, productId) {
+  return (
+    preferences.excludedProductIds.includes(productId) ||
+    Object.hasOwn(preferences.products, productId) ||
+    Object.hasOwn(preferences.preferredCoverImage, productId) ||
+    Object.hasOwn(preferences.manualNote, productId)
+  )
+}
+
+export function migrateCatalogItemPreferences({ preferences, prototypes, preferenceMap }) {
+  const before = structuredClone(preferences || EMPTY_PREFERENCES)
+  const normalized = migratePrototypePreferences({
+    preferences: before,
+    aliases: {},
+    prototypes,
+  })
+  const next = normalized.preferences
+  const prototypeByCatalogItemId = new Map()
+  for (const prototype of prototypes || []) {
+    for (const catalogItemId of prototype.catalogItemIds || []) {
+      if (prototypeByCatalogItemId.has(catalogItemId)) {
+        throw new Error(`Catalog Item belongs to multiple Prototypes: ${catalogItemId}.`)
+      }
+      prototypeByCatalogItemId.set(catalogItemId, prototype)
+    }
+  }
+  const groups = new Map()
+  const summary = {
+    catalogMappings: 0,
+    cover: 0,
+    exclude: 0,
+    notes: 0,
+    conflicts: [],
+    invalidCoverPreferences: 0,
+    unresolvedMappings: 0,
+  }
+  for (const mapping of normalizeCatalogPreferenceMappings(preferenceMap)) {
+    const targets = [...new Set(mapping.catalogItemIds
+      .map((catalogItemId) => prototypeByCatalogItemId.get(catalogItemId)?.prototypeId)
+      .filter(Boolean))]
+    if (targets.length !== 1) {
+      summary.unresolvedMappings += 1
+      summary.conflicts.push({
+        kind: 'catalog_mapping',
+        legacyProductId: mapping.legacyProductId,
+        catalogItemIds: mapping.catalogItemIds,
+        targetPrototypeIds: targets,
+      })
+      continue
+    }
+    const values = groups.get(targets[0]) || []
+    values.push(mapping)
+    groups.set(targets[0], values.sort((left, right) => (
+      left.legacyProductId.localeCompare(right.legacyProductId)
+    )))
+  }
+
+  const excluded = new Set(next.excludedProductIds)
+  const prototypeById = new Map((prototypes || []).map((value) => [value.prototypeId, value]))
+  for (const [prototypeId, mappings] of [...groups.entries()].sort(([left], [right]) => (
+    left.localeCompare(right)
+  ))) {
+    const prototype = prototypeById.get(prototypeId)
+    const activeMappings = mappings.filter((mapping) => (
+      preferenceFootprint(next, mapping.legacyProductId)
+    ))
+    if (!activeMappings.length) continue
+    summary.catalogMappings += activeMappings.length
+    const targetEntry = next.products[prototypeId] && typeof next.products[prototypeId] === 'object'
+      ? next.products[prototypeId]
+      : {}
+    next.products[prototypeId] = targetEntry
+
+    const targetCover = coverValue(targetEntry, next.preferredCoverImage[prototypeId])
+    const coverCandidates = activeMappings.map((mapping) => {
+      const legacyEntry = next.products[mapping.legacyProductId] || {}
+      const raw = coverValue(legacyEntry, next.preferredCoverImage[mapping.legacyProductId])
+      const mapped = mapping.imageUrlBySha256[raw] || raw
+      return {
+        legacyProductId: mapping.legacyProductId,
+        raw,
+        valid: validCover(mapped, prototype),
+      }
+    }).filter((value) => value.raw)
+    const validTargetCover = validCover(targetCover, prototype)
+    const validMappedCovers = coverCandidates.filter((value) => value.valid)
+    summary.invalidCoverPreferences += coverCandidates.length - validMappedCovers.length
+    const selectedCover = validTargetCover || validMappedCovers[0]?.valid || null
+    setCover(targetEntry, selectedCover)
+    if (!validTargetCover && selectedCover) summary.cover += 1
+    const distinctCovers = uniqueStrings([
+      validTargetCover?.value,
+      ...validMappedCovers.map((value) => value.valid.value),
+    ])
+    if (distinctCovers.length > 1) {
+      summary.conflicts.push({
+        kind: 'cover',
+        survivorPrototypeId: prototypeId,
+        chosen: selectedCover.value,
+        candidates: validMappedCovers.map((value) => ({
+          legacyProductId: value.legacyProductId,
+          value: value.valid.value,
+        })),
+      })
+    }
+
+    const legacyIds = mappings.map((mapping) => mapping.legacyProductId)
+    const excludedLegacyIds = legacyIds.filter((productId) => excluded.has(productId))
+    const previousExcluded = excluded.has(prototypeId)
+    if (excludedLegacyIds.length === legacyIds.length) excluded.add(prototypeId)
+    else if (!previousExcluded) excluded.delete(prototypeId)
+    if (previousExcluded !== excluded.has(prototypeId)) summary.exclude += 1
+    if (excludedLegacyIds.length > 0 && excludedLegacyIds.length < legacyIds.length) {
+      summary.conflicts.push({
+        kind: 'exclude',
+        survivorPrototypeId: prototypeId,
+        resolution: 'visible',
+        excludedLegacyProductIds: excludedLegacyIds,
+      })
+    }
+
+    const previousNote = String(targetEntry.manualNote || next.manualNote[prototypeId] || '').trim()
+    const notes = [
+      { prototypeId, note: previousNote },
+      ...activeMappings.map((mapping) => ({
+        prototypeId: mapping.legacyProductId,
+        note: String(
+          next.products[mapping.legacyProductId]?.manualNote ||
+          next.manualNote[mapping.legacyProductId] ||
+          '',
+        ).trim(),
+      })),
+    ]
+    const mergedNote = mergePrototypeNotes(notes)
+    if (mergedNote) targetEntry.manualNote = mergedNote
+    else delete targetEntry.manualNote
+    if (mergedNote && mergedNote !== previousNote && notes.some((value) => (
+      value.prototypeId !== prototypeId && value.note
+    ))) summary.notes += 1
+
+    for (const legacyProductId of legacyIds) {
+      excluded.delete(legacyProductId)
+      delete next.products[legacyProductId]
+      delete next.preferredCoverImage[legacyProductId]
+      delete next.manualNote[legacyProductId]
+    }
+    if (Object.keys(targetEntry).length === 0) delete next.products[prototypeId]
+  }
+
+  next.excludedProductIds = [...excluded].sort()
+  next.preferredCoverImage = Object.fromEntries(Object.entries(next.products)
+    .map(([prototypeId, entry]) => [prototypeId, coverValue(entry)])
+    .filter(([, value]) => value))
+  next.manualNote = Object.fromEntries(Object.entries(next.products)
+    .map(([prototypeId, entry]) => [prototypeId, String(entry.manualNote || '').trim()])
+    .filter(([, value]) => value))
+
+  return {
+    preferences: next,
+    changed: JSON.stringify(before) !== JSON.stringify(next),
+    summary: { ...summary, conflictCount: summary.conflicts.length },
+  }
+}
+
+export async function backupPreferencesOnce(
+  preferencesPath,
+  backupLabel = 'rem-v1-consolidation',
+) {
+  if (!/^[a-z0-9-]+$/u.test(backupLabel)) throw new Error('Preference backup label is invalid.')
+  const backupPath = `${preferencesPath}.pre-${backupLabel}.bak`
   try {
     await copyFile(preferencesPath, backupPath, fsConstants.COPYFILE_EXCL)
     return { created: true, backupPath }
@@ -238,7 +430,13 @@ export async function backupPreferencesOnce(preferencesPath) {
   }
 }
 
-export async function migratePrototypePreferencesFile({ preferencesPath, aliases, prototypes }) {
+export async function migratePrototypePreferencesFile({
+  preferencesPath,
+  aliases,
+  prototypes,
+  catalogPreferenceMap = null,
+  backupLabel = 'rem-v1-consolidation',
+}) {
   const current = await readJson(preferencesPath)
   if (!current) {
     return {
@@ -248,10 +446,21 @@ export async function migratePrototypePreferencesFile({ preferencesPath, aliases
       backup: { created: false, backupPath: null },
     }
   }
-  const migration = migratePrototypePreferences({ preferences: current, aliases, prototypes })
+  const aliasMigration = migratePrototypePreferences({ preferences: current, aliases, prototypes })
+  const migration = catalogPreferenceMap
+    ? migrateCatalogItemPreferences({
+      preferences: aliasMigration.preferences,
+      prototypes,
+      preferenceMap: catalogPreferenceMap,
+    })
+    : aliasMigration
+  if (catalogPreferenceMap) {
+    migration.summary.aliasMigration = aliasMigration.summary
+  }
+  migration.changed = JSON.stringify(current) !== JSON.stringify(migration.preferences)
   let backup = { created: false, backupPath: null }
   if (migration.changed) {
-    backup = await backupPreferencesOnce(preferencesPath)
+    backup = await backupPreferencesOnce(preferencesPath, backupLabel)
     await atomicWriteJson(preferencesPath, migration.preferences)
   }
   return { ...migration, backup }
