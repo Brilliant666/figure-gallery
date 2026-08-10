@@ -6,7 +6,7 @@ The shared pipeline reads three bounded public catalog sources:
 
 - Solaris Japan collection JSON (wide baseline);
 - Good Smile current reviewed product seeds and, for `sync`, the legacy public search;
-- one Japan Figure UCP catalog query.
+- one Japan Figure UCP catalog query, exhausted through its explicit cursor pagination.
 
 The fetcher checks `robots.txt` before source requests, fails closed when that policy cannot be checked, delays requests per host, validates every redirect, and stops on 401, 403, or 429. Hpoi and all unlisted hosts are hard-denied. There is no Firecrawl, proxy, browser automation, login, cookie, source guessing, or fourth connector.
 
@@ -48,4 +48,4 @@ The default runtime location is:
 
 `baseline-comparison-input.json` exposes deterministic title/manufacturer keys plus source identities and URLs for comparing the new catalog with a previously reviewed local baseline without importing either runtime schema into the other tool.
 
-`sync` includes the bounded Good Smile legacy backfill. `refresh` omits that historical search and checks the normal sources. Both merge with existing runtime records, preserve source provenance, and report unchanged/changed/new counts. Runtime files contain no credentials and must never be committed.
+`sync` includes the bounded Good Smile legacy backfill. `refresh` omits that historical search and checks the normal sources. Both merge with existing runtime records, preserve source provenance, and report unchanged/changed/new counts using the versioned business digest rather than volatile observation timestamps or response ordering. Runtime files contain no credentials and must never be committed.

@@ -5,6 +5,7 @@ import os from 'node:os'
 import path from 'node:path'
 import { runPipeline } from '../src/pipeline.js'
 import { resolveProfile } from '../src/profiles.js'
+import { JapanFigurePaginationError } from '../src/connectors/japan-figure.js'
 
 function goodSmileHtml(url) {
   const id = String(url).match(/\/product\/(\d+)/u)?.[1]
@@ -49,7 +50,7 @@ test('offline pipeline writes wide, eligible, grouping, review, and projection c
     },
     async postJson() {
       this.requestCount += 1
-      return { result: { structuredContent: { products: [] } } }
+      return { result: { structuredContent: { products: [], pagination: { has_next_page: false, cursor: null } } } }
     },
   }
   try {
@@ -58,6 +59,8 @@ test('offline pipeline writes wide, eligible, grouping, review, and projection c
     assert.equal(first.summary.sourceStats.solaris.raw, 5)
     assert.equal(first.summary.wideCatalog, 5)
     assert.equal(first.summary.poseEligible, 3)
+    assert.equal(first.summary.sourceStats['japan-figure'].pagination.pagesFetched, 1)
+    assert.equal(first.summary.sourceStats['japan-figure'].pagination.paginationExhausted, true)
     assert.equal(first.summary.exclusionReasons['Deformed/Q'], 1)
     assert.equal(first.summary.exclusionReasons.Nendoroid, 1)
     assert.equal(first.projectionInput.count, 3)
@@ -75,6 +78,19 @@ test('offline pipeline writes wide, eligible, grouping, review, and projection c
     const grouping = JSON.parse(await readFile(path.join(root, 'cheshire', 'grouping-results.json'), 'utf8'))
     assert.equal(projection.count, projection.items.length)
     assert.ok(grouping.pairDecisions.every((pair) => pair.pairId && pair.items.every((item) => item.id)))
+
+    const invalidPaginationFetcher = {
+      ...fetcher,
+      requestCount: 0,
+      async postJson() {
+        this.requestCount += 1
+        return { result: { structuredContent: { products: [], pagination: { has_next_page: true, cursor: null } } } }
+      },
+    }
+    await assert.rejects(
+      runPipeline({ mode: 'refresh', profile, fetcher: invalidPaginationFetcher, now: '2026-08-10T00:20:00.000Z' }),
+      (error) => error instanceof JapanFigurePaginationError && error.code === 'protocol_error',
+    )
   } finally {
     if (previousRoot === undefined) delete process.env.CHARACTER_FIGURE_COLLECTOR_ROOT
     else process.env.CHARACTER_FIGURE_COLLECTOR_ROOT = previousRoot

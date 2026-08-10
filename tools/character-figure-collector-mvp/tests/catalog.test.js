@@ -1,10 +1,17 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { mergeCatalog, groupingInputItem } from '../src/catalog.js'
+import { BUSINESS_DIGEST_VERSION, businessDigest, mergeCatalog, groupingInputItem } from '../src/catalog.js'
 import { record } from '../src/records.js'
 import { resolveProfile } from '../src/profiles.js'
 
-function sourceRecord({ family = 'solaris', id = '1', title = 'Azur Lane Cheshire Summer Pose Figure', image = 'https://img.example/a.jpg' } = {}) {
+function sourceRecord({
+  family = 'solaris',
+  id = '1',
+  title = 'Azur Lane Cheshire Summer Pose Figure',
+  manufacturer = 'Taito',
+  scale = null,
+  images = ['https://img.example/a.jpg'],
+} = {}) {
   return record({
     sourceFamily: family,
     sourceId: id,
@@ -12,9 +19,10 @@ function sourceRecord({ family = 'solaris', id = '1', title = 'Azur Lane Cheshir
     character: resolveProfile('cheshire'),
     title,
     series: 'Azur Lane',
-    manufacturer: 'Taito',
+    manufacturer,
     category: 'Prize',
-    imageUrls: [image],
+    scale,
+    imageUrls: images,
   })
 }
 
@@ -47,11 +55,18 @@ test('source identity, exact cross-source merge, and refresh are idempotent', ()
   const grouping = groupingInputItem(crossSource.items[0])
   assert.match(grouping.comparisonKey, /^azurlanecheshiresummerposefigure\|taito$/u)
   assert.equal(grouping.sourceIdentities.length, 2)
+  const reorderedCollections = {
+    ...crossSource.items[0],
+    tags: [...crossSource.items[0].tags].reverse(),
+    images: [...crossSource.items[0].images].reverse(),
+    sourceRefs: [...crossSource.items[0].sourceRefs].reverse(),
+  }
+  assert.equal(businessDigest(reorderedCollections), crossSource.items[0].businessDigest)
 })
 
 test('field changes are reported without creating another item', () => {
   const first = mergeCatalog([], [sourceRecord()], '2026-08-10T00:00:00.000Z')
-  const changed = sourceRecord({ image: 'https://img.example/b.jpg' })
+  const changed = sourceRecord({ images: ['https://img.example/b.jpg'] })
   const second = mergeCatalog(first.items, [changed], '2026-08-10T00:10:00.000Z')
   assert.equal(second.items.length, 1)
   assert.equal(second.changes.changed, 1)
@@ -59,13 +74,99 @@ test('field changes are reported without creating another item', () => {
 
 test('volatile source observation timestamps do not create false catalog changes', () => {
   const initial = sourceRecord()
-  initial.sourceUpdatedAt = '2026-08-10T00:00:00.000Z'
+  Object.assign(initial, {
+    sourceUpdatedAt: '2026-08-10T00:00:00.000Z',
+    updated_at: '2026-08-10T00:00:00.000Z',
+    fetchedAt: '2026-08-10T00:00:01.000Z',
+    lastFetchedAt: '2026-08-10T00:00:02.000Z',
+    requestTimestamp: '2026-08-10T00:00:03.000Z',
+    crawlTimestamp: '2026-08-10T00:00:04.000Z',
+    httpResponseTiming: 123,
+    runtimePath: 'runtime/first',
+    generatedAt: '2026-08-10T00:00:05.000Z',
+  })
   const first = mergeCatalog([], [initial], '2026-08-10T00:00:00.000Z')
   const refreshed = sourceRecord()
-  refreshed.sourceUpdatedAt = '2026-08-10T00:10:00.000Z'
+  Object.assign(refreshed, {
+    sourceUpdatedAt: '2026-08-10T00:10:00.000Z',
+    updated_at: '2026-08-10T00:10:00.000Z',
+    fetchedAt: '2026-08-10T00:10:01.000Z',
+    lastFetchedAt: '2026-08-10T00:10:02.000Z',
+    requestTimestamp: '2026-08-10T00:10:03.000Z',
+    crawlTimestamp: '2026-08-10T00:10:04.000Z',
+    httpResponseTiming: 456,
+    runtimePath: 'runtime/second',
+    generatedAt: '2026-08-10T00:10:05.000Z',
+  })
   const second = mergeCatalog(first.items, [refreshed], '2026-08-10T00:10:00.000Z')
   assert.equal(second.changes.unchanged, 1)
   assert.equal(second.changes.changed, 0)
+  assert.equal(second.items[0].sourceUpdatedAt, refreshed.sourceUpdatedAt)
+  assert.equal(second.items[0].businessDigest, first.items[0].businessDigest)
+})
+
+test('image response ordering does not create a false catalog change', () => {
+  const first = mergeCatalog([], [sourceRecord({ images: [
+    'https://img.example/a.jpg',
+    'https://img.example/b.jpg',
+    'https://img.example/c.jpg',
+  ] })], '2026-08-10T00:00:00.000Z')
+  const second = mergeCatalog(first.items, [sourceRecord({ images: [
+    'https://img.example/c.jpg',
+    'https://img.example/a.jpg',
+    'https://img.example/b.jpg',
+  ] })], '2026-08-10T00:10:00.000Z')
+  assert.equal(second.changes.changed, 0)
+  assert.equal(second.changes.unchanged, 1)
+  assert.equal(second.items[0].businessDigest, first.items[0].businessDigest)
+})
+
+test('title, manufacturer, scale, and image-set changes remain real business changes', () => {
+  const first = mergeCatalog([], [sourceRecord()], '2026-08-10T00:00:00.000Z')
+  const changes = [
+    sourceRecord({ title: 'Azur Lane Cheshire Winter Pose Figure' }),
+    sourceRecord({ manufacturer: 'APEX' }),
+    sourceRecord({ scale: '1/7' }),
+    sourceRecord({ images: ['https://img.example/a.jpg', 'https://img.example/b.jpg'] }),
+  ]
+  for (const incoming of changes) {
+    const refreshed = mergeCatalog(first.items, [incoming], '2026-08-10T00:10:00.000Z')
+    assert.equal(refreshed.changes.changed, 1)
+    assert.equal(refreshed.changes.unchanged, 0)
+  }
+})
+
+test('legacy digest baselines upgrade silently and remain idempotent', () => {
+  const first = mergeCatalog([], [sourceRecord({ images: [
+    'https://img.example/a.jpg',
+    'https://img.example/b.jpg',
+  ] })], '2026-08-10T00:00:00.000Z')
+  const legacy = {
+    ...first.items[0],
+    images: [...first.items[0].images].reverse(),
+    sourceUpdatedAt: '2026-08-10T00:01:00.000Z',
+    digest: 'legacy-v1-digest',
+  }
+  delete legacy.businessDigest
+  delete legacy.businessDigestVersion
+
+  const migrated = mergeCatalog([legacy], [sourceRecord({ images: [
+    'https://img.example/b.jpg',
+    'https://img.example/a.jpg',
+  ] })], '2026-08-10T00:10:00.000Z')
+  assert.equal(migrated.changes.changed, 0)
+  assert.equal(migrated.changes.unchanged, 1)
+  assert.equal(migrated.items[0].businessDigestVersion, BUSINESS_DIGEST_VERSION)
+  assert.equal(migrated.items[0].businessDigest, businessDigest(migrated.items[0]))
+  assert.equal(migrated.items[0].digest, migrated.items[0].businessDigest)
+
+  const repeated = mergeCatalog(migrated.items, [sourceRecord({ images: [
+    'https://img.example/a.jpg',
+    'https://img.example/b.jpg',
+  ] })], '2026-08-10T00:20:00.000Z')
+  assert.equal(repeated.changes.changed, 0)
+  assert.equal(repeated.changes.unchanged, 1)
+  assert.equal(repeated.items[0].businessDigest, migrated.items[0].businessDigest)
 })
 
 test('profile semantic core merges the three reviewed GSC/Solaris products', () => {

@@ -1,7 +1,7 @@
 import path from 'node:path'
 import { collectSolaris } from './connectors/solaris.js'
 import { collectGoodSmile } from './connectors/goodsmile.js'
-import { collectJapanFigure } from './connectors/japan-figure.js'
+import { collectJapanFigure, JapanFigurePaginationError } from './connectors/japan-figure.js'
 import { mergeCatalog, groupingInputItem } from './catalog.js'
 import { looksLikeFigure, poseExclusionReason } from './pose-eligibility.js'
 import { matchesProfileRecord } from './profiles.js'
@@ -18,7 +18,8 @@ async function optional(sourceName, operation, warnings) {
     return await operation()
   } catch (error) {
     if (error instanceof AccessBlockedError) throw error
-    warnings.push({ source: sourceName, error: error.message })
+    if (error instanceof JapanFigurePaginationError) throw error
+    warnings.push({ source: sourceName, error: error.message, ...(error.code ? { code: error.code } : {}) })
     return { source: sourceName, raw: 0, records: [] }
   }
 }
@@ -82,13 +83,17 @@ export async function runPipeline({ mode, profile, fetcher, now = new Date().toI
     raw: result.raw,
     characterMatched: result.matched,
     figureLike: result.eligibleBroad,
+    ...(result.pagination ? { pagination: result.pagination } : {}),
   }]))
+  const sourceStatuses = filteredBySource.map((result) => result.status).filter(Boolean)
   const summary = {
     schemaVersion: 1,
     runId,
     mode,
     character: profile.slug,
-    status: warnings.length ? 'pass_with_warnings' : 'pass',
+    status: sourceStatuses.includes('ERROR') ? 'error'
+      : sourceStatuses.includes('INCOMPLETE') ? 'incomplete'
+        : warnings.length ? 'pass_with_warnings' : 'pass',
     sourceStats,
     wideCatalog: wide.length,
     poseEligible: poseEligible.length,

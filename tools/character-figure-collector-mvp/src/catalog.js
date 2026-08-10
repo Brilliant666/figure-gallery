@@ -1,32 +1,66 @@
-import { compact, normalized, sha256, unique } from './text.js'
+import { clean, compact, normalized, sha256, unique } from './text.js'
 import { semanticMergeCompatible } from './semantic-title.js'
+
+export const BUSINESS_DIGEST_VERSION = 2
 
 function sourceKey(source) {
   return `${normalized(source.family)}:${normalized(source.sourceId || source.url)}`
 }
 
-function itemDigest(item) {
-  const stable = {
-    title: item.title,
-    series: item.series,
-    manufacturer: item.manufacturer,
-    category: item.category,
-    description: item.description,
-    scale: item.scale,
-    heightMm: item.heightMm,
-    release: item.release,
-    productType: item.productType,
-    tags: item.tags,
-    images: item.images,
-    sourceRefs: item.sourceRefs,
-    available: item.available,
-    profilePoseExclusion: item.profilePoseExclusion,
-    sourcePoseExclusion: item.sourcePoseExclusion,
-    semanticTitle: item.semanticTitle,
-    manufacturerKey: item.manufacturerKey,
-    structuralVariantSignature: item.structuralVariantSignature,
+function canonicalStrings(values = []) {
+  return unique(values).sort((left, right) => left.localeCompare(right, 'en'))
+}
+
+function canonicalImages(images = []) {
+  const byIdentity = new Map()
+  for (const image of images) {
+    const url = clean(image?.url)
+    if (!url) continue
+    const sourceFamily = normalized(image?.sourceFamily)
+    byIdentity.set(`${url}\u0000${sourceFamily}`, { url, sourceFamily })
   }
-  return sha256(JSON.stringify(stable))
+  return [...byIdentity.values()].sort((left, right) =>
+    left.url.localeCompare(right.url, 'en') || left.sourceFamily.localeCompare(right.sourceFamily, 'en'),
+  )
+}
+
+function canonicalSourceRefs(sourceRefs = []) {
+  const byIdentity = new Map()
+  for (const source of sourceRefs) {
+    const value = {
+      family: normalized(source?.family),
+      sourceId: clean(source?.sourceId),
+      url: clean(source?.url),
+    }
+    if (!value.family || (!value.sourceId && !value.url)) continue
+    byIdentity.set(`${value.family}\u0000${value.sourceId || value.url}\u0000${value.url}`, value)
+  }
+  return [...byIdentity.values()].sort((left, right) =>
+    left.family.localeCompare(right.family, 'en') ||
+    left.sourceId.localeCompare(right.sourceId, 'en') ||
+    left.url.localeCompare(right.url, 'en'),
+  )
+}
+
+export function businessDigest(item) {
+  const business = {
+    characterId: clean(item.characterId),
+    characterSlug: normalized(item.characterSlug),
+    title: clean(item.title),
+    series: clean(item.series),
+    manufacturer: clean(item.manufacturer),
+    category: clean(item.category),
+    description: clean(item.description),
+    scale: item.scale == null ? null : clean(item.scale),
+    heightMm: item.heightMm == null ? null : Number(item.heightMm),
+    release: clean(item.release),
+    productType: clean(item.productType),
+    tags: canonicalStrings(item.tags),
+    images: canonicalImages(item.images),
+    sourceRefs: canonicalSourceRefs(item.sourceRefs),
+    available: typeof item.available === 'boolean' ? item.available : null,
+  }
+  return sha256(JSON.stringify(business))
 }
 
 function combineRecords(records, existingId = null, timestamps = {}) {
@@ -67,7 +101,11 @@ function combineRecords(records, existingId = null, timestamps = {}) {
     firstSeenAt: timestamps.firstSeenAt ?? null,
     lastSeenAt: timestamps.lastSeenAt ?? null,
   }
-  result.digest = itemDigest(result)
+  result.businessDigestVersion = BUSINESS_DIGEST_VERSION
+  result.businessDigest = businessDigest(result)
+  // Keep the historical field while runtime files transition to the explicit
+  // business digest contract. Consumers should prefer businessDigest.
+  result.digest = result.businessDigest
   return result
 }
 
@@ -108,7 +146,10 @@ export function mergeCatalog(existingItems = [], incomingRecords = [], now = new
     const candidate = combineRecords(group.records, group.existing?.catalogItemId, { firstSeenAt, lastSeenAt: group.touched ? now : group.existing?.lastSeenAt })
     if (!group.existing) changes.new += 1
     else if (!group.touched) changes.retained += 1
-    else if (candidate.digest === group.existing.digest) changes.unchanged += 1
+    // Recompute the stored side with the current contract instead of trusting
+    // a legacy digest. A digest algorithm upgrade alone is not a business
+    // change; the returned candidate silently writes the new baseline.
+    else if (candidate.businessDigest === businessDigest(group.existing)) changes.unchanged += 1
     else changes.changed += 1
     items.push(candidate)
   }

@@ -53,7 +53,9 @@ jobs:
         with:
           node-version: 22.23.1
           cache: npm
-          cache-dependency-path: tools/personal-gallery-mvp/package-lock.json
+          cache-dependency-path: |
+            tools/personal-gallery-mvp/package-lock.json
+            tools/character-figure-collector-mvp/package-lock.json
 
       - name: Verify toolchain and official npm registry
         shell: bash
@@ -84,6 +86,14 @@ jobs:
       - name: Run offline unit and integration tests behind the network guard
         working-directory: tools/personal-gallery-mvp
         run: npm test
+
+      - name: Install and test the shared character collector offline
+        shell: bash
+        working-directory: tools/character-figure-collector-mvp
+        run: |
+          set -euo pipefail
+          npm ci
+          npm test
 
       - name: Install project-local Playwright Chromium
         working-directory: tools/personal-gallery-mvp
