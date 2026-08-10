@@ -8,9 +8,10 @@ import {
   ART_SCALE_FILTER_LEAK_ID,
   buildProjectionFromCollector,
   buildPrototypeProjection,
+  buildPrototypeProjectionState,
   classifyCatalogItem,
+  legacyMembershipPrototypeId,
   sourceFamilyForUrl,
-  stablePrototypeId,
 } from '../../src/projection/prototype-projection.js'
 
 function item(id, overrides = {}) {
@@ -91,10 +92,13 @@ test('catalog classification preserves the frozen useful static categories', () 
   assert.equal(classifyCatalogItem({ category: '' }), 'unknown')
 })
 
-test('prototype IDs are deterministic and independent of input item order', () => {
-  assert.equal(stablePrototypeId(['item-b', 'item-a']), stablePrototypeId(['item-a', 'item-b']))
-  assert.match(stablePrototypeId(['item-a']), /^rem-proto-[a-f0-9]{16}$/u)
-  assert.throws(() => stablePrototypeId(['item-a', 'item-a']), /unique Catalog Item IDs/u)
+test('legacy bootstrap IDs are deterministic and independent of input item order', () => {
+  assert.equal(
+    legacyMembershipPrototypeId(['item-b', 'item-a']),
+    legacyMembershipPrototypeId(['item-a', 'item-b']),
+  )
+  assert.match(legacyMembershipPrototypeId(['item-a']), /^rem-proto-[a-f0-9]{16}$/u)
+  assert.throws(() => legacyMembershipPrototypeId(['item-a', 'item-a']), /unique Catalog Item IDs/u)
 })
 
 test('projection excludes the known bust leak and applies AUTO plus frozen SAME edges', () => {
@@ -159,6 +163,47 @@ test('duplicate Catalog Item IDs fail before grouping', () => {
   const inputs = syntheticInputs()
   inputs.figures.items[1].id = 'item-a'
   assert.throws(() => buildPrototypeProjection(inputs), /unique, non-empty Catalog Item IDs/u)
+})
+
+test('an existing registry gives a new group an anchor ID and preserves it when membership expands', () => {
+  const baseItems = [item('item-a'), item(ART_SCALE_FILTER_LEAK_ID)]
+  const base = buildPrototypeProjectionState({
+    figures: { count: baseItems.length, character: 'Rem', items: baseItems },
+    groupingResults: { pairDecisions: [], autoMergeGroups: 0, autoMergeItems: 0 },
+    imageEvidence: { reviewPairs: [] },
+    generatedAt: '2026-08-10T00:00:00.000Z',
+  })
+  const withNewItems = [...baseItems, item('item-new')]
+  const withNew = buildPrototypeProjectionState({
+    figures: { count: withNewItems.length, character: 'Rem', items: withNewItems },
+    groupingResults: { pairDecisions: [], autoMergeGroups: 0, autoMergeItems: 0 },
+    imageEvidence: { reviewPairs: [] },
+    identityRegistry: base.identityRegistry,
+    generatedAt: '2026-08-11T00:00:00.000Z',
+  })
+  const newPrototype = withNew.projection.prototypes.find((prototype) => (
+    prototype.catalogItemIds.includes('item-new')
+  ))
+  const expandedItems = [...withNewItems, item('item-new-color')]
+  const expanded = buildPrototypeProjectionState({
+    figures: { count: expandedItems.length, character: 'Rem', items: expandedItems },
+    groupingResults: {
+      pairDecisions: [{ decision: 'AUTO_MERGE', items: ['item-new', 'item-new-color'] }],
+      autoMergeGroups: 1,
+      autoMergeItems: 2,
+    },
+    imageEvidence: { reviewPairs: [] },
+    identityRegistry: withNew.identityRegistry,
+    generatedAt: '2026-08-12T00:00:00.000Z',
+  })
+  const expandedPrototype = expanded.projection.prototypes.find((prototype) => (
+    prototype.catalogItemIds.includes('item-new')
+  ))
+
+  assert.notEqual(newPrototype.prototypeId, legacyMembershipPrototypeId(['item-new']))
+  assert.equal(expandedPrototype.prototypeId, newPrototype.prototypeId)
+  assert.notEqual(expandedPrototype.membershipFingerprint, newPrototype.membershipFingerprint)
+  assert.deepEqual(expandedPrototype.catalogItemIds, ['item-new', 'item-new-color'])
 })
 
 test('collector loader verifies digests and writes an atomic runtime projection', async () => {

@@ -23,6 +23,10 @@ process.stdout.write(`${JSON.stringify({
   status: 'completed',
   output: path.resolve(options.output),
   ...projection.summary,
+  identity: projection.identity,
+  consolidation: projection.consolidation,
+  preferenceMigration: projection.buildResult.preferenceMigration,
+  preferenceBackupCreated: projection.buildResult.preferenceBackup.created,
   hpoiRequests: 0,
   networkRequests: 0,
 }, null, 2)}\n`)

@@ -3,6 +3,7 @@ import { promises as fs } from 'node:fs'
 import path from 'node:path'
 
 import { HPOI_FROZEN_STATUS, readSourceStatus } from '../storage/source-status.js'
+import { mergePrototypeNotes } from '../projection/prototype-preference-migration.js'
 import {
   characterPreferencesPath,
   ensureCharacterStorage,
@@ -31,6 +32,12 @@ const PROJECTION_SOURCE_FAMILIES = new Set([
   'japan-figure',
   'unknown',
 ])
+
+const DEFAULT_PROJECTION_SORT = Object.freeze({
+  mode: 'recommended_reference_completeness_v1',
+  label: '推荐（参考资料完整度）',
+  signals: [],
+})
 
 async function readJson(filePath, fallback = null) {
   try {
@@ -369,6 +376,120 @@ function summarize(products, failures) {
   }
 }
 
+function resolvePrototypeAliasValue(value, aliases = {}) {
+  let current = cleanText(value)
+  if (!current) return ''
+  const seen = new Set()
+  while (Object.hasOwn(aliases, current)) {
+    if (seen.has(current)) return ''
+    seen.add(current)
+    current = cleanText(aliases[current])
+    if (!current) return ''
+  }
+  return current
+}
+
+export function normalizePrototypeAliases(raw = {}, validPrototypeIds = []) {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {}
+  const valid = new Set(validPrototypeIds.filter((value) => typeof value === 'string' && value))
+  const aliases = Object.fromEntries(
+    Object.entries(raw)
+      .filter(([retired, survivor]) => (
+        typeof retired === 'string' && retired && typeof survivor === 'string' && survivor && retired !== survivor
+      ))
+      .sort(([left], [right]) => left.localeCompare(right)),
+  )
+  const normalized = {}
+  for (const retired of Object.keys(aliases)) {
+    const survivor = resolvePrototypeAliasValue(retired, aliases)
+    if (survivor && survivor !== retired && (valid.size === 0 || valid.has(survivor))) {
+      normalized[retired] = survivor
+    }
+  }
+  return normalized
+}
+
+export function canonicalizePrototypePreferences(raw = {}, aliases = {}) {
+  const preferences = normalizePreferences(raw)
+  const normalizedAliases = normalizePrototypeAliases(aliases)
+  if (Object.keys(normalizedAliases).length === 0) return preferences
+
+  const retiredBySurvivor = new Map()
+  for (const [retired, survivor] of Object.entries(normalizedAliases)) {
+    const values = retiredBySurvivor.get(survivor) || []
+    values.push(retired)
+    retiredBySurvivor.set(survivor, values)
+  }
+  for (const values of retiredBySurvivor.values()) values.sort()
+
+  const originalExcluded = new Set(preferences.excludedProductIds)
+  const excludedProductIds = preferences.excludedProductIds.filter((id) => (
+    !Object.hasOwn(normalizedAliases, id) && !retiredBySurvivor.has(id)
+  ))
+  for (const [survivor, retiredIds] of [...retiredBySurvivor.entries()].sort(([left], [right]) => left.localeCompare(right))) {
+    const retiredSignals = retiredIds.filter((id) => originalExcluded.has(id))
+    const survivorSignal = originalExcluded.has(survivor)
+    // A canonical survivor-only value is a current UI decision. If a retired key is present,
+    // preserve the consolidation rule: mixed visible/excluded state stays visible.
+    if (
+      (retiredSignals.length === 0 && survivorSignal) ||
+      (survivorSignal && retiredSignals.length === retiredIds.length)
+    ) {
+      excludedProductIds.push(survivor)
+    }
+  }
+
+  const products = {}
+  const candidatesBySurvivor = new Map()
+  for (const [id, value] of Object.entries(preferences.products)) {
+    const survivor = resolvePrototypeAliasValue(id, normalizedAliases) || id
+    const candidates = candidatesBySurvivor.get(survivor) || []
+    candidates.push({ id, value })
+    candidatesBySurvivor.set(survivor, candidates)
+  }
+  for (const [survivor, candidates] of [...candidatesBySurvivor.entries()].sort(([left], [right]) => left.localeCompare(right))) {
+    candidates.sort((left, right) => {
+      if (left.id === survivor) return -1
+      if (right.id === survivor) return 1
+      return left.id.localeCompare(right.id)
+    })
+    const entry = {}
+    let coverSelected = false
+    for (const { value } of candidates) {
+      if (!coverSelected && value.preferredCoverImageUrl) {
+        entry.preferredCoverImageUrl = value.preferredCoverImageUrl
+        coverSelected = true
+      }
+      if (!coverSelected && value.preferredCoverImageId) {
+        entry.preferredCoverImageId = value.preferredCoverImageId
+        coverSelected = true
+      }
+    }
+    const manualNote = mergePrototypeNotes(candidates.map(({ id, value }) => ({
+      prototypeId: id,
+      note: value.manualNote,
+    })))
+    if (manualNote) entry.manualNote = manualNote
+    if (Object.keys(entry).length > 0) products[survivor] = entry
+  }
+
+  return normalizePreferences({
+    schemaVersion: preferences.schemaVersion,
+    excludedProductIds,
+    excludedImageSha256: preferences.excludedImageSha256,
+    products,
+  })
+}
+
+function normalizeProjectionSort(raw = {}) {
+  const label = raw?.label === '推荐' ? '推荐' : DEFAULT_PROJECTION_SORT.label
+  return {
+    mode: cleanText(raw?.mode, DEFAULT_PROJECTION_SORT.mode),
+    label,
+    signals: [...new Set(asArray(raw?.signals).filter((value) => typeof value === 'string' && value.trim()))],
+  }
+}
+
 function projectionImageIdentity(url) {
   return createHash('sha256').update(url).digest('hex')
 }
@@ -541,6 +662,9 @@ function normalizeProjectionPrototype(prototype, preferences) {
   return {
     id,
     prototypeId: id,
+    membershipFingerprint: /^[a-f\d]{64}$/iu.test(cleanText(prototype.membershipFingerprint))
+      ? cleanText(prototype.membershipFingerprint).toLowerCase()
+      : '',
     viewMode: 'prototype_projection',
     catalogItemIds: asArray(prototype.catalogItemIds).filter((value) => typeof value === 'string'),
     groupedCatalogItemCount: Number(prototype.groupedCatalogItemCount) || catalogItems.length,
@@ -580,8 +704,13 @@ export async function loadPrototypeGallery(root, character) {
   if (!projection || projection.viewMode !== 'prototype_projection' || !Array.isArray(projection.prototypes)) {
     return null
   }
-  const preferences = normalizePreferences(
+  const prototypeIds = projection.prototypes
+    .map((prototype) => cleanText(prototype?.prototypeId || prototype?.id))
+    .filter(Boolean)
+  const prototypeAliases = normalizePrototypeAliases(projection.prototypeAliases, prototypeIds)
+  const preferences = canonicalizePrototypePreferences(
     await readJson(characterPreferencesPath(root, character.slug), DEFAULT_PREFERENCES),
+    prototypeAliases,
   )
   const prototypes = projection.prototypes
     .map((prototype) => normalizeProjectionPrototype(prototype, preferences))
@@ -626,6 +755,8 @@ export async function loadPrototypeGallery(root, character) {
     stopReason: null,
     products: prototypes,
     prototypes,
+    prototypeAliases,
+    sort: normalizeProjectionSort(projection.sort),
     failures,
     summary,
     preferences,
@@ -763,7 +894,12 @@ export async function savePreferences(root, characterSlug, value) {
   const character = await resolveCharacterConfig(root, characterSlug)
   if (!character) throw new Error('Unknown character for preferences.')
   await ensureCharacterStorage(root, character)
-  const preferences = normalizePreferences(value)
+  const projection = await readPrototypeProjection(root, character.slug)
+  const prototypeIds = asArray(projection?.prototypes)
+    .map((prototype) => cleanText(prototype?.prototypeId || prototype?.id))
+    .filter(Boolean)
+  const aliases = normalizePrototypeAliases(projection?.prototypeAliases, prototypeIds)
+  const preferences = canonicalizePrototypePreferences(value, aliases)
   const target = characterPreferencesPath(root, character.slug)
   await fs.mkdir(path.dirname(target), { recursive: true })
   const temporary = `${target}.${process.pid}.${Date.now()}.tmp`

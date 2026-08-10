@@ -199,6 +199,7 @@ test('two-character galleries isolate routes and preferences while sharing immut
 
   await page.goto(`${baseUrl}/gallery/characters/cheshire`)
   await expect(page.locator('#gallery-title')).toHaveText('柴郡')
+  await expect(page.locator('#sort-mode-field')).toBeHidden()
   await expect(page.locator('.product-card')).toHaveCount(7)
   await expect(page.locator('.reference-cover')).toHaveCount(7)
   const cheshireCover = await page.locator('.product-card').first().locator('.reference-cover').getAttribute('data-sha256')
@@ -207,6 +208,7 @@ test('two-character galleries isolate routes and preferences while sharing immut
 
   await page.goto(`${baseUrl}/gallery/characters/rem`)
   await expect(page.locator('#gallery-title')).toHaveText('蕾姆')
+  await expect(page.locator('#sort-mode-field')).toBeHidden()
   await expect(page.locator('.product-card')).toHaveCount(10)
   await expect(page.locator('.reference-cover')).toHaveCount(10)
   await expect(page.locator('.product-card').first()).toContainText('Synthetic Shared Figure Title')
@@ -301,6 +303,14 @@ test('Rem prototype projection renders one pose per card with search, detail, pr
     viewMode: 'prototype_projection',
     character: 'Rem',
     characterSlug: 'rem',
+    prototypeAliases: {
+      'rem-proto-yukata-retired': 'rem-proto-yukata0000001',
+    },
+    sort: {
+      mode: 'recommended_reference_completeness_v1',
+      label: '推荐',
+      signals: ['hasCover', 'imageBucket', 'sourceFamilyCount', 'hasGoodSmileEnrichment'],
+    },
     summary: {
       catalogItemCount: 3,
       projectionEligibleCount: 3,
@@ -379,6 +389,16 @@ test('Rem prototype projection renders one pose per card with search, detail, pr
     await expect(page.locator('.product-card')).toHaveCount(2)
     await expect(page.locator('#gallery-meta')).toContainText('3 个有效 Catalog Items')
     await expect(page.locator('#gallery-meta')).toContainText('2 个独立姿势')
+    await expect(page.locator('#sort-mode-field')).toBeVisible()
+    await expect(page.locator('#sort-mode')).toHaveValue('recommended_reference_completeness_v1')
+    await expect(page.locator('#sort-mode')).toContainText('推荐')
+    await expect(page.locator('body')).not.toContainText(/热门|Trending|Popularity|最新/iu)
+
+    await page.goto(`${baseUrl}/gallery/characters/rem/prototypes/rem-proto-yukata-retired`)
+    await expect(page).toHaveURL(/\/gallery\/characters\/rem\/prototypes\/rem-proto-yukata0000001$/u)
+    await expect(page.locator('.detail-image-tile')).toHaveCount(2)
+    await expect(page.locator('.catalog-item-card')).toHaveCount(2)
+    await page.goto(`${baseUrl}/gallery/characters/rem`)
 
     await page.locator('#gallery-search').fill('Renewal')
     await expect(page.locator('.product-card')).toHaveCount(1)

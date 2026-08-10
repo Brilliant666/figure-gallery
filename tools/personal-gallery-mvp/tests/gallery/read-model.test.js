@@ -5,11 +5,13 @@ import path from 'node:path'
 import test from 'node:test'
 
 import {
+  canonicalizePrototypePreferences,
   loadGalleryByQuery,
   loadPrototypeGallery,
   loadRunGallery,
   listRecentRuns,
   normalizePreferences,
+  normalizePrototypeAliases,
   normalizeQuery,
   resolveMediaObject,
   savePreferences,
@@ -362,6 +364,70 @@ test('projects official-source fields and resolves the stable Cheshire gallery t
   assert.equal(recent[0].sourceMode, 'official_sources')
 })
 
+test('canonicalizes retired prototype preference keys without hiding a mixed-state survivor', () => {
+  const survivor = 'rem-proto-survivor'
+  const retiredA = 'rem-proto-retired-a'
+  const retiredB = 'rem-proto-retired-b'
+  const aliases = normalizePrototypeAliases({
+    [retiredA]: survivor,
+    [retiredB]: survivor,
+  }, [survivor])
+  const normalized = canonicalizePrototypePreferences({
+    excludedProductIds: [retiredA],
+    excludedImageSha256: [SHA],
+    products: {
+      [retiredA]: { preferredCoverImageUrl: 'https://images.goodsmile.info/rem-retired.jpg' },
+      [retiredB]: { manualNote: 'retired note' },
+    },
+  }, aliases)
+
+  assert.deepEqual(normalized.excludedProductIds, [])
+  assert.deepEqual(normalized.excludedImageSha256, [SHA])
+  assert.deepEqual(normalized.products[survivor], {
+    preferredCoverImageUrl: 'https://images.goodsmile.info/rem-retired.jpg',
+    manualNote: 'retired note',
+  })
+  assert.equal(Object.hasOwn(normalized.products, retiredA), false)
+  assert.equal(Object.hasOwn(normalized.products, retiredB), false)
+
+  const allExcluded = canonicalizePrototypePreferences({
+    excludedProductIds: [survivor, retiredA, retiredB],
+  }, aliases)
+  assert.deepEqual(allExcluded.excludedProductIds, [survivor])
+  const currentUiExclusion = canonicalizePrototypePreferences({
+    excludedProductIds: [survivor],
+  }, aliases)
+  assert.deepEqual(currentUiExclusion.excludedProductIds, [survivor])
+
+  const survivorCoverWins = canonicalizePrototypePreferences({
+    products: {
+      [survivor]: { preferredCoverImageId: SHA },
+      [retiredA]: { preferredCoverImageUrl: 'https://images.goodsmile.info/retired-cover.jpg' },
+    },
+  }, aliases)
+  assert.deepEqual(survivorCoverWins.products[survivor], { preferredCoverImageId: SHA })
+
+  const duplicateNotes = canonicalizePrototypePreferences({
+    products: {
+      [survivor]: { manualNote: 'same note' },
+      [retiredA]: { manualNote: 'same note' },
+      [retiredB]: { manualNote: 'same note' },
+    },
+  }, aliases)
+  assert.equal(duplicateNotes.products[survivor].manualNote, 'same note')
+
+  const distinctNotes = canonicalizePrototypePreferences({
+    products: {
+      [survivor]: { manualNote: 'survivor note' },
+      [retiredA]: { manualNote: 'retired note' },
+    },
+  }, aliases)
+  assert.equal(
+    distinctNotes.products[survivor].manualNote,
+    `[${retiredA}] retired note\n[${survivor}] survivor note`,
+  )
+})
+
 test('loads a reversible prototype projection before the legacy Rem product run', async (t) => {
   const root = await mkdtemp(path.join(os.tmpdir(), 'personal-gallery-projection-'))
   t.after(() => rm(root, { recursive: true, force: true }))
@@ -385,6 +451,14 @@ test('loads a reversible prototype projection before the legacy Rem product run'
     viewMode: 'prototype_projection',
     character: 'Rem',
     characterSlug: 'rem',
+    prototypeAliases: {
+      'rem-proto-retired0000001': 'rem-proto-0123456789abcdef',
+    },
+    sort: {
+      mode: 'recommended_reference_completeness_v1',
+      label: '推荐',
+      signals: ['hasCover', 'imageBucket'],
+    },
     summary: {
       catalogItemCount: 2,
       projectionEligibleCount: 2,
@@ -398,6 +472,7 @@ test('loads a reversible prototype projection before the legacy Rem product run'
     },
     prototypes: [{
       prototypeId: 'rem-proto-0123456789abcdef',
+      membershipFingerprint: 'f'.repeat(64),
       catalogItemIds: ['goodsmile:1', 'solaris:2'],
       title: 'Rem Yukata',
       manufacturer: 'KADOKAWA',
@@ -443,8 +518,50 @@ test('loads a reversible prototype projection before the legacy Rem product run'
   assert.equal(direct.products[0].catalogItems.length, 2)
   assert.deepEqual(direct.products[0].images.map((image) => image.sourceFamily), ['goodsmile', 'solaris'])
   assert.equal(direct.products[0].sources[1].sourceFamily, 'solaris')
+  assert.equal(direct.products[0].membershipFingerprint, 'f'.repeat(64))
+  assert.deepEqual(direct.prototypeAliases, {
+    'rem-proto-retired0000001': 'rem-proto-0123456789abcdef',
+  })
+  assert.deepEqual(direct.sort, {
+    mode: 'recommended_reference_completeness_v1',
+    label: '推荐',
+    signals: ['hasCover', 'imageBucket'],
+  })
 
   const byQuery = await loadGalleryByQuery(root, '蕾姆')
   assert.equal(byQuery.viewMode, 'prototype_projection')
   assert.equal(byQuery.products[0].id, 'rem-proto-0123456789abcdef')
+})
+
+test('savePreferences canonicalizes stale retired prototype keys from an old page', async (t) => {
+  const root = await mkdtemp(path.join(os.tmpdir(), 'personal-gallery-alias-preferences-'))
+  t.after(() => rm(root, { recursive: true, force: true }))
+  const characterDirectory = path.join(root, 'characters', 'rem')
+  await mkdir(characterDirectory, { recursive: true })
+  await writeFile(path.join(characterDirectory, 'prototype-projection.json'), JSON.stringify({
+    schemaVersion: 2,
+    projectionVersion: 'rem-prototype-projection-v2',
+    viewMode: 'prototype_projection',
+    characterSlug: 'rem',
+    prototypeAliases: { 'rem-proto-retired': 'rem-proto-survivor' },
+    prototypes: [{ prototypeId: 'rem-proto-survivor', images: [], catalogItems: [] }],
+  }))
+
+  const saved = await savePreferences(root, 'rem', {
+    products: {
+      'rem-proto-survivor': { manualNote: 'survivor note' },
+      'rem-proto-retired': { manualNote: 'retired note' },
+    },
+    preferredCoverImage: {
+      'rem-proto-retired': 'https://images.goodsmile.info/rem-cover.jpg',
+    },
+  })
+  assert.deepEqual(saved.products['rem-proto-survivor'], {
+    preferredCoverImageUrl: 'https://images.goodsmile.info/rem-cover.jpg',
+    manualNote: '[rem-proto-retired] retired note\n[rem-proto-survivor] survivor note',
+  })
+  assert.equal(Object.hasOwn(saved.products, 'rem-proto-retired'), false)
+  assert.deepEqual(saved.preferredCoverImage, {
+    'rem-proto-survivor': 'https://images.goodsmile.info/rem-cover.jpg',
+  })
 })

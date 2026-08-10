@@ -1,0 +1,113 @@
+{
+  "schemaVersion": 1,
+  "character": "Rem",
+  "generatedAt": "2026-08-10T17:34:21+08:00",
+  "baseline": {
+    "pullRequest": 21,
+    "head": "4bd43506733830f8fe388fc60f16b9ca155242e2",
+    "auditPullRequest": 22,
+    "auditHead": "c08aeca42eabb0b0d7f3d808741f74a2a3262a8a",
+    "auditProposalSha256": "ffc4ff447b5a1f3d1fb47281e24a224059199dd74a59e55e3e89af4787619d60"
+  },
+  "beforePrototypeCount": 231,
+  "afterPrototypeCount": 221,
+  "catalogItemCount": 285,
+  "projectionEligibleItemCount": 284,
+  "catalogItemsCollapsed": 63,
+  "singletonPrototypeCount": 175,
+  "multiItemPrototypeCount": 46,
+  "largestPrototypeGroupSize": 4,
+  "mergeGroupsApplied": 7,
+  "prototypeCardsAffected": 17,
+  "unchangedPrototypeIds": 214,
+  "survivorPrototypeIdsPreserved": 7,
+  "activePreexistingPrototypeIds": 221,
+  "retiredPrototypeIds": 10,
+  "newPrototypeIds": 0,
+  "membershipFingerprintChanged": 7,
+  "rebuildIdDrift": 0,
+  "rebuildMembershipFingerprintDrift": 0,
+  "aliasMappings": 10,
+  "preferenceMigrations": {
+    "cover": 0,
+    "exclude": 0,
+    "notes": 0
+  },
+  "preferenceConflicts": 0,
+  "preferenceBackupCreated": false,
+  "preferenceBackupReason": "No affected preference required modification",
+  "differentRelationsChecked": 24,
+  "differentRelationsPassed": 24,
+  "groupingConflicts": 0,
+  "cards": 221,
+  "cardsWithCover": 220,
+  "imageRefCount": 1257,
+  "imageProvenance": {
+    "goodsmile": 257,
+    "solaris": 980,
+    "japan-figure": 20,
+    "unknown": 0
+  },
+  "recommendationSort": {
+    "label": "推荐",
+    "semantics": "reference_data_completeness",
+    "recommendationSortSignals": [
+      "hasCover DESC",
+      "imageCoverageBucket DESC",
+      "sourceFamilyCount DESC",
+      "hasGoodSmileEnrichment DESC",
+      "normalizedTitle ASC",
+      "prototypeId ASC"
+    ],
+    "top50SortDrift": 0,
+    "top50CardsWithCover": 50,
+    "top50CardsWithAtLeastEightImages": 50,
+    "top50AverageImageRefs": 14.4,
+    "tailAverageImageRefs": 3.14,
+    "fakePopularityUi": false
+  },
+  "relaxTime": {
+    "case1": "separate",
+    "case2": "separate",
+    "reason": "Existing provenance review remains inconclusive; no new grouping research was run"
+  },
+  "postConsolidationDuplicateCandidates": 0,
+  "chromeAcceptance": {
+    "browser": "system Google Chrome",
+    "fullCardScan": 221,
+    "loadedCoverImages": 220,
+    "explicitNoImageCards": 1,
+    "mergeGroupsChecked": 7,
+    "search": "pass",
+    "filters": "pass",
+    "detail": "pass",
+    "lightbox": "pass",
+    "responsiveColumns": [4, 3, 2],
+    "coverPersistence": "pass",
+    "retiredUrlAlias": "pass"
+  },
+  "checks": {
+    "unitTests": {
+      "passed": 192,
+      "failed": 0
+    },
+    "playwright": {
+      "browser": "system Google Chrome",
+      "passed": 2,
+      "failed": 0
+    },
+    "sourceSafety": "pass",
+    "npmAuditHigh": 0,
+    "npmAuditCritical": 0,
+    "hpoiRequests": 0,
+    "newGroupingResearch": false
+  },
+  "runtimeDigests": {
+    "prototypeIdSequenceSha256": "e72353bbdda85af302a097b3823d560f890026eb575c0ecf7e4ec65152bd8c05",
+    "membershipStateSha256": "2cbab37d9b777178cf090955b199207a0ee5cc32bbeacadc169e11e6de771c52",
+    "top50OrderSha256": "b2302779115b0040417125e0600ba78f37c667bec9182965bdc8bf0d78e6fc1b",
+    "identityRegistrySha256": "bfb6e8ea4ec57600e482bbacf06c339102b8dff10d11fa858371d31f78b44b7b",
+    "preferencesSha256": "2cefd9161486668ea27b9217cb32b22cbb18eeaba4cd8eed523e2a4877a14df3"
+  },
+  "remV1FreezeDecision": "YES"
+}

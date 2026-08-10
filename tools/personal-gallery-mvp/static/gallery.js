@@ -8,6 +8,8 @@ const productDetail = document.querySelector('#product-detail')
 const gallerySearch = document.querySelector('#gallery-search')
 const classificationFilter = document.querySelector('#classification-filter')
 const manufacturerFilter = document.querySelector('#manufacturer-filter')
+const sortMode = document.querySelector('#sort-mode')
+const sortModeField = document.querySelector('#sort-mode-field')
 const designFilter = document.querySelector('#design-filter')
 const scaleFilter = document.querySelector('#scale-filter')
 const designFilterField = document.querySelector('#design-filter-field')
@@ -189,7 +191,28 @@ function referenceProducts() {
 }
 
 function selectedProduct() {
-  return gallery?.products.find((product) => product.id === route.productId) || null
+  const id = resolvePrototypeAlias(route.productId)
+  return gallery?.products.find((product) => product.id === id) || null
+}
+
+function resolvePrototypeAlias(value) {
+  let current = value
+  const aliases = gallery?.prototypeAliases || {}
+  const seen = new Set()
+  while (current && Object.hasOwn(aliases, current)) {
+    if (seen.has(current)) return value
+    seen.add(current)
+    current = aliases[current]
+  }
+  return current
+}
+
+function canonicalizePrototypeRoute() {
+  if (route.mode !== 'detail' || gallery?.viewMode !== 'prototype_projection') return
+  const resolved = resolvePrototypeAlias(route.productId)
+  if (!resolved || resolved === route.productId) return
+  route.productId = resolved
+  window.history.replaceState(null, '', productDetailPath(resolved))
 }
 
 function setPreference(kind, value, enabled) {
@@ -485,6 +508,16 @@ function coverSourceLabel(product) {
   return '第一张有效图片'
 }
 
+function renderSortMode() {
+  const isProjection = gallery.viewMode === 'prototype_projection'
+  sortModeField.classList.toggle('hidden', !isProjection)
+  if (!isProjection) return
+  const option = document.createElement('option')
+  option.value = gallery.sort?.mode || 'recommended_reference_completeness_v1'
+  option.textContent = gallery.sort?.label === '推荐' ? '推荐' : '推荐（参考资料完整度）'
+  sortMode.replaceChildren(option)
+}
+
 function sourceFamilyLabel(value) {
   return SOURCE_FAMILY_LABELS[value] || SOURCE_FAMILY_LABELS.unknown
 }
@@ -661,6 +694,7 @@ async function load() {
     }
     if (!response.ok) throw new Error(`gallery ${response.status}`)
     gallery = await response.json()
+    canonicalizePrototypeRoute()
     document.body.dataset.galleryStatus = gallery.status
     document.body.dataset.view = route.mode
     clearError()
@@ -669,6 +703,7 @@ async function load() {
       ? `${selectedProduct()?.title || gallery.query} · Shooting Reference`
       : `${gallery.query} · Shooting Reference Index`
     renderSourceStatus()
+    renderSortMode()
     replaceFilterOptions(
       classificationFilter,
       referenceProducts()

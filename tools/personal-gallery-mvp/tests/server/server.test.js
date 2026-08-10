@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import http from 'node:http'
-import { mkdtemp, rm } from 'node:fs/promises'
+import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import test from 'node:test'
@@ -321,6 +321,50 @@ test('serves the local UI and blocks collection before constructing network work
   })
   assert.equal(preferences.status, 200)
   assert.deepEqual((await preferences.json()).preferences.excludedProductIds, ['synthetic'])
+})
+
+test('preference HTTP endpoint canonicalizes a stale retired prototype key', async (t) => {
+  const root = await mkdtemp(path.join(os.tmpdir(), 'personal-gallery-server-alias-preferences-'))
+  const characterDirectory = path.join(root, 'characters', 'rem')
+  await mkdir(characterDirectory, { recursive: true })
+  await writeFile(path.join(characterDirectory, 'prototype-projection.json'), JSON.stringify({
+    schemaVersion: 2,
+    projectionVersion: 'rem-prototype-projection-v2',
+    viewMode: 'prototype_projection',
+    characterSlug: 'rem',
+    prototypeAliases: { 'rem-proto-retired': 'rem-proto-survivor' },
+    prototypes: [{ prototypeId: 'rem-proto-survivor', images: [], catalogItems: [] }],
+  }))
+  const localConfig = config(root)
+  const application = createPersonalGalleryServer({
+    config: localConfig,
+    runtime: createDefaultRuntime(localConfig),
+  })
+  t.after(async () => {
+    await application.close()
+    await rm(root, { recursive: true, force: true })
+  })
+  const address = await application.listen()
+  const base = `http://127.0.0.1:${address.port}`
+
+  const response = await fetch(`${base}/api/preferences/rem`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Origin: base, Connection: 'close' },
+    body: JSON.stringify({
+      products: {
+        'rem-proto-survivor': { manualNote: 'current page note' },
+        'rem-proto-retired': { manualNote: 'stale page note' },
+      },
+    }),
+  })
+  assert.equal(response.status, 200)
+  const body = await response.json()
+  assert.deepEqual(body.preferences.products, {
+    'rem-proto-survivor': {
+      manualNote: '[rem-proto-retired] stale page note\n[rem-proto-survivor] current page note',
+    },
+  })
+  assert.equal(Object.hasOwn(body.preferences.products, 'rem-proto-retired'), false)
 })
 
 test('same-origin JSON stop request stops an active HTTP job', async (t) => {
