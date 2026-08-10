@@ -42,6 +42,32 @@ const setStableId: FieldHook = ({ operation, previousValue, req, value }) => {
   return value
 }
 
+const keepImmutableText =
+  (fieldName: string): FieldHook =>
+  ({ operation, previousValue, req, value }) => {
+    if (operation === 'create') {
+      assertCatalogDomainWrite(req)
+      return value
+    }
+
+    if (operation === 'update') {
+      assertCatalogDomainWrite(req)
+
+      if (previousValue === undefined || previousValue === null) return value
+      if (value === undefined) return previousValue
+      if (value !== previousValue) {
+        throw new ValidationError({
+          errors: [{ message: `${fieldName} is immutable.`, path: fieldName }],
+          req,
+        })
+      }
+
+      return previousValue
+    }
+
+    return value
+  }
+
 export const stableIdField = (): Field => ({
   name: 'stableId',
   type: 'text',
@@ -69,6 +95,38 @@ export const immutableUuidField = (name: string): Field => ({
   minLength: 36,
   required: true,
   unique: true,
+})
+
+export const immutableTextField = (
+  name: string,
+  options: { maxLength?: number; minLength?: number; required?: boolean } = {},
+): Field => ({
+  name,
+  type: 'text',
+  admin: {
+    readOnly: true,
+  },
+  hooks: {
+    beforeValidate: [keepImmutableText(name)],
+  },
+  index: true,
+  maxLength: options.maxLength,
+  minLength: options.minLength ?? 1,
+  required: options.required ?? true,
+  unique: true,
+})
+
+export const sha256HexField = (name: string, required = true): Field => ({
+  name,
+  type: 'text',
+  admin: { readOnly: true },
+  maxLength: 64,
+  minLength: 64,
+  required,
+  validate: (value: unknown) =>
+    (!required && (value === undefined || value === null)) ||
+    (typeof value === 'string' && /^[0-9a-f]{64}$/u.test(value)) ||
+    `${name} must be a lowercase SHA-256 hex digest.`,
 })
 
 export const lockVersionField = (): Field => ({

@@ -76,6 +76,8 @@ export interface Config {
     'figure-prototypes': FigurePrototype;
     'figure-prototype-characters': FigurePrototypeCharacter;
     'figure-versions': FigureVersion;
+    'catalog-items': CatalogItem;
+    'source-records': SourceRecord;
     'operation-logs': OperationLog;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
@@ -93,6 +95,8 @@ export interface Config {
     'figure-prototypes': FigurePrototypesSelect<false> | FigurePrototypesSelect<true>;
     'figure-prototype-characters': FigurePrototypeCharactersSelect<false> | FigurePrototypeCharactersSelect<true>;
     'figure-versions': FigureVersionsSelect<false> | FigureVersionsSelect<true>;
+    'catalog-items': CatalogItemsSelect<false> | CatalogItemsSelect<true>;
+    'source-records': SourceRecordsSelect<false> | SourceRecordsSelect<true>;
     'operation-logs': OperationLogsSelect<false> | OperationLogsSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
@@ -288,11 +292,13 @@ export interface Manufacturer {
 export interface FigurePrototype {
   id: number;
   stableId: string;
+  projectionKey?: string | null;
+  membershipFingerprint?: string | null;
   title: string;
   normalizedTitle: string;
   work?: (number | null) | Work;
-  manufacturer: number | Manufacturer;
-  figureType: 'scale' | 'prize';
+  manufacturer?: (number | null) | Manufacturer;
+  figureType: 'scale' | 'prize' | 'static';
   scale?: string | null;
   costumeText?: string | null;
   isGroup: boolean;
@@ -361,6 +367,72 @@ export interface FigureVersion {
   releaseDate?: string | null;
   skuOrCode?: string | null;
   notes?: string | null;
+  lockVersion: number;
+  createdBy: number | User;
+  updatedBy: number | User;
+  deletedAt?: string | null;
+  deletedBy?: (number | null) | User;
+  deleteReason?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "catalog-items".
+ */
+export interface CatalogItem {
+  id: number;
+  stableId: string;
+  catalogItemKey: string;
+  character: number | Character;
+  prototype: number | FigurePrototype;
+  title: string;
+  manufacturerText: string;
+  classification: string;
+  category?: string | null;
+  scale?: string | null;
+  heightMm?: number | null;
+  release?: string | null;
+  productType?: string | null;
+  series?: string | null;
+  description?: string | null;
+  imageRefs?:
+    | {
+        imageRefKey: string;
+        url: string;
+        sourceFamily: string;
+        catalogItemKey: string;
+        isMain: boolean;
+        id?: string | null;
+      }[]
+    | null;
+  lockVersion: number;
+  createdBy: number | User;
+  updatedBy: number | User;
+  deletedAt?: string | null;
+  deletedBy?: (number | null) | User;
+  deleteReason?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "source-records".
+ */
+export interface SourceRecord {
+  id: number;
+  stableId: string;
+  sourceRecordKey: string;
+  sourceFamily: string;
+  sourceUrl: string;
+  observedTitle?: string | null;
+  observedManufacturer?: string | null;
+  sourceLabel?: string | null;
+  sourceRole?: string | null;
+  character: number | Character;
+  catalogItem: number | CatalogItem;
+  businessDigest: string;
+  businessDigestVersion: number;
   lockVersion: number;
   createdBy: number | User;
   updatedBy: number | User;
@@ -468,6 +540,14 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'figure-versions';
         value: number | FigureVersion;
+      } | null)
+    | ({
+        relationTo: 'catalog-items';
+        value: number | CatalogItem;
+      } | null)
+    | ({
+        relationTo: 'source-records';
+        value: number | SourceRecord;
       } | null)
     | ({
         relationTo: 'operation-logs';
@@ -651,6 +731,8 @@ export interface ManufacturersSelect<T extends boolean = true> {
  */
 export interface FigurePrototypesSelect<T extends boolean = true> {
   stableId?: T;
+  projectionKey?: T;
+  membershipFingerprint?: T;
   title?: T;
   normalizedTitle?: T;
   work?: T;
@@ -713,6 +795,70 @@ export interface FigureVersionsSelect<T extends boolean = true> {
   releaseDate?: T;
   skuOrCode?: T;
   notes?: T;
+  lockVersion?: T;
+  createdBy?: T;
+  updatedBy?: T;
+  deletedAt?: T;
+  deletedBy?: T;
+  deleteReason?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "catalog-items_select".
+ */
+export interface CatalogItemsSelect<T extends boolean = true> {
+  stableId?: T;
+  catalogItemKey?: T;
+  character?: T;
+  prototype?: T;
+  title?: T;
+  manufacturerText?: T;
+  classification?: T;
+  category?: T;
+  scale?: T;
+  heightMm?: T;
+  release?: T;
+  productType?: T;
+  series?: T;
+  description?: T;
+  imageRefs?:
+    | T
+    | {
+        imageRefKey?: T;
+        url?: T;
+        sourceFamily?: T;
+        catalogItemKey?: T;
+        isMain?: T;
+        id?: T;
+      };
+  lockVersion?: T;
+  createdBy?: T;
+  updatedBy?: T;
+  deletedAt?: T;
+  deletedBy?: T;
+  deleteReason?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "source-records_select".
+ */
+export interface SourceRecordsSelect<T extends boolean = true> {
+  stableId?: T;
+  sourceRecordKey?: T;
+  sourceFamily?: T;
+  sourceUrl?: T;
+  observedTitle?: T;
+  observedManufacturer?: T;
+  sourceLabel?: T;
+  sourceRole?: T;
+  character?: T;
+  catalogItem?: T;
+  businessDigest?: T;
+  businessDigestVersion?: T;
   lockVersion?: T;
   createdBy?: T;
   updatedBy?: T;

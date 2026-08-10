@@ -8,7 +8,6 @@ const sourceRoot = join(repositoryRoot, "apps", "web", "src");
 const contractsRoot = join(repositoryRoot, "packages", "domain-contracts");
 const laterTypes = [
   "CandidateClient",
-  "SourceRecord",
   "CandidateRecord",
   "CandidateImage",
   "ReviewWorkItem",
@@ -25,6 +24,8 @@ const allowedCollectionSlugs = [
   "figure-prototype-characters",
   "figure-versions",
   "operation-logs",
+  "catalog-items",
+  "source-records",
 ];
 
 function walk(root) {
@@ -61,6 +62,7 @@ for (const slug of allowedCollectionSlugs) {
 
 const internalContextPath = join(sourceRoot, "domain", "catalog", "internal-context.ts");
 const catalogServicesPath = join(sourceRoot, "domain", "catalog", "services.ts");
+const catalogBridgeImporterPath = join(sourceRoot, "formal-bridge", "importer.ts");
 const catalogCollectionCommonPath = join(
   sourceRoot,
   "collections",
@@ -79,6 +81,7 @@ for (const path of sourceFiles) {
   if (
     path !== internalContextPath &&
     path !== catalogServicesPath &&
+    path !== catalogBridgeImporterPath &&
     /\bwithCatalogDomainWrite\b/.test(content)
   ) {
     errors.push(`${name}: catalog write capability used outside the domain service`);
@@ -91,7 +94,7 @@ for (const path of sourceFiles) {
     errors.push(`${name}: catalog capability assertion used outside the guarded Collection layer`);
   }
   if (/\b(?:req\.)?payload\.(?:create|update|delete)\s*\(/.test(content)) {
-    if (path !== catalogServicesPath) {
+    if (path !== catalogServicesPath && path !== catalogBridgeImporterPath) {
       errors.push(`${name}: formal Payload mutation exists outside the catalog domain service`);
     }
   }
@@ -116,6 +119,6 @@ if (errors.length) {
   fail("Catalog boundary check failed.", errors);
 } else {
   process.stdout.write(
-    `Catalog boundary check passed (${sourceFiles.length} source files; PR-02+ types absent).\n`,
+    `Catalog boundary check passed (${sourceFiles.length} source files; formal bridge collections allowlisted and Candidate/Review/Media types absent).\n`,
   );
 }

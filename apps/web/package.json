@@ -7,6 +7,8 @@
   "scripts": {
     "build": "cross-env NEXT_TELEMETRY_DISABLED=1 NODE_OPTIONS=\"--no-deprecation --max-old-space-size=8000\" next build",
     "dev": "cross-env NEXT_TELEMETRY_DISABLED=1 NODE_OPTIONS=--no-deprecation next dev",
+    "export:formal-bridge": "cross-env NODE_OPTIONS=--no-deprecation tsx scripts/export-formal-bridge.ts",
+    "import:formal-bridge": "cross-env NODE_OPTIONS=--no-deprecation tsx scripts/import-formal-bridge.ts",
     "format:check": "prettier --check .",
     "generate:importmap": "cross-env NODE_OPTIONS=--no-deprecation payload generate:importmap",
     "generate:types": "cross-env NODE_OPTIONS=--no-deprecation payload generate:types",

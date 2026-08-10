@@ -56,6 +56,8 @@ jobs:
           database_uri="postgresql://figure_gallery:${postgres_password}@127.0.0.1:55432/figure_gallery_pr00"
           cycle_database="figure_gallery_pr01_cycle_${GITHUB_RUN_ID}_${GITHUB_RUN_ATTEMPT}"
           cycle_database_uri="postgresql://figure_gallery:${postgres_password}@127.0.0.1:55432/${cycle_database}"
+          formal_bridge_database="figure_gallery_bridge_${GITHUB_RUN_ID}_${GITHUB_RUN_ATTEMPT}"
+          formal_bridge_database_uri="postgresql://figure_gallery:${postgres_password}@127.0.0.1:55432/${formal_bridge_database}"
           admin_email="catalog-admin-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}@synthetic.invalid"
           admin_password="$(openssl rand -base64 36 | tr -d '\n')"
           init_markers="$RUNNER_TEMP/pr00-init-markers"
@@ -63,9 +65,10 @@ jobs:
           formal_summary_root="$RUNNER_TEMP/formal-web-summary"
           pr00_summary="$formal_summary_root/pr00"
           pr01_summary="$formal_summary_root/pr01"
-          mkdir -p "$init_markers" "$cat_markers" "$pr00_summary" "$pr01_summary"
+          formal_bridge_summary="$formal_summary_root/formal-bridge"
+          mkdir -p "$init_markers" "$cat_markers" "$pr00_summary" "$pr01_summary" "$formal_bridge_summary"
 
-          for value in "$database_uri" "$cycle_database_uri" "$admin_password"; do
+          for value in "$database_uri" "$cycle_database_uri" "$formal_bridge_database_uri" "$admin_password"; do
             echo "::add-mask::$value"
           done
 
@@ -94,6 +97,9 @@ jobs:
             echo "PR01_MIGRATION_OUTPUT=$pr01_summary/migration-cycle.json"
             echo "PR01_CYCLE_DB=$cycle_database"
             echo "PR01_CYCLE_DATABASE_URI=$cycle_database_uri"
+            echo "FORMAL_BRIDGE_DB=$formal_bridge_database"
+            echo "FORMAL_BRIDGE_DATABASE_URI=$formal_bridge_database_uri"
+            echo "FORMAL_BRIDGE_INTEGRATION_OUTPUT=$formal_bridge_summary/postgres-integration.json"
           } >> "$GITHUB_ENV"
 
           printf '%s\n' \
@@ -353,6 +359,23 @@ jobs:
           node ../../infra/scripts/mark-catalog-gate.mjs CAT-15 "$CAT_MARKERS" "successful formal writes used domain services and appended exactly one application-boundary append-only OperationLog with aggregate snapshots and duty context"
           node ../../infra/scripts/mark-catalog-gate.mjs CAT-16 "$CAT_MARKERS" "expectedVersion concurrency produced one winner and one stable conflict; failed aggregate mutation rolled back"
 
+      - name: Run formal bridge PostgreSQL Local API integration
+        shell: bash
+        working-directory: apps/web
+        run: |
+          set -euo pipefail
+          test "$FORMAL_BRIDGE_DB" != 'figure_gallery_pr00'
+          test "$FORMAL_BRIDGE_DB" != "$PR01_CYCLE_DB"
+          [[ "$FORMAL_BRIDGE_DB" =~ ^[a-z0-9_]+$ ]]
+          docker compose --env-file "$GITHUB_WORKSPACE/$COMPOSE_ENV" -f "$GITHUB_WORKSPACE/$COMPOSE_FILE" exec -T postgres \
+            createdb -U figure_gallery --maintenance-db=postgres "$FORMAL_BRIDGE_DB"
+          DATABASE_URI="$FORMAL_BRIDGE_DATABASE_URI" npm run payload -- migrate
+          DATABASE_URI="$FORMAL_BRIDGE_DATABASE_URI" npx --no-install tsx tests/integration/formal-bridge.integration.ts
+          test -s "$FORMAL_BRIDGE_INTEGRATION_OUTPUT"
+          node -e "const fs=require('node:fs'); const value=JSON.parse(fs.readFileSync(process.env.FORMAL_BRIDGE_INTEGRATION_OUTPUT,'utf8')); if (value.status !== 'pass' || value.database !== 'PostgreSQL' || value.dataset !== 'synthetic' || value.payloadBoundary !== 'Local API' || value.hpoiRequests !== 0 || value.networkRequests !== 0 || !value.freshBridgeOwnedIdentities || !value.invalidInputRejectedWithoutWrites || value.parity?.equal !== true) throw new Error('Formal bridge integration summary did not satisfy its offline Local API contract');"
+          docker compose --env-file "$GITHUB_WORKSPACE/$COMPOSE_ENV" -f "$GITHUB_WORKSPACE/$COMPOSE_FILE" exec -T postgres \
+            dropdb -f -U figure_gallery --maintenance-db=postgres "$FORMAL_BRIDGE_DB"
+
       - name: Build production standalone output
         shell: bash
         working-directory: apps/web
@@ -401,7 +424,7 @@ jobs:
           node infra/scripts/check-formal-boundaries.mjs
           node infra/scripts/check-catalog-boundaries.mjs
           node infra/scripts/check-dependency-pins.mjs
-          node -e "const fs=require('node:fs'); for (const path of [process.env.PR01_INTEGRATION_OUTPUT, process.env.PR01_MIGRATION_OUTPUT]) { const value=JSON.parse(fs.readFileSync(path,'utf8')); if (value.hpoiRequests !== 0) throw new Error(path + ': forbidden-source request count is not zero'); }"
+          node -e "const fs=require('node:fs'); for (const path of [process.env.PR01_INTEGRATION_OUTPUT, process.env.PR01_MIGRATION_OUTPUT, process.env.FORMAL_BRIDGE_INTEGRATION_OUTPUT]) { const value=JSON.parse(fs.readFileSync(path,'utf8')); if (value.hpoiRequests !== 0) throw new Error(path + ': forbidden-source request count is not zero'); }"
           if rg -n 'https?://' packages/test-fixtures; then
             echo 'Synthetic fixtures must not contain network URLs.' >&2
             exit 1
@@ -413,9 +436,9 @@ jobs:
             git diff --check origin/main...HEAD
           fi
           node infra/scripts/mark-init-gate.mjs INIT-11 "$INIT_MARKERS" "credential, large, binary, database, media, build-output, and diff scans passed"
-          node infra/scripts/mark-init-gate.mjs INIT-12 "$INIT_MARKERS" "PR-01 catalog scope is present while PR-02+ business entities, source adapters, formal media, public catalog pages, and later capabilities remain zero; forbidden-host validation and loopback-only browser guard found zero forbidden-source requests"
+          node infra/scripts/mark-init-gate.mjs INIT-12 "$INIT_MARKERS" "PR-01 catalog plus the minimal SourceRecord/CatalogItem bridge are present while Candidate, Review, formal media, public catalog pages, source adapters, and later capabilities remain absent; forbidden-host validation and loopback-only browser guard found zero forbidden-source requests"
           node infra/scripts/mark-catalog-gate.mjs CAT-20 "$CAT_MARKERS" "fully synthetic offline fixture seeded idempotently; repository and fixture scans found no real data, media, or network URL"
-          node infra/scripts/mark-catalog-gate.mjs CAT-21 "$CAT_MARKERS" "forbidden-host source scans and Playwright loopback guard recorded zero forbidden-source requests; PR-02 through PR-06 boundaries remain absent"
+          node infra/scripts/mark-catalog-gate.mjs CAT-21 "$CAT_MARKERS" "forbidden-host source scans and Playwright loopback guard recorded zero forbidden-source requests; the full PR-02 Candidate pipeline and PR-03 through PR-06 capabilities remain absent"
 
       - name: Assemble and verify INIT-01 through INIT-12
         shell: bash
@@ -451,7 +474,7 @@ jobs:
           fi
           echo 'safe=true' >> "$GITHUB_OUTPUT"
 
-      - name: Upload small redacted PR-00 and PR-01 CI summaries
+      - name: Upload small redacted PR-00 PR-01 and formal bridge CI summaries
         if: always() && steps.summary-safety.outputs.safe == 'true'
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:

@@ -46,7 +46,6 @@ const runtimeExtensions = new Set([
 ]);
 const postPr01BusinessTypes = [
   "CandidateClient",
-  "SourceRecord",
   "CandidateRecord",
   "CandidateImage",
   "MediaAsset",
@@ -59,11 +58,13 @@ const allowedCollectionFiles = new Set([
   "Users.ts",
   "catalog/Character.ts",
   "catalog/CharacterAlias.ts",
+  "catalog/CatalogItem.ts",
   "catalog/FigurePrototype.ts",
   "catalog/FigurePrototypeCharacter.ts",
   "catalog/FigureVersion.ts",
   "catalog/Manufacturer.ts",
   "catalog/OperationLog.ts",
+  "catalog/SourceRecord.ts",
   "catalog/Work.ts",
   "catalog/common.ts",
   "catalog/index.ts",

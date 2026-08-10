@@ -12,8 +12,10 @@ import {
   attributionFields,
   catalogCollection,
   catalogRelationTo,
+  immutableTextField,
   lockVersionField,
   selectOptions,
+  sha256HexField,
   stableIdField,
 } from './common'
 
@@ -34,6 +36,8 @@ export const FigurePrototype: CollectionConfig = catalogCollection({
   },
   fields: [
     stableIdField(),
+    immutableTextField('projectionKey', { maxLength: 255, required: false }),
+    sha256HexField('membershipFingerprint', false),
     {
       name: 'title',
       type: 'text',
@@ -60,7 +64,6 @@ export const FigurePrototype: CollectionConfig = catalogCollection({
       admin: { readOnly: true },
       index: true,
       relationTo: catalogRelationTo('manufacturers'),
-      required: true,
     },
     {
       name: 'figureType',

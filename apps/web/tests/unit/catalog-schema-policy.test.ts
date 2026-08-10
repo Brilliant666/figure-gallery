@@ -39,7 +39,7 @@ function hookArguments(
 }
 
 describe('catalog PostgreSQL foreign-key policy', () => {
-  it('changes only the eight allowlisted formal relationships to RESTRICT', async () => {
+  it('changes only the twelve allowlisted formal relationships to RESTRICT', async () => {
     const args = hookArguments()
     const returnedSchema = await applyCatalogForeignKeyPolicy(args)
 
