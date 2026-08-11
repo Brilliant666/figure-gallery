@@ -2,8 +2,14 @@ import { createHash } from 'node:crypto'
 import { promises as fs } from 'node:fs'
 import path from 'node:path'
 
+import {
+  attachGalleryImageDigests,
+  buildPrototypeGalleryReadModel,
+  canonicalizeGalleryPrototypePreferences,
+  normalizeGalleryPreferences,
+  normalizeGalleryPrototypeAliases,
+} from '../../../../packages/gallery-read-model/src/index.js'
 import { HPOI_FROZEN_STATUS, readSourceStatus } from '../storage/source-status.js'
-import { mergePrototypeNotes } from '../projection/prototype-preference-migration.js'
 import {
   characterPreferencesPath,
   ensureCharacterStorage,
@@ -18,25 +24,6 @@ const DEFAULT_PREFERENCES = Object.freeze({
   products: {},
   preferredCoverImage: {},
   manualNote: {},
-})
-
-const PROJECTION_IMAGE_HOSTS = new Set([
-  'cdn.shopify.com',
-  'images.goodsmile.info',
-  'www.goodsmile.com',
-])
-
-const PROJECTION_SOURCE_FAMILIES = new Set([
-  'goodsmile',
-  'solaris',
-  'japan-figure',
-  'unknown',
-])
-
-const DEFAULT_PROJECTION_SORT = Object.freeze({
-  mode: 'recommended_reference_completeness_v1',
-  label: '推荐（参考资料完整度）',
-  signals: [],
 })
 
 async function readJson(filePath, fallback = null) {
@@ -56,20 +43,6 @@ function asArray(value) {
 
 function cleanText(value, fallback = '') {
   return typeof value === 'string' && value.trim() ? value.trim() : fallback
-}
-
-function safeProjectionImageUrl(value) {
-  try {
-    const parsed = new URL(value)
-    return parsed.protocol === 'https:' &&
-      PROJECTION_IMAGE_HOSTS.has(parsed.hostname.toLowerCase()) &&
-      !parsed.username &&
-      !parsed.password
-      ? parsed.href
-      : ''
-  } catch {
-    return ''
-  }
 }
 
 function sourceDomainFrom(fields) {
@@ -105,63 +78,7 @@ export function normalizeQuery(value) {
     .replace(/^-+|-+$/g, '') || 'gallery'
 }
 
-export function normalizePreferences(raw = {}) {
-  const legacyCovers =
-    raw.preferredCoverImage && typeof raw.preferredCoverImage === 'object'
-      ? raw.preferredCoverImage
-      : {}
-  const legacyNotes = raw.manualNote && typeof raw.manualNote === 'object' ? raw.manualNote : {}
-  const rawProducts = raw.products && typeof raw.products === 'object' ? raw.products : {}
-  const products = {}
-  const productIds = new Set([
-    ...Object.keys(rawProducts),
-    ...Object.keys(legacyCovers),
-    ...Object.keys(legacyNotes),
-  ])
-  for (const productId of productIds) {
-    if (typeof productId !== 'string' || !productId) continue
-    const source = rawProducts[productId] && typeof rawProducts[productId] === 'object'
-      ? rawProducts[productId]
-      : {}
-    const preferredCoverValue = cleanText(
-      source.preferredCoverImageUrl || source.preferredCoverImageId || legacyCovers[productId],
-    )
-    const preferredCoverImageId = /^[a-f\d]{64}$/i.test(preferredCoverValue)
-      ? preferredCoverValue.toLowerCase()
-      : ''
-    const preferredCoverImageUrl = safeProjectionImageUrl(preferredCoverValue)
-    const manualNote = cleanText(source.manualNote || legacyNotes[productId])
-    const entry = {}
-    if (preferredCoverImageId) entry.preferredCoverImageId = preferredCoverImageId
-    if (preferredCoverImageUrl) entry.preferredCoverImageUrl = preferredCoverImageUrl
-    if (manualNote) entry.manualNote = manualNote
-    if (Object.keys(entry).length > 0) products[productId] = entry
-  }
-  const preferredCoverImage = Object.fromEntries(
-    Object.entries(products)
-      .filter(([, value]) => value.preferredCoverImageUrl || value.preferredCoverImageId)
-      .map(([productId, value]) => [
-        productId,
-        value.preferredCoverImageUrl || value.preferredCoverImageId,
-      ]),
-  )
-  const manualNote = Object.fromEntries(
-    Object.entries(products)
-      .filter(([, value]) => value.manualNote)
-      .map(([productId, value]) => [productId, value.manualNote]),
-  )
-  return {
-    schemaVersion: 2,
-    excludedProductIds: [...new Set(asArray(raw.excludedProductIds).filter((item) => typeof item === 'string'))],
-    excludedImageSha256: [
-      ...new Set(asArray(raw.excludedImageSha256).filter((item) => /^[a-f\d]{64}$/i.test(item))),
-    ],
-    products,
-    // Kept as normalized compatibility projections for the MVP-01/MVP-02 runtime.
-    preferredCoverImage,
-    manualNote,
-  }
-}
+export const normalizePreferences = normalizeGalleryPreferences
 
 function normalizeImage(image, productId, excludedImages, homepageImage, order) {
   if (!image || typeof image !== 'object') return null
@@ -376,320 +293,11 @@ function summarize(products, failures) {
   }
 }
 
-function resolvePrototypeAliasValue(value, aliases = {}) {
-  let current = cleanText(value)
-  if (!current) return ''
-  const seen = new Set()
-  while (Object.hasOwn(aliases, current)) {
-    if (seen.has(current)) return ''
-    seen.add(current)
-    current = cleanText(aliases[current])
-    if (!current) return ''
-  }
-  return current
-}
-
-export function normalizePrototypeAliases(raw = {}, validPrototypeIds = []) {
-  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {}
-  const valid = new Set(validPrototypeIds.filter((value) => typeof value === 'string' && value))
-  const aliases = Object.fromEntries(
-    Object.entries(raw)
-      .filter(([retired, survivor]) => (
-        typeof retired === 'string' && retired && typeof survivor === 'string' && survivor && retired !== survivor
-      ))
-      .sort(([left], [right]) => left.localeCompare(right)),
-  )
-  const normalized = {}
-  for (const retired of Object.keys(aliases)) {
-    const survivor = resolvePrototypeAliasValue(retired, aliases)
-    if (survivor && survivor !== retired && (valid.size === 0 || valid.has(survivor))) {
-      normalized[retired] = survivor
-    }
-  }
-  return normalized
-}
-
-export function canonicalizePrototypePreferences(raw = {}, aliases = {}) {
-  const preferences = normalizePreferences(raw)
-  const normalizedAliases = normalizePrototypeAliases(aliases)
-  if (Object.keys(normalizedAliases).length === 0) return preferences
-
-  const retiredBySurvivor = new Map()
-  for (const [retired, survivor] of Object.entries(normalizedAliases)) {
-    const values = retiredBySurvivor.get(survivor) || []
-    values.push(retired)
-    retiredBySurvivor.set(survivor, values)
-  }
-  for (const values of retiredBySurvivor.values()) values.sort()
-
-  const originalExcluded = new Set(preferences.excludedProductIds)
-  const excludedProductIds = preferences.excludedProductIds.filter((id) => (
-    !Object.hasOwn(normalizedAliases, id) && !retiredBySurvivor.has(id)
-  ))
-  for (const [survivor, retiredIds] of [...retiredBySurvivor.entries()].sort(([left], [right]) => left.localeCompare(right))) {
-    const retiredSignals = retiredIds.filter((id) => originalExcluded.has(id))
-    const survivorSignal = originalExcluded.has(survivor)
-    // A canonical survivor-only value is a current UI decision. If a retired key is present,
-    // preserve the consolidation rule: mixed visible/excluded state stays visible.
-    if (
-      (retiredSignals.length === 0 && survivorSignal) ||
-      (survivorSignal && retiredSignals.length === retiredIds.length)
-    ) {
-      excludedProductIds.push(survivor)
-    }
-  }
-
-  const products = {}
-  const candidatesBySurvivor = new Map()
-  for (const [id, value] of Object.entries(preferences.products)) {
-    const survivor = resolvePrototypeAliasValue(id, normalizedAliases) || id
-    const candidates = candidatesBySurvivor.get(survivor) || []
-    candidates.push({ id, value })
-    candidatesBySurvivor.set(survivor, candidates)
-  }
-  for (const [survivor, candidates] of [...candidatesBySurvivor.entries()].sort(([left], [right]) => left.localeCompare(right))) {
-    candidates.sort((left, right) => {
-      if (left.id === survivor) return -1
-      if (right.id === survivor) return 1
-      return left.id.localeCompare(right.id)
-    })
-    const entry = {}
-    let coverSelected = false
-    for (const { value } of candidates) {
-      if (!coverSelected && value.preferredCoverImageUrl) {
-        entry.preferredCoverImageUrl = value.preferredCoverImageUrl
-        coverSelected = true
-      }
-      if (!coverSelected && value.preferredCoverImageId) {
-        entry.preferredCoverImageId = value.preferredCoverImageId
-        coverSelected = true
-      }
-    }
-    const manualNote = mergePrototypeNotes(candidates.map(({ id, value }) => ({
-      prototypeId: id,
-      note: value.manualNote,
-    })))
-    if (manualNote) entry.manualNote = manualNote
-    if (Object.keys(entry).length > 0) products[survivor] = entry
-  }
-
-  return normalizePreferences({
-    schemaVersion: preferences.schemaVersion,
-    excludedProductIds,
-    excludedImageSha256: preferences.excludedImageSha256,
-    products,
-  })
-}
-
-function normalizeProjectionSort(raw = {}) {
-  const label = raw?.label === '推荐' ? '推荐' : DEFAULT_PROJECTION_SORT.label
-  return {
-    mode: cleanText(raw?.mode, DEFAULT_PROJECTION_SORT.mode),
-    label,
-    signals: [...new Set(asArray(raw?.signals).filter((value) => typeof value === 'string' && value.trim()))],
-  }
-}
+export const normalizePrototypeAliases = normalizeGalleryPrototypeAliases
+export const canonicalizePrototypePreferences = canonicalizeGalleryPrototypePreferences
 
 function projectionImageIdentity(url) {
   return createHash('sha256').update(url).digest('hex')
-}
-
-function normalizeProjectionSourceFamily(value) {
-  const normalized = cleanText(value, 'unknown').toLowerCase()
-  return PROJECTION_SOURCE_FAMILIES.has(normalized) ? normalized : 'unknown'
-}
-
-function normalizeProjectionClassification(value, category = '') {
-  const normalized = cleanText(value).toLowerCase().replace(/[\s-]+/gu, '_')
-  if (['scale', 'likely_scale'].includes(normalized)) return 'likely_scale'
-  if (['prize', 'likely_prize'].includes(normalized)) return 'likely_prize'
-  if (['static', 'likely_static'].includes(normalized)) return 'likely_static'
-  const categoryValue = cleanText(category).toLowerCase()
-  if (/prize|景品/iu.test(categoryValue)) return 'likely_prize'
-  if (/scale|比例/iu.test(categoryValue)) return 'likely_scale'
-  return 'unknown'
-}
-
-function normalizeProjectionImage(image, prototypeId, excludedImages, order) {
-  if (!image || typeof image !== 'object') return null
-  const url = safeProjectionImageUrl(image.url || image.sourceUrl)
-  if (!url) return null
-  const sha256 = projectionImageIdentity(url)
-  const sourceFamily = normalizeProjectionSourceFamily(image.sourceFamily)
-  return {
-    id: cleanText(image.id, `image-ref-${sha256.slice(0, 16)}`),
-    sha256,
-    width: Number.isFinite(Number(image.width)) ? Number(image.width) : null,
-    height: Number.isFinite(Number(image.height)) ? Number(image.height) : null,
-    bytes: null,
-    mime: cleanText(image.mime, 'image/jpeg'),
-    sourceUrl: url,
-    url,
-    mediaUrl: url,
-    catalogItemId: cleanText(image.catalogItemId),
-    sourceFamily,
-    alt: cleanText(image.alt, `Reference image for ${prototypeId}`),
-    excluded: excludedImages.has(sha256),
-    isOfficialPrimary: sourceFamily === 'goodsmile' && image.isMain === true,
-    isMain: image.isMain === true,
-    remote: true,
-    order,
-  }
-}
-
-function normalizeProjectionSource(source) {
-  if (!source || typeof source !== 'object') return null
-  let url = ''
-  try {
-    const parsed = new URL(source.url)
-    if (parsed.protocol === 'https:' && !parsed.username && !parsed.password) url = parsed.href
-  } catch {
-    return null
-  }
-  if (!url) return null
-  const host = new URL(url).hostname.toLowerCase()
-  const inferredFamily = host === 'solarisjapan.com' || host === 'www.solarisjapan.com'
-    ? 'solaris'
-    : host === 'japan-figure.com' || host === 'www.japan-figure.com'
-      ? 'japan-figure'
-      : host === 'goodsmile.com' || host === 'www.goodsmile.com' ||
-          host === 'goodsmile.info' || host === 'www.goodsmile.info' ||
-          host === 'images.goodsmile.info'
-        ? 'goodsmile'
-        : 'unknown'
-  return {
-    url,
-    sourceFamily: normalizeProjectionSourceFamily(source.sourceFamily || inferredFamily),
-    label: cleanText(source.label),
-  }
-}
-
-function normalizeProjectionCatalogItem(item) {
-  if (!item || typeof item !== 'object') return null
-  const id = cleanText(item.id || item.catalogItemId)
-  if (!id) return null
-  const sources = asArray(item.sources)
-    .map(normalizeProjectionSource)
-    .filter((source, index, all) =>
-      source && all.findIndex((candidate) => candidate?.url === source.url) === index,
-    )
-  for (const sourceUrl of asArray(item.sourceUrls)) {
-    const normalized = normalizeProjectionSource({
-      url: sourceUrl,
-      sourceFamily: item.sourceFamily,
-      label: '',
-    })
-    if (normalized && !sources.some((source) => source.url === normalized.url)) sources.push(normalized)
-  }
-  return {
-    id,
-    title: cleanText(item.title, id),
-    manufacturer: cleanText(item.manufacturer, 'unknown'),
-    category: cleanText(item.category, 'unknown'),
-    classification: normalizeProjectionClassification(item.classification || item.type, item.category),
-    scale: cleanText(item.scale, 'unknown'),
-    release: cleanText(item.release || item.releaseDate),
-    source: cleanText(item.source),
-    sources,
-  }
-}
-
-function selectProjectionCover(images, preferredUrl, projectedCover) {
-  const available = images.filter((image) => !image.excluded)
-  if (preferredUrl) {
-    const preferred = available.find((image) => image.url === preferredUrl)
-    if (preferred) return { image: preferred, source: 'manual_override', preferredCoverUnavailable: false }
-  }
-  const projectedUrl = safeProjectionImageUrl(projectedCover?.url || projectedCover?.sourceUrl)
-  const projectedId = cleanText(projectedCover?.id)
-  const selected = available.find((image) =>
-    (projectedUrl && image.url === projectedUrl) || (projectedId && image.id === projectedId),
-  )
-  if (selected) {
-    return {
-      image: selected,
-      source: 'projection_rule',
-      preferredCoverUnavailable: Boolean(preferredUrl),
-    }
-  }
-  const fallback = available.find((image) => image.sourceFamily === 'goodsmile' && image.isMain) ||
-    available.find((image) => image.sourceFamily === 'goodsmile') ||
-    available.find((image) => image.isMain) ||
-    available[0] ||
-    null
-  return {
-    image: fallback,
-    source: fallback ? 'projection_rule' : 'none',
-    preferredCoverUnavailable: Boolean(preferredUrl),
-  }
-}
-
-function normalizeProjectionPrototype(prototype, preferences) {
-  if (!prototype || typeof prototype !== 'object') return null
-  const id = cleanText(prototype.prototypeId || prototype.id)
-  if (!id) return null
-  const excludedImages = new Set(preferences.excludedImageSha256)
-  const images = asArray(prototype.images)
-    .map((image, index) => normalizeProjectionImage(image, id, excludedImages, index))
-    .filter((image, index, all) =>
-      image && all.findIndex((candidate) => candidate?.url === image.url) === index,
-    )
-  const preference = preferences.products?.[id] || {}
-  const preferredCoverImageUrl = cleanText(preference.preferredCoverImageUrl)
-  const cover = selectProjectionCover(images, preferredCoverImageUrl, prototype.cover)
-  const catalogItems = asArray(prototype.catalogItems).map(normalizeProjectionCatalogItem).filter(Boolean)
-  const sources = asArray(prototype.sources)
-    .map(normalizeProjectionSource)
-    .filter((source, index, all) =>
-      source && all.findIndex((candidate) => candidate?.url === source.url) === index,
-    )
-  for (const item of catalogItems) {
-    for (const source of item.sources) {
-      if (!sources.some((candidate) => candidate.url === source.url)) sources.push(source)
-    }
-  }
-  const manufacturers = [
-    ...new Set([
-      ...asArray(prototype.manufacturers),
-      prototype.manufacturer,
-      ...catalogItems.map((item) => item.manufacturer),
-    ].map((value) => cleanText(value)).filter(Boolean)),
-  ]
-  const classification = normalizeProjectionClassification(
-    prototype.classification || prototype.type,
-    prototype.category,
-  )
-  return {
-    id,
-    prototypeId: id,
-    membershipFingerprint: /^[a-f\d]{64}$/iu.test(cleanText(prototype.membershipFingerprint))
-      ? cleanText(prototype.membershipFingerprint).toLowerCase()
-      : '',
-    viewMode: 'prototype_projection',
-    catalogItemIds: asArray(prototype.catalogItemIds).filter((value) => typeof value === 'string'),
-    groupedCatalogItemCount: Number(prototype.groupedCatalogItemCount) || catalogItems.length,
-    title: cleanText(prototype.title, `Prototype ${id}`),
-    design: cleanText(prototype.title, `Prototype ${id}`),
-    manufacturer: cleanText(prototype.manufacturer || manufacturers[0], 'unknown'),
-    manufacturers,
-    classification,
-    category: cleanText(prototype.category, 'unknown'),
-    scale: cleanText(prototype.scale || catalogItems.find((item) => item.scale !== 'unknown')?.scale, 'unknown'),
-    charactersHint: asArray(prototype.charactersHint).filter((value) => typeof value === 'string'),
-    images,
-    coverImage: cover.image,
-    coverSelectionSource: cover.source,
-    preferredCoverUnavailable: cover.preferredCoverUnavailable,
-    preferredCoverImageUrl,
-    preferredCoverImageId: preferredCoverImageUrl,
-    excluded: preferences.excludedProductIds.includes(id),
-    note: cleanText(preference.manualNote || preferences.manualNote[id]),
-    catalogItems,
-    sources,
-    failures: [],
-    imageFailures: [],
-    failureCount: 0,
-  }
 }
 
 async function readPrototypeProjection(root, characterSlug) {
@@ -698,23 +306,21 @@ async function readPrototypeProjection(root, characterSlug) {
   return (await readJson(canonical)) || (await readJson(legacy))
 }
 
-export async function loadPrototypeGallery(root, character) {
+export async function loadPrototypeGallery(root, character, options = {}) {
   if (!character) return null
   const projection = await readPrototypeProjection(root, character.slug)
   if (!projection || projection.viewMode !== 'prototype_projection' || !Array.isArray(projection.prototypes)) {
     return null
   }
-  const prototypeIds = projection.prototypes
-    .map((prototype) => cleanText(prototype?.prototypeId || prototype?.id))
-    .filter(Boolean)
-  const prototypeAliases = normalizePrototypeAliases(projection.prototypeAliases, prototypeIds)
-  const preferences = canonicalizePrototypePreferences(
-    await readJson(characterPreferencesPath(root, character.slug), DEFAULT_PREFERENCES),
-    prototypeAliases,
-  )
-  const prototypes = projection.prototypes
-    .map((prototype) => normalizeProjectionPrototype(prototype, preferences))
-    .filter(Boolean)
+  const projectionWithImageDigests = attachGalleryImageDigests(projection, projectionImageIdentity)
+  const preferences = options.preferences ??
+    await readJson(characterPreferencesPath(root, character.slug), DEFAULT_PREFERENCES)
+  const core = buildPrototypeGalleryReadModel({
+    character,
+    projection: projectionWithImageDigests,
+    preferences,
+  })
+  const prototypes = core.products
   const failures = []
   const calculated = summarize(prototypes, failures)
   const providedSummary = projection.summary && typeof projection.summary === 'object'
@@ -722,6 +328,7 @@ export async function loadPrototypeGallery(root, character) {
     : {}
   const summary = {
     ...calculated,
+    ...core.summary,
     ...providedSummary,
     products: prototypes.length,
     prototypes: prototypes.length,
@@ -753,10 +360,9 @@ export async function loadPrototypeGallery(root, character) {
     startedAt: projection.generatedAt || null,
     completedAt: projection.generatedAt || null,
     stopReason: null,
+    ...core,
     products: prototypes,
     prototypes,
-    prototypeAliases,
-    sort: normalizeProjectionSort(projection.sort),
     failures,
     summary,
     preferences,

@@ -10,11 +10,21 @@ import { createDefaultRuntime } from './runtime-adapter.js'
 import { normalizeCharacterSlug, resolveBuiltinCharacter } from '../characters/registry.js'
 
 const STATIC_ROOT = path.join(TOOL_ROOT, 'static')
+const GALLERY_READ_MODEL_ASSET = path.resolve(
+  TOOL_ROOT,
+  '..',
+  '..',
+  'packages',
+  'gallery-read-model',
+  'src',
+  'index.js',
+)
 const BODY_LIMIT = 64 * 1024
 const STATIC_FILES = new Map([
-  ['/assets/styles.css', ['styles.css', 'text/css; charset=utf-8']],
-  ['/assets/home.js', ['home.js', 'text/javascript; charset=utf-8']],
-  ['/assets/gallery.js', ['gallery.js', 'text/javascript; charset=utf-8']],
+  ['/assets/styles.css', [path.join(STATIC_ROOT, 'styles.css'), 'text/css; charset=utf-8']],
+  ['/assets/home.js', [path.join(STATIC_ROOT, 'home.js'), 'text/javascript; charset=utf-8']],
+  ['/assets/gallery.js', [path.join(STATIC_ROOT, 'gallery.js'), 'text/javascript; charset=utf-8']],
+  ['/assets/gallery-read-model.js', [GALLERY_READ_MODEL_ASSET, 'text/javascript; charset=utf-8']],
 ])
 
 function securityHeaders(contentType = null) {
@@ -306,8 +316,8 @@ export function createPersonalGalleryServer({ config, runtime = createDefaultRun
         return sendFile(response, path.join(STATIC_ROOT, 'gallery.html'), 'text/html; charset=utf-8')
       }
       if (method === 'GET' && STATIC_FILES.has(url.pathname)) {
-        const [name, contentType] = STATIC_FILES.get(url.pathname)
-        return sendFile(response, path.join(STATIC_ROOT, name), contentType)
+        const [filePath, contentType] = STATIC_FILES.get(url.pathname)
+        return sendFile(response, filePath, contentType)
       }
       if (method === 'GET' && url.pathname === '/api/status') {
         const sourceStatus = typeof runtime.readSourceStatus === 'function'

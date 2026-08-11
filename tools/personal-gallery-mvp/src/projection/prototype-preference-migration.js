@@ -2,6 +2,7 @@ import { constants as fsConstants } from 'node:fs'
 import { copyFile } from 'node:fs/promises'
 import { createHash } from 'node:crypto'
 
+import { mergeGalleryPrototypeNotes } from '../../../../packages/gallery-read-model/src/index.js'
 import { atomicWriteJson, readJson } from '../storage/json-files.js'
 
 const EMPTY_PREFERENCES = Object.freeze({
@@ -57,28 +58,7 @@ function setCover(entry, selected) {
   if (selected) entry[selected.field] = selected.value
 }
 
-export function mergePrototypeNotes(values = []) {
-  const notes = values
-    .map(({ prototypeId, note }) => ({
-      prototypeId: String(prototypeId || '').trim(),
-      note: String(note || '').trim(),
-    }))
-    .filter(({ prototypeId, note }) => prototypeId && note)
-    .sort((left, right) => left.prototypeId.localeCompare(right.prototypeId))
-  const sourcesByNote = new Map()
-  for (const { prototypeId, note } of notes) {
-    const sources = sourcesByNote.get(note) || []
-    if (!sources.includes(prototypeId)) sources.push(prototypeId)
-    sourcesByNote.set(note, sources)
-  }
-  if (sourcesByNote.size === 0) return ''
-  if (sourcesByNote.size === 1) return sourcesByNote.keys().next().value
-  return [...sourcesByNote.entries()]
-    .map(([note, prototypeIds]) => ({ note, prototypeIds: [...prototypeIds].sort() }))
-    .sort((left, right) => left.prototypeIds[0].localeCompare(right.prototypeIds[0]))
-    .map(({ note, prototypeIds }) => `[${prototypeIds.join(', ')}] ${note}`)
-    .join('\n')
-}
+export const mergePrototypeNotes = mergeGalleryPrototypeNotes
 
 export function migratePrototypePreferences({ preferences, aliases, prototypes }) {
   const before = structuredClone(preferences || EMPTY_PREFERENCES)
