@@ -1,3 +1,11 @@
+import {
+  filterGalleryProducts,
+  GALLERY_SOURCE_DISPLAY_LABELS,
+  galleryManufacturerOptions,
+  galleryReferenceProducts,
+  galleryTypeOptions,
+} from '/assets/gallery-read-model.js'
+
 const title = document.querySelector('#gallery-title')
 const meta = document.querySelector('#gallery-meta')
 const grid = document.querySelector('#product-grid')
@@ -78,12 +86,7 @@ const CATALOG_SOURCE_DOMAINS = new Set([
   'japan-figure.com',
   'www.japan-figure.com',
 ])
-const SOURCE_FAMILY_LABELS = Object.freeze({
-  goodsmile: 'Good Smile — official',
-  solaris: 'Solaris Japan — catalog/retailer source',
-  'japan-figure': 'Japan Figure — catalog source',
-  unknown: 'Unknown source family',
-})
+const SOURCE_FAMILY_LABELS = GALLERY_SOURCE_DISPLAY_LABELS
 const CLASSIFICATION_LABELS = Object.freeze({
   likely_scale: '比例手办',
   likely_prize: '景品',
@@ -162,32 +165,19 @@ function isSafeSourceUrl(value, expectedDomain) {
 
 function currentProducts() {
   if (!gallery) return []
-  const search = gallerySearch.value.normalize('NFKC').trim().toLocaleLowerCase('zh-CN')
-  const classification = classificationFilter.value
-  const manufacturer = manufacturerFilter.value
-  const design = designFilter.value
-  const scale = scaleFilter.value
-  return referenceProducts().filter((product) => {
-    if (!showExcluded.checked && product.excluded) return false
-    if (classification !== 'all' && product.classification !== classification) return false
-    if (manufacturer !== 'all' && ![product.manufacturer, ...(product.manufacturers || [])].includes(manufacturer)) return false
-    if (gallery.viewMode !== 'prototype_projection' && design !== 'all' && product.design !== design) return false
-    if (gallery.viewMode !== 'prototype_projection' && scale !== 'all' && product.scale !== scale) return false
-    if (search) {
-      const searchable = [
-        product.title,
-        product.manufacturer,
-        ...(product.manufacturers || []),
-        ...(product.catalogItems || []).flatMap((item) => [item.title, item.manufacturer]),
-      ].join('\n').normalize('NFKC').toLocaleLowerCase('zh-CN')
-      if (!searchable.includes(search)) return false
-    }
-    return true
+  return filterGalleryProducts(gallery.products, {
+    search: gallerySearch.value,
+    classification: classificationFilter.value,
+    manufacturer: manufacturerFilter.value,
+    design: designFilter.value,
+    scale: scaleFilter.value,
+    showExcluded: showExcluded.checked,
+    includeLegacyFilters: gallery.viewMode !== 'prototype_projection',
   })
 }
 
 function referenceProducts() {
-  return gallery?.products.filter((product) => Object.hasOwn(CLASSIFICATION_LABELS, product.classification)) || []
+  return galleryReferenceProducts(gallery?.products || [])
 }
 
 function selectedProduct() {
@@ -706,15 +696,13 @@ async function load() {
     renderSortMode()
     replaceFilterOptions(
       classificationFilter,
-      referenceProducts()
-        .map((product) => product.classification)
-        .filter((value) => Object.hasOwn(CLASSIFICATION_LABELS, value)),
+      galleryTypeOptions(gallery.products),
       '全部类型',
       classificationLabel,
     )
     replaceFilterOptions(
       manufacturerFilter,
-      referenceProducts().flatMap((product) => product.manufacturers?.length ? product.manufacturers : [product.manufacturer]),
+      galleryManufacturerOptions(gallery.products),
       '全部厂商',
     )
     const isProjection = gallery.viewMode === 'prototype_projection'

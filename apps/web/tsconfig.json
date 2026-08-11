@@ -22,6 +22,7 @@
       "@/*": ["./src/*"],
       "@payload-config": ["./src/payload.config.ts"],
       "@figure-gallery/domain-contracts": ["../../packages/domain-contracts/src/index.ts"],
+      "@figure-gallery/gallery-read-model": ["../../packages/gallery-read-model/src/index.js"],
       "@figure-gallery/test-fixtures": ["../../packages/test-fixtures/src/index.ts"]
     },
     "target": "ES2022"

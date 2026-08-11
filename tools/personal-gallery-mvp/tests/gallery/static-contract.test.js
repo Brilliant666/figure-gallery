@@ -11,6 +11,10 @@ test('gallery is self-contained and exposes the shooting-reference index and det
   const home = await readFile(path.join(toolRoot, 'static', 'index.html'), 'utf8')
   const css = await readFile(path.join(toolRoot, 'static', 'styles.css'), 'utf8')
   const script = await readFile(path.join(toolRoot, 'static', 'gallery.js'), 'utf8')
+  const sharedReadModel = await readFile(
+    path.resolve(toolRoot, '..', '..', 'packages', 'gallery-read-model', 'src', 'index.js'),
+    'utf8',
+  )
   assert.doesNotMatch(html, /https?:\/\//i)
   assert.doesNotMatch(css, /https?:\/\//i)
   assert.doesNotMatch(script, /https?:\/\//i)
@@ -39,8 +43,10 @@ test('gallery is self-contained and exposes the shooting-reference index and det
   assert.match(script, /createDetailImageTile/)
   assert.match(script, /prototype_projection/)
   assert.match(script, /Catalog Items/)
-  assert.match(script, /Solaris Japan — catalog\/retailer source/)
-  assert.match(script, /Japan Figure — catalog source/)
+  assert.match(sharedReadModel, /Solaris Japan/)
+  assert.match(sharedReadModel, /catalog\/retailer source/)
+  assert.match(sharedReadModel, /Japan Figure/)
+  assert.match(sharedReadModel, /catalog source/)
   assert.match(script, /canonicalizePrototypeRoute/)
   assert.match(script, /renderSortMode/)
   assert.doesNotMatch(`${html}\n${script}`, /(?:热门|\bHot\b|Trending|Popularity|最新|recommendationScore)/iu)

@@ -1,0 +1,149 @@
+{
+  "schemaVersion": 1,
+  "status": "pass",
+  "bridgeContentDigest": "d39ea1d2d74116e27f259d07a7e376d7fe7a06fd53d2769da7dd2384d18d0042",
+  "readerArchitecture": {
+    "canonicalContract": "@figure-gallery/gallery-read-model",
+    "localReader": "local projection runtime adapter",
+    "formalReader": "Payload Local API / PostgreSQL adapter",
+    "formalReaderReadsDatabaseBackedData": true,
+    "formalSpecificGalleryBusinessBranches": 0,
+    "defaultUserVisibleSource": "local"
+  },
+  "characters": {
+    "local": 2,
+    "formal": 2
+  },
+  "catalogItems": {
+    "local": 290,
+    "formal": 290
+  },
+  "prototypes": {
+    "rem": {
+      "local": 221,
+      "formal": 221
+    },
+    "cheshire": {
+      "local": 6,
+      "formal": 6
+    },
+    "total": {
+      "local": 227,
+      "formal": 227
+    }
+  },
+  "imageRefs": {
+    "local": 1326,
+    "formal": 1326
+  },
+  "cardsWithCover": {
+    "local": 226,
+    "formal": 226
+  },
+  "noImageCards": {
+    "local": 1,
+    "formal": 1
+  },
+  "parity": {
+    "character": true,
+    "counts": true,
+    "prototypeIds": true,
+    "cardFields": true,
+    "cardOrder": true,
+    "covers": true,
+    "catalogMembership": true,
+    "imageRefs": true,
+    "provenance": true,
+    "sourceLabels": true,
+    "sourceUrls": true,
+    "search": true,
+    "manufacturerFilters": true,
+    "typeFilters": true,
+    "preferences": true
+  },
+  "mismatches": {
+    "total": 0,
+    "order": 0,
+    "covers": 0,
+    "catalogMembership": 0,
+    "imageRefs": 0,
+    "preferences": 0
+  },
+  "mismatchCount": 0,
+  "preferenceOverlay": {
+    "manualCover": true,
+    "prototypeExclusion": true,
+    "imageExclusion": true,
+    "manualNote": true,
+    "stablePrototypeIdKey": true,
+    "drift": 0
+  },
+  "queryCoverage": {
+    "searchQueries": 13,
+    "manufacturerFilters": 45,
+    "typeFilters": 4
+  },
+  "freshPostgreSQL": {
+    "migrations": "pass",
+    "freshImport": {
+      "charactersInserted": 2,
+      "prototypeRelationsInserted": 227,
+      "catalogItemsInserted": 290,
+      "sourceRecordsInserted": 348,
+      "updates": 0,
+      "errors": 0
+    },
+    "repeatImport": {
+      "inserts": 0,
+      "updates": 0,
+      "errors": 0
+    },
+    "formalReadBoundary": "Payload Local API",
+    "shadowParity": "pass"
+  },
+  "regression": {
+    "remPrototypeIdDrift": 0,
+    "remRecommendationOrderDrift": 0,
+    "cheshirePrototypeIdDrift": 0,
+    "groupingConflicts": 0
+  },
+  "implementationCost": {
+    "measurement": "nonblank physical LOC for new readers/shared module; added plus removed lines for Local reader",
+    "formalReaderLOC": 165,
+    "localReaderChangedLOC": 438,
+    "sharedCanonicalExtractionLOC": 1068,
+    "galleryBusinessLogicChangedLOC": 0,
+    "behavioralGalleryLogicChanges": 0,
+    "formalSpecificGalleryBranchLOC": 0
+  },
+  "validation": {
+    "formalUnitTests": "69/69",
+    "personalGalleryUnitTests": "197/197",
+    "formalCatalogIntegrationChecks": "24/24",
+    "formalPlaywright": "4/4",
+    "personalGalleryPlaywright": "2/2",
+    "formalBuild": "pass",
+    "migrationCycle": "pass",
+    "formalBridgeIntegration": "pass",
+    "systemChromeRem": "pass",
+    "systemChromeCheshire": "6/6",
+    "sourceSafety": "pass",
+    "npmAudit": {
+      "formalProductionHigh": 0,
+      "formalProductionCritical": 0,
+      "formalProductionModerate": 5,
+      "personalProductionHigh": 0,
+      "personalProductionCritical": 0
+    },
+    "externalMerchandiseSourceRequests": 0
+  },
+  "schemaChangesMade": 0,
+  "schemaParityGap": false,
+  "decision": {
+    "formalGalleryShadowRead": "PASS",
+    "overallGalleryParity": "PASS",
+    "canEnterCutoverTask": true,
+    "cutoverPerformed": false,
+    "recommendedNextTask": "GALLERY-FORMAL-CUTOVER-01"
+  }
+}
