@@ -699,8 +699,7 @@ try {
   })
   check(
     prototypeAfterRollback.docs[0]?.lockVersion === prototypeBeforeRollbackDocument.lockVersion &&
-      prototypeAfterRollback.docs[0]?.manufacturer ===
-        prototypeBeforeRollbackDocument.manufacturer,
+      prototypeAfterRollback.docs[0]?.manufacturer === prototypeBeforeRollbackDocument.manufacturer,
     'A post-CAS eligibility failure must roll back both version and manufacturer.',
   )
   const logsAfterRollback = await payload.count({
@@ -1064,9 +1063,9 @@ try {
       ([sourceTable, sourceColumn, targetTable]) =>
         foreignKeyPolicyByRelation.get(`${sourceTable}.${sourceColumn}->${targetTable}.id`) === 'r',
     ),
-    'All eight formal catalog foreign keys must use ON DELETE RESTRICT.',
+    'All twelve formal catalog foreign keys must use ON DELETE RESTRICT.',
   )
-  pass('postgres-foreign-key-policy', '8/8 formal catalog references use ON DELETE RESTRICT')
+  pass('postgres-foreign-key-policy', '12/12 formal catalog references use ON DELETE RESTRICT')
 
   await expectDatabaseRejection(
     pool,

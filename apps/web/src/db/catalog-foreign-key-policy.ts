@@ -11,6 +11,10 @@ export const RESTRICTED_CATALOG_REFERENCES = [
   ['figure_prototype_characters', 'prototype_id', 'figure_prototypes'],
   ['figure_prototype_characters', 'character_id', 'characters'],
   ['figure_versions', 'prototype_id', 'figure_prototypes'],
+  ['catalog_items', 'character_id', 'characters'],
+  ['catalog_items', 'prototype_id', 'figure_prototypes'],
+  ['source_records', 'character_id', 'characters'],
+  ['source_records', 'catalog_item_id', 'catalog_items'],
 ] as const
 
 /**

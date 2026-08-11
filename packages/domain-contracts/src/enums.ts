@@ -33,7 +33,7 @@ export type CharacterAliasType = (typeof CHARACTER_ALIAS_TYPES)[number];
 export const MANUFACTURER_STATUSES = ["draft", "active", "hidden"] as const;
 export type ManufacturerStatus = (typeof MANUFACTURER_STATUSES)[number];
 
-export const FIGURE_TYPES = ["scale", "prize"] as const;
+export const FIGURE_TYPES = ["scale", "prize", "static"] as const;
 export type FigureType = (typeof FIGURE_TYPES)[number];
 
 export const PROTOTYPE_AUTHORIZATION_STATUSES = [

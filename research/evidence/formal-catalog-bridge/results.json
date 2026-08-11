@@ -1,0 +1,233 @@
+{
+  "schemaVersion": 1,
+  "result": "PASS",
+  "mainBaseSha": "5a8633f05b6e0695580862c4008a42bce086c9ab",
+  "schema": {
+    "existingCharacterReused": true,
+    "existingFigurePrototypeReused": true,
+    "newCollections": ["source-records", "catalog-items"],
+    "extendedCollections": [
+      {
+        "collection": "figure-prototypes",
+        "importantExtensions": [
+          "projectionKey",
+          "membershipFingerprint",
+          "optional manufacturer relation",
+          "static figure type"
+        ]
+      }
+    ],
+    "importantExtensionCount": 4,
+    "legacySchemaMismatch": true,
+    "schemaGapBlocked": false,
+    "scopeGateExceeded": false
+  },
+  "logicalInputs": [
+    {
+      "label": "cheshire.catalog-items",
+      "sha256": "b3b8a60216b174bcf05bff198e69ea3342fd58bb8df76c34f88a65e9f6b9cad8"
+    },
+    {
+      "label": "cheshire.character-config",
+      "sha256": "c465b1be0d15ad4db8d2d7a0cf5105ae03162c430187cf369f00baf0831cb46b"
+    },
+    {
+      "label": "cheshire.prototype-identities",
+      "sha256": "5f0d4f2637514bc222a8dd6c1281507ee95779ab4cbe92eb06fe95e30d4604fc"
+    },
+    {
+      "label": "cheshire.prototype-projection",
+      "sha256": "f454e47c897bf1a3dc7db306317a62cdb5fbfde5dbc6b325913d3f56996c83a6"
+    },
+    {
+      "label": "rem.catalog-items",
+      "sha256": "e4d15b4f6e1c7e67f9f593c4d256cbd23d69bac7aae7bccc7daf3fbb48e54267"
+    },
+    {
+      "label": "rem.character-config",
+      "sha256": "f2d60a4c88f1afb22c785b212af1c9096e740be5dc11b715f67b436bd2147a3e"
+    },
+    {
+      "label": "rem.prototype-identities",
+      "sha256": "bfb6e8ea4ec57600e482bbacf06c339102b8dff10d11fa858371d31f78b44b7b"
+    },
+    {
+      "label": "rem.prototype-projection",
+      "sha256": "c91af6598b5906a211598b607d5fbe85c01289eb0b2bfa38b28b9342aafc5b26"
+    }
+  ],
+  "localExport": {
+    "characters": 2,
+    "sourceRecords": 348,
+    "sourceRecordsByFamily": {
+      "goodsmile": 35,
+      "solaris": 292,
+      "japan-figure": 21,
+      "unknown": 0
+    },
+    "crossSourceCatalogItems": 49,
+    "catalogItems": {
+      "rem": 284,
+      "cheshire": 6,
+      "total": 290
+    },
+    "figurePrototypes": {
+      "rem": 221,
+      "cheshire": 6,
+      "total": 227
+    },
+    "imageRefs": {
+      "rem": 1257,
+      "cheshire": 69,
+      "total": 1326
+    },
+    "imageProvenance": {
+      "goodsmile": 285,
+      "solaris": 1020,
+      "japan-figure": 21,
+      "unknown": 0
+    },
+    "contentDigest": "d39ea1d2d74116e27f259d07a7e376d7fe7a06fd53d2769da7dd2384d18d0042",
+    "secondExportDrift": 0,
+    "duplicateIds": 0,
+    "orphanRefs": 0,
+    "machineAbsolutePaths": 0
+  },
+  "formalImportFresh": {
+    "inserted": {
+      "characters": 2,
+      "characterAliases": 9,
+      "sourceRecords": 348,
+      "catalogItems": 290,
+      "figurePrototypes": 227,
+      "figurePrototypeCharacters": 227,
+      "operationLogs": 1
+    },
+    "unchanged": {
+      "characters": 0,
+      "characterAliases": 0,
+      "sourceRecords": 0,
+      "catalogItems": 0,
+      "figurePrototypes": 0,
+      "figurePrototypeCharacters": 0
+    },
+    "updated": 0,
+    "unintendedUpdates": 0,
+    "errors": 0
+  },
+  "formalImportRepeat": {
+    "inserted": {
+      "characters": 0,
+      "characterAliases": 0,
+      "sourceRecords": 0,
+      "catalogItems": 0,
+      "figurePrototypes": 0,
+      "figurePrototypeCharacters": 0,
+      "operationLogs": 0
+    },
+    "unchanged": {
+      "characters": 2,
+      "characterAliases": 9,
+      "sourceRecords": 348,
+      "catalogItems": 290,
+      "figurePrototypes": 227,
+      "figurePrototypeCharacters": 227
+    },
+    "updated": 0,
+    "unintendedUpdates": 0,
+    "duplicateIds": 0,
+    "errors": 0,
+    "idempotency": "PASS"
+  },
+  "readback": {
+    "characters": 2,
+    "sourceRecords": 348,
+    "catalogItems": 290,
+    "figurePrototypes": 227,
+    "imageRefs": 1326,
+    "contentDigest": "d39ea1d2d74116e27f259d07a7e376d7fe7a06fd53d2769da7dd2384d18d0042",
+    "duplicateIds": 0,
+    "orphanRefs": 0
+  },
+  "parity": {
+    "characters": "PASS",
+    "catalogItems": "PASS",
+    "prototypes": "PASS",
+    "prototypeProjectionKeys": "PASS",
+    "membershipFingerprints": "PASS",
+    "membershipRelations": "PASS",
+    "imageRefs": "PASS",
+    "provenance": "PASS",
+    "sourceUrls": "PASS",
+    "duplicateIds": 0,
+    "orphanRefs": 0,
+    "overall": "PASS"
+  },
+  "remRegression": {
+    "figurePrototypes": 221,
+    "cards": 221,
+    "cardsWithCover": 220,
+    "prototypeIdDrift": 0,
+    "recommendationOrderDrift": 0
+  },
+  "cheshireRegression": {
+    "figurePrototypes": 6,
+    "cards": 6,
+    "cardsWithCover": 6,
+    "prototypeIdDrift": 0
+  },
+  "validation": {
+    "migrationFresh": "PASS",
+    "migrationRepeat": "PASS",
+    "migrationStatus": "PASS",
+    "migrationSchemaDrift": 0,
+    "legacyMigrationCycle": "PASS",
+    "syntheticPostgreSQLIntegration": "PASS",
+    "currentBaselinePostgreSQLIntegration": "PASS",
+    "catalogIntegrationChecks": 24,
+    "formalUnitTests": 66,
+    "personalGalleryUnitTests": 197,
+    "formalPlaywrightTests": 4,
+    "formalBuild": "PASS",
+    "typecheck": "PASS",
+    "lint": "PASS",
+    "changedFilesFormatting": "PASS",
+    "repositorySafety": "PASS",
+    "formalBoundary": "PASS",
+    "catalogBoundary": "PASS",
+    "dependencyPins": "PASS",
+    "dependencySecurityChecks": 29,
+    "npmAudit": {
+      "highOrCritical": 0,
+      "moderate": 5,
+      "noFixAvailable": true,
+      "statusAtRequiredHighThreshold": "PASS"
+    },
+    "payloadBoundary": "Local API",
+    "chromeRegression": {
+      "remCards": 221,
+      "cheshireCards": 6,
+      "consoleErrors": 0,
+      "status": "PASS"
+    },
+    "hpoiRequests": 0,
+    "collectionNetworkRequests": 0
+  },
+  "boundaries": {
+    "formalPersistenceResponsibilities": [
+      "persist",
+      "query",
+      "retain identity",
+      "retain provenance"
+    ],
+    "discoveryFilteringAndGroupingMovedIntoFormalApp": false,
+    "formalGalleryReadModelSwitched": false,
+    "downloadedMedia": 0,
+    "s3Uploads": 0,
+    "deployed": false
+  },
+  "decision": {
+    "formalBridge": "PASS",
+    "readyForSeparatelyAuthorizedGalleryReadModelWork": true
+  }
+}
