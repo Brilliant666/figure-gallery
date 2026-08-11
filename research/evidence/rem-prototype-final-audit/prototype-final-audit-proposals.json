@@ -1,0 +1,394 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-08-10T15:18:17+08:00",
+  "auditOnly": true,
+  "appliedToProjection": false,
+  "baseline": {
+    "pullRequest": 21,
+    "head": "4bd43506733830f8fe388fc60f16b9ca155242e2",
+    "currentPrototypeCount": 231,
+    "projectionEligibleItemCount": 284,
+    "projectionSha256": "e23e2d71d77725850b7641a62b62cac82208342f34e2f7b25d1d1977a1251d75"
+  },
+  "summary": {
+    "residualCandidatePairs": 35,
+    "residualCandidateGroups": 23,
+    "confirmedSamePairRelations": 11,
+    "confirmedDifferentPairRelations": 24,
+    "uncertainPairRelations": 0,
+    "confirmedSameMergeGroups": 7,
+    "manualOnlyDuplicateGroups": 1,
+    "currentPrototypeCardsAffected": 17,
+    "prototypeCardsCollapsedByProposal": 10,
+    "correctedPrototypeCount": 221,
+    "correctedLow": 221,
+    "correctedExpected": 221,
+    "correctedHigh": 221
+  },
+  "reasonCounts": {
+    "PURE_COLOR_VARIANT": {
+      "groups": 2,
+      "prototypeCardsAffected": 6
+    },
+    "RERELEASE_RENEWAL": {
+      "groups": 1,
+      "prototypeCardsAffected": 2
+    },
+    "CHANNEL_VARIANT": {
+      "groups": 1,
+      "prototypeCardsAffected": 2
+    },
+    "DUPLICATE_LISTING": {
+      "groups": 2,
+      "prototypeCardsAffected": 5
+    },
+    "MINOR_EXPRESSION_ACCESSORY": {
+      "groups": 1,
+      "prototypeCardsAffected": 2
+    },
+    "OTHER_SAME_SCULPT": {
+      "groups": 0,
+      "prototypeCardsAffected": 0
+    }
+  },
+  "groups": [
+    {
+      "proposalId": "proposal-bicute-base-blue-white-pearl",
+      "prototypeIds": [
+        "rem-proto-0688416d8ef1f378",
+        "rem-proto-a310c242726e5726",
+        "rem-proto-b0250a3eb8e1c264"
+      ],
+      "decision": "CONFIRMED_SAME_POSE",
+      "reasonType": "PURE_COLOR_VARIANT",
+      "reason": "BiCute Bunnies base, Blue and White Pearl show the same body sculpt, limb positions and silhouette; paint is the material difference.",
+      "sourceCandidateIds": [
+        "residual-pair-009"
+      ],
+      "manualOnlyExpansion": true
+    },
+    {
+      "proposalId": "proposal-birthday-lingerie-colors",
+      "prototypeIds": [
+        "rem-proto-023dfed31cb33603",
+        "rem-proto-68a281869f603b9d",
+        "rem-proto-9ce25921631eefff"
+      ],
+      "decision": "CONFIRMED_SAME_POSE",
+      "reasonType": "PURE_COLOR_VARIANT",
+      "reason": "Purple, original pink and Blue Birthday Lingerie versions use the same seated sculpt and silhouette; color and base treatment differ.",
+      "sourceCandidateIds": [
+        "residual-pair-011",
+        "residual-pair-017",
+        "residual-pair-018"
+      ],
+      "manualOnlyExpansion": false
+    },
+    {
+      "proposalId": "proposal-oni-tenshi-listings",
+      "prototypeIds": [
+        "rem-proto-2bb1087db6b8de1e",
+        "rem-proto-2e3a5b1e009acd52",
+        "rem-proto-6f4e152cfc551f3c"
+      ],
+      "decision": "CONFIRMED_SAME_POSE",
+      "reasonType": "DUPLICATE_LISTING",
+      "reason": "LPM, SPM and generic Oni Tenshi listings show the same white-costume sculpt and pose; the line labels are catalog aliases rather than distinct poses.",
+      "sourceCandidateIds": [
+        "residual-pair-012",
+        "residual-pair-013",
+        "residual-pair-015"
+      ],
+      "manualOnlyExpansion": false
+    },
+    {
+      "proposalId": "proposal-original-winter-winter-bunny",
+      "prototypeIds": [
+        "rem-proto-6446ba77f0fee392",
+        "rem-proto-b51f231b7aa14d8e"
+      ],
+      "decision": "CONFIRMED_SAME_POSE",
+      "reasonType": "MINOR_EXPRESSION_ACCESSORY",
+      "reason": "The body, limbs, clothing sculpt and silhouette match; the visible change is the small head accessory (Santa cap versus bunny ears).",
+      "sourceCandidateIds": [
+        "residual-pair-014"
+      ],
+      "manualOnlyExpansion": false
+    },
+    {
+      "proposalId": "proposal-kunoichi-listings",
+      "prototypeIds": [
+        "rem-proto-2f175e77fcde82c3",
+        "rem-proto-8dd74e43d10ebdc0"
+      ],
+      "decision": "CONFIRMED_SAME_POSE",
+      "reasonType": "DUPLICATE_LISTING",
+      "reason": "The SPM-labelled and generic Kunoichi records show the same sculpt, pose and costume geometry.",
+      "sourceCandidateIds": [
+        "residual-pair-016"
+      ],
+      "manualOnlyExpansion": false
+    },
+    {
+      "proposalId": "proposal-yukata-repaint-renewal",
+      "prototypeIds": [
+        "rem-proto-47dd45a7e14e789d",
+        "rem-proto-b22937098c30e8a8"
+      ],
+      "decision": "CONFIRMED_SAME_POSE",
+      "reasonType": "RERELEASE_RENEWAL",
+      "reason": "The repaint and Renewal Package records retain the same Yukata sculpt and pose; packaging/reissue treatment does not create a new photography pose.",
+      "sourceCandidateIds": [
+        "residual-pair-019"
+      ],
+      "manualOnlyExpansion": false
+    },
+    {
+      "proposalId": "proposal-cheerleader-channel-variant",
+      "prototypeIds": [
+        "rem-proto-39a995d0d02960df",
+        "rem-proto-c585521bcf854295"
+      ],
+      "decision": "CONFIRMED_SAME_POSE",
+      "reasonType": "CHANNEL_VARIANT",
+      "reason": "Renewal Online Crane and Original Cheerleader Smiling show the same body sculpt and pose; channel color and a small expression variation do not change the photography pose.",
+      "sourceCandidateIds": [
+        "residual-pair-021"
+      ],
+      "manualOnlyExpansion": false
+    }
+  ],
+  "manualReview": [
+    {
+      "candidateId": "residual-pair-001",
+      "prototypeIds": ["rem-proto-0ee4971ae19a0c17", "rem-proto-52719e75b9e597a7"],
+      "decision": "CONFIRMED_DIFFERENT_POSE",
+      "reason": "The source-specific views show seated versus reclining/lying bodies; the mixed cross-source image is provenance contamination, not identity evidence."
+    },
+    {
+      "candidateId": "residual-pair-002",
+      "prototypeIds": ["rem-proto-15d3cfe3b58b56ec", "rem-proto-c9333f6a2704b288"],
+      "decision": "CONFIRMED_DIFFERENT_POSE",
+      "reason": "Glitter & Glamours and Another Colour have different arm positions, dress geometry and silhouettes."
+    },
+    {
+      "candidateId": "residual-pair-003",
+      "prototypeIds": ["rem-proto-5a66157113a6900c", "rem-proto-ae12b9c19564fd63"],
+      "decision": "CONFIRMED_DIFFERENT_POSE",
+      "reason": "Birthday 2021 and Birthday use different props and body poses."
+    },
+    {
+      "candidateId": "residual-pair-004",
+      "prototypeIds": ["rem-proto-5b1d87fbc80ff558", "rem-proto-ce4d010483ff22be"],
+      "decision": "CONFIRMED_DIFFERENT_POSE",
+      "reason": "Serenus Couture Vol. 2 and Vol. 3 are distinct sculpts and poses."
+    },
+    {
+      "candidateId": "residual-pair-005",
+      "prototypeIds": ["rem-proto-63e4fd3cb007c40c", "rem-proto-80ae6729c78ab85c"],
+      "decision": "CONFIRMED_DIFFERENT_POSE",
+      "reason": "The single Rem PM figure and Ram & Rem composition are different compositions."
+    },
+    {
+      "candidateId": "residual-pair-006",
+      "prototypeIds": ["rem-proto-7a1d96fd77a46066", "rem-proto-f35d0fbac96ac98e"],
+      "decision": "CONFIRMED_DIFFERENT_POSE",
+      "reason": "The Yumekawa Maid pair and single-figure composition remain separate."
+    },
+    {
+      "candidateId": "residual-pair-007",
+      "prototypeIds": ["rem-proto-7a6dcc936b8c8dd5", "rem-proto-91a1f4db9d742fae"],
+      "decision": "CONFIRMED_DIFFERENT_POSE",
+      "reason": "The EXQ records show visibly different stance and outfit geometry."
+    },
+    {
+      "candidateId": "residual-pair-008",
+      "prototypeIds": ["rem-proto-a310c242726e5726", "rem-proto-afea5fc78039d0b4"],
+      "decision": "CONFIRMED_DIFFERENT_POSE",
+      "reason": "BiCute Blue and Bicolor have different hand and leg poses."
+    },
+    {
+      "candidateId": "residual-pair-009",
+      "prototypeIds": ["rem-proto-a310c242726e5726", "rem-proto-b0250a3eb8e1c264"],
+      "decision": "CONFIRMED_SAME_POSE",
+      "reason": "BiCute Blue and White Pearl share the same sculpt and pose; paint is the material difference."
+    },
+    {
+      "candidateId": "residual-pair-010",
+      "prototypeIds": ["rem-proto-afea5fc78039d0b4", "rem-proto-b0250a3eb8e1c264"],
+      "decision": "CONFIRMED_DIFFERENT_POSE",
+      "reason": "BiCute Bicolor and White Pearl have different arm and leg poses."
+    },
+    {
+      "candidateId": "residual-pair-011",
+      "prototypeIds": ["rem-proto-023dfed31cb33603", "rem-proto-68a281869f603b9d"],
+      "decision": "CONFIRMED_SAME_POSE",
+      "reason": "Purple and original Birthday Lingerie use the same seated sculpt; paint/base treatment differs."
+    },
+    {
+      "candidateId": "residual-pair-012",
+      "prototypeIds": ["rem-proto-2bb1087db6b8de1e", "rem-proto-6f4e152cfc551f3c"],
+      "decision": "CONFIRMED_SAME_POSE",
+      "reason": "The LPM and generic Oni Tenshi listings show the same sculpt and pose."
+    },
+    {
+      "candidateId": "residual-pair-013",
+      "prototypeIds": ["rem-proto-2e3a5b1e009acd52", "rem-proto-6f4e152cfc551f3c"],
+      "decision": "CONFIRMED_SAME_POSE",
+      "reason": "The SPM and generic Oni Tenshi listings show the same sculpt and pose."
+    },
+    {
+      "candidateId": "residual-pair-014",
+      "prototypeIds": ["rem-proto-6446ba77f0fee392", "rem-proto-b51f231b7aa14d8e"],
+      "decision": "CONFIRMED_SAME_POSE",
+      "reason": "Original Winter and Winter Bunny share the exact body/limb sculpt; only a small head accessory changes."
+    },
+    {
+      "candidateId": "residual-pair-015",
+      "prototypeIds": ["rem-proto-2bb1087db6b8de1e", "rem-proto-2e3a5b1e009acd52"],
+      "decision": "CONFIRMED_SAME_POSE",
+      "reason": "LPM and SPM Oni Tenshi labels point to the same visible sculpt and pose."
+    },
+    {
+      "candidateId": "residual-pair-016",
+      "prototypeIds": ["rem-proto-2f175e77fcde82c3", "rem-proto-8dd74e43d10ebdc0"],
+      "decision": "CONFIRMED_SAME_POSE",
+      "reason": "The SPM-labelled and generic Kunoichi records show the same sculpt and pose."
+    },
+    {
+      "candidateId": "residual-pair-017",
+      "prototypeIds": ["rem-proto-68a281869f603b9d", "rem-proto-9ce25921631eefff"],
+      "decision": "CONFIRMED_SAME_POSE",
+      "reason": "Original and Blue Birthday Lingerie use the same seated sculpt; paint differs."
+    },
+    {
+      "candidateId": "residual-pair-018",
+      "prototypeIds": ["rem-proto-023dfed31cb33603", "rem-proto-9ce25921631eefff"],
+      "decision": "CONFIRMED_SAME_POSE",
+      "reason": "Purple and Blue Birthday Lingerie use the same seated sculpt; paint differs."
+    },
+    {
+      "candidateId": "residual-pair-019",
+      "prototypeIds": ["rem-proto-47dd45a7e14e789d", "rem-proto-b22937098c30e8a8"],
+      "decision": "CONFIRMED_SAME_POSE",
+      "reason": "Yukata repaint and Renewal Package retain the same sculpt and pose."
+    },
+    {
+      "candidateId": "residual-pair-020",
+      "prototypeIds": ["rem-proto-11ff96261dcaff3c", "rem-proto-33db28e4c5e56a3a"],
+      "decision": "CONFIRMED_DIFFERENT_POSE",
+      "reason": "Phantom Night Wizard pair and single-figure composition are different photography compositions."
+    },
+    {
+      "candidateId": "residual-pair-021",
+      "prototypeIds": ["rem-proto-39a995d0d02960df", "rem-proto-c585521bcf854295"],
+      "decision": "CONFIRMED_SAME_POSE",
+      "reason": "Cheerleader channel/renewal versions share the same body sculpt and pose; color and a small expression differ."
+    },
+    {
+      "candidateId": "residual-pair-022",
+      "prototypeIds": ["rem-proto-08c1c6dbd86281b2", "rem-proto-583e1a497f66b836"],
+      "decision": "CONFIRMED_DIFFERENT_POSE",
+      "reason": "Omezame and Madorami change arm, head and torso pose rather than expression alone."
+    },
+    {
+      "candidateId": "residual-pair-023",
+      "prototypeIds": ["rem-proto-0033000a279ca9b0", "rem-proto-6446ba77f0fee392"],
+      "decision": "CONFIRMED_DIFFERENT_POSE",
+      "reason": "Winter Coat and Original Winter use different body and clothing silhouettes."
+    },
+    {
+      "candidateId": "residual-pair-024",
+      "prototypeIds": ["rem-proto-0acb42a062cb298a", "rem-proto-a5c0780ce5acfcc4"],
+      "decision": "CONFIRMED_DIFFERENT_POSE",
+      "reason": "The Sakura variants are different sculpts and poses."
+    },
+    {
+      "candidateId": "residual-pair-025",
+      "prototypeIds": ["rem-proto-5b007749f4ca6406", "rem-proto-c2965e11b325f881"],
+      "decision": "CONFIRMED_DIFFERENT_POSE",
+      "reason": "Clear and Dressy and generic Espresto have different costume and body geometry."
+    },
+    {
+      "candidateId": "residual-pair-026",
+      "prototypeIds": ["rem-proto-0acb42a062cb298a", "rem-proto-c585521bcf854295"],
+      "decision": "CONFIRMED_DIFFERENT_POSE",
+      "reason": "Sakura and Cheerleader are different costumes, sculpts and poses."
+    },
+    {
+      "candidateId": "residual-pair-027",
+      "prototypeIds": ["rem-proto-173898f6784b4e1e", "rem-proto-9d97386e4a5e87f2"],
+      "decision": "CONFIRMED_DIFFERENT_POSE",
+      "reason": "Jumper Swimsuit and Original Maid Swimsuit have different body poses and silhouettes."
+    },
+    {
+      "candidateId": "residual-pair-028",
+      "prototypeIds": ["rem-proto-0033000a279ca9b0", "rem-proto-b51f231b7aa14d8e"],
+      "decision": "CONFIRMED_DIFFERENT_POSE",
+      "reason": "Winter Coat and Winter Bunny have different body and clothing sculpts."
+    },
+    {
+      "candidateId": "residual-pair-029",
+      "prototypeIds": ["rem-proto-57755ad602a8fd95", "rem-proto-c314e7aca79152dc"],
+      "decision": "CONFIRMED_DIFFERENT_POSE",
+      "reason": "Ice Season and POP UP PARADE L are different sculpts and poses."
+    },
+    {
+      "candidateId": "residual-pair-030",
+      "prototypeIds": ["rem-proto-80deed6d29562934", "rem-proto-b7c333313aa3e396"],
+      "decision": "CONFIRMED_DIFFERENT_POSE",
+      "reason": "Room Wear and Cat Room Wear use different body poses and costume geometry."
+    },
+    {
+      "candidateId": "residual-pair-031",
+      "prototypeIds": ["rem-proto-08198fdfc8fc85e5", "rem-proto-7f391153feaede96"],
+      "decision": "CONFIRMED_DIFFERENT_POSE",
+      "reason": "F:Nex China Dress and BiCute China are different sculpts and poses."
+    },
+    {
+      "candidateId": "residual-pair-032",
+      "prototypeIds": ["rem-proto-b4974c6793d935ba", "rem-proto-f9f55df51821274f"],
+      "decision": "CONFIRMED_DIFFERENT_POSE",
+      "reason": "Bare Leg Bunny 2nd is standing while the original is kneeling."
+    },
+    {
+      "candidateId": "residual-pair-033",
+      "prototypeIds": ["rem-proto-5b1d87fbc80ff558", "rem-proto-75d95d01144e388b"],
+      "decision": "CONFIRMED_DIFFERENT_POSE",
+      "reason": "Serenus Couture Vol. 2 and the base version are different sculpts and poses."
+    },
+    {
+      "candidateId": "residual-pair-034",
+      "prototypeIds": ["rem-proto-75d95d01144e388b", "rem-proto-ce4d010483ff22be"],
+      "decision": "CONFIRMED_DIFFERENT_POSE",
+      "reason": "The base Serenus Couture and Vol. 3 are different sculpts and poses."
+    },
+    {
+      "candidateId": "residual-pair-035",
+      "prototypeIds": ["rem-proto-5f82f602529ebfba", "rem-proto-d3ce18687c805fe8"],
+      "decision": "CONFIRMED_DIFFERENT_POSE",
+      "reason": "Bunny 2nd is standing while the original Bunny is kneeling; they remain separate."
+    }
+  ],
+  "manualOnlyFindings": [
+    {
+      "findingId": "manual-only-bicute-base",
+      "prototypeIds": [
+        "rem-proto-0688416d8ef1f378",
+        "rem-proto-a310c242726e5726",
+        "rem-proto-b0250a3eb8e1c264"
+      ],
+      "decision": "CONFIRMED_SAME_POSE",
+      "reasonType": "PURE_COLOR_VARIANT",
+      "reason": "The full 231-card scan found the base BiCute card omitted by the automatic pair generator; it shares the Blue/White Pearl body sculpt and pose."
+    }
+  ],
+  "scope": {
+    "allPrototypeCardsVisuallyScanned": true,
+    "prototypeCardsScanned": 231,
+    "allResidualCandidatesVisuallyReviewed": true,
+    "remoteImagesReadOnly": true,
+    "newGroupingAlgorithm": false,
+    "projectionModified": false
+  }
+}
